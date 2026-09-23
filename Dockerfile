@@ -1,17 +1,15 @@
 FROM alpine:3.19
 
-# Install Perl, curl, SSL certificates
 RUN apk add --no-cache perl perl-io-socket-ssl perl-json-pp curl bash ca-certificates
 
 WORKDIR /app
 
-# Copy application files
-COPY server.pl ./
-COPY index.html ./
-COPY bot ./bot
-COPY entrypoint.sh ./
+COPY . ./
 
-RUN chmod +x entrypoint.sh server.pl bot/bot.pl
+RUN mkdir -p bot && \
+    ([ -f bot.pl ] && cp bot.pl bot/ || true) && \
+    ([ -f database.json ] && cp database.json bot/ || true) && \
+    chmod +x entrypoint.sh server.pl bot/bot.pl 2>/dev/null || true
 
 ENV PORT=8080
 EXPOSE 8080
