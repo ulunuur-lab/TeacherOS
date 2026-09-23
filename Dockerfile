@@ -12,6 +12,7 @@ RUN mkdir -p bot && \
     chmod +x entrypoint.sh server.pl bot/bot.pl 2>/dev/null || true
 
 ENV PORT=8080
+ENV PUBLIC_URL=https://teacheros-0l68.onrender.com
 EXPOSE 8080
 
 CMD ["./entrypoint.sh"]
