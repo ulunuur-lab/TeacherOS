@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  teacheros:
+    build: .
+    container_name: teacheros_app
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - PUBLIC_URL=http://localhost:8080
+      - BOT_TOKEN=8979510433:AAGd4TEZb_rx4b8lZrFFfJfAz-dAI2ZRzMw
+      - GEMINI_API_KEY=AIzaSyBmXda2F3ehCvoOaETwNV25YrFeMoKDEiE
+    volumes:
+      - ./bot/database.json:/app/bot/database.json
