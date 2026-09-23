@@ -1,6 +1,6 @@
 FROM alpine:3.19
 
-RUN apk add --no-cache perl perl-io-socket-ssl perl-json-pp curl bash ca-certificates
+RUN apk add --no-cache perl perl-io-socket-ssl curl bash ca-certificates
 
 WORKDIR /app
 
