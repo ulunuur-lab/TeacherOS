@@ -432,7 +432,6 @@ Respond with ONLY a valid, strict JSON object.};
         my $res_body;
         if ($curriculum && $curriculum->{slides}) {
             my $is_valid = defined($curriculum->{isValidTopic}) ? $curriculum->{isValidTopic} : 1;
-            # Guarantee exact slideCount returned ONLY if it is a valid topic
             if ($is_valid && !($is_valid eq "false" || $is_valid == 0)) {
                 my $slides = $curriculum->{slides};
                 while (scalar(@$slides) < $slideCount) {
@@ -448,9 +447,21 @@ Respond with ONLY a valid, strict JSON object.};
                 }
                 $curriculum->{slides} = $slides;
             }
-            $res_body = encode_json($curriculum);
+            my $wrapped = {
+                ok => 1,
+                curriculum => {
+                    topic => $topic,
+                    %$curriculum,
+                    quiz => $curriculum->{quizPool} || [],
+                    translations => $curriculum->{transPool} || [],
+                    errors => $curriculum->{errorsPool} || []
+                },
+                %$curriculum
+            };
+            $res_body = encode_json($wrapped);
         } else {
             $res_body = encode_json({
+                ok => 0,
                 error => "AI generation unavailable",
                 debug => substr($last_raw_err, 0, 300),
                 fallback => 1
