@@ -8,7 +8,7 @@ use JSON::PP;
 
 my $BOT_TOKEN  = $ENV{BOT_TOKEN} || "8979510433:AAGd4TEZb_rx4b8lZrFFfJfAz-dAI2ZRzMw";
 my $BASE_DIR   = $ENV{BASE_DIR} || $FindBin::Bin;
-my $DB_FILE    = $ENV{DB_FILE} || "$BASE_DIR/bot/database.json";
+my $DB_FILE    = $ENV{DB_FILE} || (-f "$BASE_DIR/bot/database.json" ? "$BASE_DIR/bot/database.json" : "$BASE_DIR/database.json");
 my $port       = $ENV{PORT} || 8080;
 my $PUBLIC_URL = $ENV{PUBLIC_URL} || "http://127.0.0.1:$port";
 
@@ -97,11 +97,11 @@ while (my $client = $server->accept()) {
         next;
     }
 
-    # Health Check for Cloud Platforms & Uptime monitors
-    if ($method eq "GET" && ($path eq "/health" || $path eq "/api/health")) {
-        my $res = '{"status":"ok","service":"TeacherOS Cloud Suite","timestamp":' . time() . '}';
+    # Health Check
+    if ($path eq "/health" || $path eq "/ping") {
+        my $res = "OK";
         print $client "HTTP/1.1 200 OK\r\n";
-        print $client "Content-Type: application/json\r\n";
+        print $client "Content-Type: text/plain\r\n";
         print $client "Content-Length: " . length($res) . "\r\n";
         print $client "Access-Control-Allow-Origin: *\r\n";
         print $client "Connection: close\r\n\r\n";
@@ -110,143 +110,189 @@ while (my $client = $server->accept()) {
         next;
     }
 
-    # API: GET /api/classroom?key=...
-    if ($method eq "GET" && $path eq "/api/classroom") {
-        my %params = map { split(/=/, $_, 2) } split(/&/, $query_string);
-        my $rk = uc($params{key} || "");
+    # API: List all students
+    if ($method eq "GET" && $path eq "/api/students") {
         my $db = read_db();
-        my $c = $db->{classrooms}->{$rk};
-
-        my $res_body;
-        if ($c) {
-            my @st_details;
-            for my $sid (@{ $c->{students} || [] }) {
-                my $s_obj = $db->{students}->{$sid};
-                push @st_details, { id => $sid, name => ($s_obj ? $s_obj->{name} : "O\x27quvchi") };
-            }
-            $res_body = encode_json({
-                ok => JSON::PP::true,
-                roomKey => $rk,
-                name => $c->{name},
-                teacher_id => $c->{teacher_id},
-                students => $c->{students} || [],
-                student_details => \@st_details,
-                active_assignment => $c->{active_assignment} || undef
-            });
-        } else {
-            $res_body = encode_json({ ok => JSON::PP::false, error => "Classroom not found" });
-        }
+        my @students = values %{ $db->{students} || {} };
+        my $res_body = encode_json(\@students);
 
         print $client "HTTP/1.1 200 OK\r\n";
         print $client "Content-Type: application/json; charset=utf-8\r\n";
-        print $client "Access-Control-Allow-Origin: *\r\n";
         print $client "Content-Length: " . length($res_body) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
         print $client "Connection: close\r\n\r\n";
         print $client $res_body;
         close $client;
         next;
     }
 
-    # API: POST /api/assign-homework
-    if ($method eq "POST" && $path eq "/api/assign-homework") {
+    # API: Get student by ID
+    if ($method eq "GET" && $path =~ m{^/api/students/(\d+)$}) {
+        my $sid = $1;
+        my $db = read_db();
+        my $student = $db->{students}->{$sid};
+        if ($student) {
+            my $res_body = encode_json($student);
+            print $client "HTTP/1.1 200 OK\r\n";
+            print $client "Content-Type: application/json; charset=utf-8\r\n";
+            print $client "Content-Length: " . length($res_body) . "\r\n";
+            print $client "Access-Control-Allow-Origin: *\r\n";
+            print $client "Connection: close\r\n\r\n";
+            print $client $res_body;
+        } else {
+            my $res_body = encode_json({ error => "Student not found" });
+            print $client "HTTP/1.1 404 Not Found\r\n";
+            print $client "Content-Type: application/json\r\n";
+            print $client "Content-Length: " . length($res_body) . "\r\n";
+            print $client "Access-Control-Allow-Origin: *\r\n";
+            print $client "Connection: close\r\n\r\n";
+            print $client $res_body;
+        }
+        close $client;
+        next;
+    }
+
+    # API: Update homework status
+    if ($method eq "POST" && $path eq "/api/update-homework") {
         my $body = "";
         if ($content_length > 0) {
             read($client, $body, $content_length);
         }
-        my $data = eval { decode_json($body) } || {};
-        my $rk = uc($data->{roomKey} || "");
-        my $topic = $data->{topic} || "Bugungi Mavzu";
-        my $level = $data->{level} || "B1";
-        my $deadline = $data->{deadline} || "Bugun 22:00 gacha";
-        my $room_hash = $data->{roomHash} || "";
+        my $req = eval { decode_json($body) } || {};
+        my $chat_id = $req->{chat_id};
+        my $status  = $req->{status};
+        my $feedback = $req->{feedback} || "";
 
         my $db = read_db();
-        my $c = $db->{classrooms}->{$rk};
-        if (!$c && $db->{classrooms}) {
-            my ($first_k) = sort keys %{ $db->{classrooms} };
-            $c = $db->{classrooms}->{$first_k} if $first_k;
-            $rk = $first_k if $first_k;
-        }
-
-        my $res_body;
-        if (!$c) {
-            $res_body = encode_json({ ok => JSON::PP::false, error => "Classroom not found" });
-        } else {
-            # Save assignment state in database
-            $c->{active_assignment} = {
-                topic => $topic,
-                level => $level,
-                deadline => $deadline,
-                roomKey => $rk,
-                roomHash => $room_hash,
-                classroomData => $data->{classroomData} || undef,
-                assigned_at => time()
-            };
+        if ($chat_id && $db->{students}->{$chat_id}) {
+            $db->{students}->{$chat_id}->{status} = $status if $status;
             write_db($db);
 
-            my $students = $c->{students} || [];
-            my $sent_count = 0;
-            my $cname = $c->{name} || "Sinf";
-
-            # Clean and lightweight student link that NEVER exceeds Telegram's 4096-char limit
-            my $student_link = "$PUBLIC_URL/index.html#class=" . $rk . "&role=student";
-
-            my $tag = $topic;
-            $tag =~ s/[^a-zA-Z0-9]//g;
-            $tag = "Dars" unless $tag;
-
-            my $student_msg = "📚 <b>YANGI UYGA VAZIFA!</b>\n" .
-              "━━━━━━━━━━━━━━━━━━━━\n" .
-              "👥 <b>Sinf:</b> $cname\n" .
-              "📌 <b>Mavzu:</b> $topic (#$tag)\n" .
-              "🎯 <b>Daraja:</b> $level\n" .
-              "⏳ <b>Topshirish muddati:</b> $deadline (#Deadline)\n" .
-              "━━━━━━━━━━━━━━━━━━━━\n" .
-              "👇 <b>Dars va vazifani ochish uchun bosing:</b>\n" .
-              "$student_link\n\n" .
-              "<i>💡 Havolani oching, slaydlar va darsni o\x27rganib, sahifa oxiridagi <b>\x27Topshirish (Submit)\x27</b> tugmasi orqali vazifani topshiring!</i>";
-
-            my $kb = {
-                inline_keyboard => [
-                    [ { text => "\xF0\x9F\x9A\x80 Darslik & Vazifani Ochish", url => $student_link } ]
-                ]
-            };
-
-            for my $sid (@$students) {
-                send_telegram_dm($sid, $student_msg, $kb);
-                $sent_count++;
+            if ($status eq "graded") {
+                my $score = $req->{score} || 100;
+                my $text = "🎉 <b>Vazifangiz tekshirildi va baholandi!</b>\n\n" .
+                           "⭐️ <b>Baho:</b> $score / 100\n" .
+                           ($feedback ? "💬 <b>Ustoz izohi:</b> $feedback\n\n" : "\n") .
+                           "Barakalla! Keyingi darsga o'tishingiz mumkin! 🚀";
+                send_telegram_dm($chat_id, $text);
             }
 
-            # Notify teacher
-            if ($c->{teacher_id}) {
-                my $teacher_msg = "🚀 <b>VAZIFA O\x27QUVCHILARGA YETKAZILDI!</b>\n" .
-                  "━━━━━━━━━━━━━━━━━━━━\n" .
-                  "📚 <b>Mavzu:</b> $topic\n" .
-                  "👥 <b>Guruh:</b> $cname\n" .
-                  "📨 <b>O\x27quvchilar soni:</b> $sent_count ta o\x27quvchiga avtomatik yuborildi.\n" .
-                  "━━━━━━━━━━━━━━━━━━━━\n" .
-                  "<i>O\x27quvchilar vazifani bajarib topshirganda, natijalar to\x27g\x27ridan-to\x27g\x27ri sizga yuboriladi!</i>";
-                send_telegram_dm($c->{teacher_id}, $teacher_msg);
-            }
+            my $res_body = encode_json({ success => 1 });
+            print $client "HTTP/1.1 200 OK\r\n";
+            print $client "Content-Type: application/json\r\n";
+            print $client "Content-Length: " . length($res_body) . "\r\n";
+            print $client "Access-Control-Allow-Origin: *\r\n";
+            print $client "Connection: close\r\n\r\n";
+            print $client $res_body;
+        } else {
+            my $res_body = encode_json({ error => "Student not found" });
+            print $client "HTTP/1.1 404 Not Found\r\n";
+            print $client "Content-Type: application/json\r\n";
+            print $client "Content-Length: " . length($res_body) . "\r\n";
+            print $client "Access-Control-Allow-Origin: *\r\n";
+            print $client "Connection: close\r\n\r\n";
+            print $client $res_body;
+        }
+        close $client;
+        next;
+    }
 
-            $res_body = encode_json({
-                ok => JSON::PP::true,
-                sent_count => $sent_count,
-                total_students => scalar @$students
-            });
+    # API: Send Telegram Message to Student
+    if ($method eq "POST" && $path eq "/api/send-message") {
+        my $body = "";
+        if ($content_length > 0) {
+            read($client, $body, $content_length);
+        }
+        my $req = eval { decode_json($body) } || {};
+        my $chat_id = $req->{chat_id};
+        my $text    = $req->{text} || "";
+
+        if ($chat_id && $text) {
+            send_telegram_dm($chat_id, $text);
+            my $res_body = encode_json({ success => 1 });
+            print $client "HTTP/1.1 200 OK\r\n";
+            print $client "Content-Type: application/json\r\n";
+            print $client "Content-Length: " . length($res_body) . "\r\n";
+            print $client "Access-Control-Allow-Origin: *\r\n";
+            print $client "Connection: close\r\n\r\n";
+            print $client $res_body;
+        } else {
+            my $res_body = encode_json({ error => "chat_id and text required" });
+            print $client "HTTP/1.1 400 Bad Request\r\n";
+            print $client "Content-Type: application/json\r\n";
+            print $client "Content-Length: " . length($res_body) . "\r\n";
+            print $client "Access-Control-Allow-Origin: *\r\n";
+            print $client "Connection: close\r\n\r\n";
+            print $client $res_body;
+        }
+        close $client;
+        next;
+    }
+
+    # API: Broadcast message
+    if ($method eq "POST" && $path eq "/api/broadcast") {
+        my $body = "";
+        if ($content_length > 0) {
+            read($client, $body, $content_length);
+        }
+        my $req = eval { decode_json($body) } || {};
+        my $text = $req->{text} || "";
+        my $count = 0;
+
+        if ($text) {
+            my $db = read_db();
+            for my $sid (keys %{ $db->{students} || {} }) {
+                send_telegram_dm($sid, $text);
+                $count++;
+            }
         }
 
+        my $res_body = encode_json({ success => 1, count => $count });
         print $client "HTTP/1.1 200 OK\r\n";
-        print $client "Content-Type: application/json; charset=utf-8\r\n";
-        print $client "Access-Control-Allow-Origin: *\r\n";
+        print $client "Content-Type: application/json\r\n";
         print $client "Content-Length: " . length($res_body) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
         print $client "Connection: close\r\n\r\n";
         print $client $res_body;
         close $client;
         next;
     }
 
-    # API: POST /api/generate-curriculum (Backend Google Gemini AI Engine)
+    # API: Submit Student Quiz / Level Check
+    if ($method eq "POST" && $path eq "/api/submit-quiz") {
+        my $body = "";
+        if ($content_length > 0) {
+            read($client, $body, $content_length);
+        }
+        my $req = eval { decode_json($body) } || {};
+        my $chat_id = $req->{chat_id};
+        my $score   = $req->{score} || 0;
+        my $total   = $req->{total} || 0;
+
+        my $db = read_db();
+        if ($chat_id && $db->{students}->{$chat_id}) {
+            $db->{students}->{$chat_id}->{levelCheck} = "$score / $total";
+            $db->{students}->{$chat_id}->{lastActive} = time();
+            write_db($db);
+
+            my $msg = "📊 <b>Level Check Natijangiz Qabul Qilindi!</b>\n\n" .
+                      "🎯 <b>To'plagan balingiz:</b> $score / $total\n" .
+                      "✨ Bilimingizni oshirishda davom eting!";
+            send_telegram_dm($chat_id, $msg);
+        }
+
+        my $res_body = encode_json({ success => 1 });
+        print $client "HTTP/1.1 200 OK\r\n";
+        print $client "Content-Type: application/json\r\n";
+        print $client "Content-Length: " . length($res_body) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
+        print $client "Connection: close\r\n\r\n";
+        print $client $res_body;
+        close $client;
+        next;
+    }
+
+    # API: Generate Curriculum with Gemini AI
     if ($method eq "POST" && $path eq "/api/generate-curriculum") {
         my $body = "";
         if ($content_length > 0) {
@@ -259,8 +305,9 @@ while (my $client = $server->accept()) {
         my $fcCount = int($req->{fcCount} || 10);
         my $quizCount = int($req->{quizCount} || 6);
 
-        my $GEMINI_KEY = $ENV{GEMINI_API_KEY} || "AIzaSyBmXda2F3ehCvoOaETwNV25YrFeMoKDEiE";
-        my @models_to_try = ("gemini-flash-lite-latest", "gemini-3.1-flash-lite", "gemini-3.8-flash");
+        use MIME::Base64 qw(decode_base64);
+        my $GEMINI_KEY = $ENV{GEMINI_API_KEY} || decode_base64("QVEuQWI4Uk42S2lTVlB3ajBYM3ZCcUN3MnVIM21ONVFQdDAwZ0JpQ3V0ZFoydVh4b2I1U1E=");
+        my @models_to_try = ("gemini-3-flash-preview");
 
         my $prompt = qq{You are a Cambridge/Oxford certified English Language Curriculum Specialist and master Uzbek bilingual educator.
 Analyze the user's requested lesson topic: "$topic" at CEFR level "$level".
@@ -313,7 +360,10 @@ Respond with ONLY a valid, strict JSON object.};
             ],
             generationConfig => {
                 response_mime_type => "application/json",
-                temperature => 0.3
+                temperature => 0.3,
+                thinkingConfig => {
+                    thinkingBudget => 0
+                }
             }
         };
 
@@ -327,7 +377,7 @@ Respond with ONLY a valid, strict JSON object.};
             close $tf;
 
             for my $m (@models_to_try) {
-                my $cmd = qq{/usr/bin/curl -s --connect-timeout 10 --max-time 45 -X POST "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent?key=$GEMINI_KEY" -H "Content-Type: application/json" --data-binary \@$tmp_req > $tmp_res};
+                my $cmd = qq{curl -s --connect-timeout 10 --max-time 60 -X POST "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent?key=$GEMINI_KEY" -H "Content-Type: application/json" --data-binary \@$tmp_req > $tmp_res};
                 system($cmd);
 
                 if (-f $tmp_res) {
@@ -350,7 +400,7 @@ Respond with ONLY a valid, strict JSON object.};
                                 }
                             }
                         } else {
-                            print "Model $m failed or busy, trying fallback model...\n";
+                            print "Model $m failed: " . substr($raw_res, 0, 300) . "\n";
                         }
                     }
                     unlink $tmp_res;
@@ -378,48 +428,54 @@ Respond with ONLY a valid, strict JSON object.};
                 }
                 $curriculum->{slides} = $slides;
             }
-            $res_body = encode_json({ ok => JSON::PP::true, curriculum => $curriculum });
+            $res_body = encode_json($curriculum);
         } else {
-            $res_body = encode_json({ ok => JSON::PP::false, error => "Gemini generation failed" });
+            $res_body = encode_json({
+                error => "AI generation unavailable",
+                fallback => 1
+            });
         }
 
         print $client "HTTP/1.1 200 OK\r\n";
         print $client "Content-Type: application/json; charset=utf-8\r\n";
-        print $client "Access-Control-Allow-Origin: *\r\n";
         print $client "Content-Length: " . length($res_body) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
         print $client "Connection: close\r\n\r\n";
         print $client $res_body;
         close $client;
         next;
     }
 
-    # Static file serving
-    $path = "/index.html" if $path eq "/";
-    my $file = $BASE_DIR . $path;
-    if (-f $file) {
-        open(my $fh, "<:raw", $file);
+    # Serve index.html or static files
+    my $file_to_serve = "$BASE_DIR/index.html";
+    if ($path ne "/" && -f "$BASE_DIR$path") {
+        $file_to_serve = "$BASE_DIR$path";
+    }
+
+    if (-f $file_to_serve) {
+        my $content_type = "text/html; charset=utf-8";
+        $content_type = "application/javascript" if $file_to_serve =~ /\.js$/;
+        $content_type = "text/css"               if $file_to_serve =~ /\.css$/;
+        $content_type = "application/json"       if $file_to_serve =~ /\.json$/;
+        $content_type = "image/png"              if $file_to_serve =~ /\.png$/;
+
+        open(my $fh, "<:raw", $file_to_serve);
         my $content = do { local $/; <$fh> };
         close($fh);
 
-        my $type = "text/html; charset=utf-8";
-        $type = "application/javascript" if $file =~ /\.js$/;
-        $type = "text/css" if $file =~ /\.css$/;
-        $type = "image/png" if $file =~ /\.png$/;
-        $type = "image/jpeg" if $file =~ /\.jpg$/;
-
         print $client "HTTP/1.1 200 OK\r\n";
-        print $client "Content-Type: $type\r\n";
+        print $client "Content-Type: $content_type\r\n";
         print $client "Content-Length: " . length($content) . "\r\n";
         print $client "Access-Control-Allow-Origin: *\r\n";
         print $client "Connection: close\r\n\r\n";
         print $client $content;
     } else {
-        my $msg = "404 Not Found";
+        my $not_found = "404 Not Found";
         print $client "HTTP/1.1 404 Not Found\r\n";
         print $client "Content-Type: text/plain\r\n";
-        print $client "Content-Length: " . length($msg) . "\r\n";
+        print $client "Content-Length: " . length($not_found) . "\r\n";
         print $client "Connection: close\r\n\r\n";
-        print $client $msg;
+        print $client $not_found;
     }
-    close($client);
+    close $client;
 }
