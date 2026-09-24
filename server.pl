@@ -110,6 +110,24 @@ while (my $client = $server->accept()) {
         next;
     }
 
+    # API: Quick test Gemini connection & credentials
+    if ($path eq "/api/test-gemini") {
+        use MIME::Base64 qw(decode_base64);
+        my $k = $ENV{GEMINI_API_KEY} || "";
+        if (!$k || $k =~ /^AIza/) {
+            $k = decode_base64("QVEuQWI4Uk42S2lTVlB3ajBYM3ZCcUN3MnVIM21ONVFQdDAwZ0JpQ3V0ZFoydVh4b2I1U1E=");
+        }
+        my $out = `curl -s --connect-timeout 5 --max-time 15 -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=$k" -H "Content-Type: application/json" -d '{"contents":[{"parts":[{"text":"Hello from Render"}]}]}'`;
+        print $client "HTTP/1.1 200 OK\r\n";
+        print $client "Content-Type: application/json; charset=utf-8\r\n";
+        print $client "Content-Length: " . length($out) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
+        print $client "Connection: close\r\n\r\n";
+        print $client $out;
+        close $client;
+        next;
+    }
+
     # API: List all students
     if ($method eq "GET" && $path eq "/api/students") {
         my $db = read_db();
@@ -306,7 +324,10 @@ while (my $client = $server->accept()) {
         my $quizCount = int($req->{quizCount} || 6);
 
         use MIME::Base64 qw(decode_base64);
-        my $GEMINI_KEY = $ENV{GEMINI_API_KEY} || decode_base64("QVEuQWI4Uk42S2lTVlB3ajBYM3ZCcUN3MnVIM21ONVFQdDAwZ0JpQ3V0ZFoydVh4b2I1U1E=");
+        my $GEMINI_KEY = $ENV{GEMINI_API_KEY} || "";
+        if (!$GEMINI_KEY || $GEMINI_KEY =~ /^AIza/) {
+            $GEMINI_KEY = decode_base64("QVEuQWI4Uk42S2lTVlB3ajBYM3ZCcUN3MnVIM21ONVFQdDAwZ0JpQ3V0ZFoydVh4b2I1U1E=");
+        }
         my @models_to_try = ("gemini-3-flash-preview");
 
         my $prompt = qq{You are a Cambridge/Oxford certified English Language Curriculum Specialist and master Uzbek bilingual educator.
@@ -360,10 +381,7 @@ Respond with ONLY a valid, strict JSON object.};
             ],
             generationConfig => {
                 response_mime_type => "application/json",
-                temperature => 0.3,
-                thinkingConfig => {
-                    thinkingBudget => 0
-                }
+                temperature => 0.3
             }
         };
 
@@ -372,6 +390,7 @@ Respond with ONLY a valid, strict JSON object.};
         my $tmp_res = "/tmp/gemini_res_$$.json";
 
         my $curriculum = undef;
+        my $last_raw_err = "";
         if (open my $tf, ">:raw", $tmp_req) {
             print $tf $json_payload;
             close $tf;
@@ -384,6 +403,7 @@ Respond with ONLY a valid, strict JSON object.};
                     if (open my $rf, "<:raw", $tmp_res) {
                         my $raw_res = do { local $/; <$rf> };
                         close $rf;
+                        $last_raw_err = $raw_res;
                         my $g_data = eval { decode_json($raw_res) };
                         if ($g_data && $g_data->{candidates}) {
                             my $text = $g_data->{candidates}->[0]->{content}->{parts}->[0]->{text};
@@ -432,6 +452,7 @@ Respond with ONLY a valid, strict JSON object.};
         } else {
             $res_body = encode_json({
                 error => "AI generation unavailable",
+                debug => substr($last_raw_err, 0, 300),
                 fallback => 1
             });
         }
