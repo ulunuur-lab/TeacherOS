@@ -10,7 +10,7 @@ my $BOT_TOKEN  = $ENV{BOT_TOKEN} || "8979510433:AAGd4TEZb_rx4b8lZrFFfJfAz-dAI2ZR
 my $BASE_DIR   = $ENV{BASE_DIR} || $FindBin::Bin;
 my $DB_FILE    = $ENV{DB_FILE} || (-f "$BASE_DIR/bot/database.json" ? "$BASE_DIR/bot/database.json" : "$BASE_DIR/database.json");
 my $port       = $ENV{PORT} || 8080;
-my $PUBLIC_URL = $ENV{PUBLIC_URL} || "http://127.0.0.1:$port";
+my $PUBLIC_URL = $ENV{PUBLIC_URL} || "https://teacheros-0l68.onrender.com";
 
 my $server = IO::Socket::INET->new(
     LocalAddr => "0.0.0.0",
@@ -166,6 +166,119 @@ while (my $client = $server->accept()) {
             print $client "Connection: close\r\n\r\n";
             print $client $res_body;
         }
+    # API: Get Classroom by Key
+    if ($method eq "GET" && $path =~ m{^/api/classroom}) {
+        my $rk = "";
+        if ($path =~ m{key=([^&]+)}) {
+            $rk = $1;
+        }
+        my $db = read_db();
+        my $c = $rk ? $db->{classrooms}->{$rk} : undef;
+        if ($c) {
+            my $res_body = encode_json({
+                ok => 1,
+                name => $c->{name},
+                roomKey => $rk,
+                teacher_id => $c->{teacher_id},
+                students => $c->{students} || [],
+                active_assignment => $c->{active_assignment}
+            });
+            print $client "HTTP/1.1 200 OK\r\n";
+            print $client "Content-Type: application/json; charset=utf-8\r\n";
+            print $client "Content-Length: " . length($res_body) . "\r\n";
+            print $client "Access-Control-Allow-Origin: *\r\n";
+            print $client "Connection: close\r\n\r\n";
+            print $client $res_body;
+        } else {
+            my $res_body = encode_json({ ok => 0, error => "Classroom not found" });
+            print $client "HTTP/1.1 404 Not Found\r\n";
+            print $client "Content-Type: application/json; charset=utf-8\r\n";
+            print $client "Content-Length: " . length($res_body) . "\r\n";
+            print $client "Access-Control-Allow-Origin: *\r\n";
+            print $client "Connection: close\r\n\r\n";
+            print $client $res_body;
+        }
+        close $client;
+        next;
+    }
+
+    # API: Assign Homework to classroom
+    if ($method eq "POST" && $path eq "/api/assign-homework") {
+        my $body = "";
+        if ($content_length > 0) {
+            read($client, $body, $content_length);
+        }
+        my $req = eval { decode_json($body) } || {};
+        my $rk = $req->{roomKey} || "";
+        my $topic = $req->{topic} || "Dars";
+        my $level = $req->{level} || "B1";
+        my $deadline = $req->{deadline} || "Bugun";
+        my $teacher_id = $req->{teacherChatId} || 7957347033;
+
+        my $db = read_db();
+        my $c = $db->{classrooms}->{$rk};
+        my $sent_count = 0;
+
+        if ($c) {
+            $c->{active_assignment} = {
+                topic => $topic,
+                level => $level,
+                deadline => $deadline,
+                roomHash => $req->{roomHash},
+                classroomData => $req->{classroomData},
+                assigned_at => time()
+            };
+            $c->{teacher_id} //= $teacher_id;
+            write_db($db);
+
+            my $student_link = "$PUBLIC_URL/index.html#class=$rk&role=student";
+            my $tag = $topic;
+            $tag =~ s/[^a-zA-Z0-9]//g;
+
+            my $student_msg = "📚 <b>YANGI UYGA VAZIFA!</b>\n" .
+                "━━━━━━━━━━━━━━━━━━━━\n" .
+                "👥 <b>Sinf:</b> " . ($c->{name} || "Sinf") . "\n" .
+                "📌 <b>Mavzu:</b> $topic (#$tag)\n" .
+                "🎯 <b>Daraja:</b> $level\n" .
+                "⏳ <b>Topshirish muddati:</b> $deadline (#Deadline)\n" .
+                "━━━━━━━━━━━━━━━━━━━━\n" .
+                "👇 <b>Darslik va vazifani ochish uchun bosing:</b>\n" .
+                "$student_link\n\n" .
+                "<i>💡 Havolani oching, slaydlar va darsni o'rganib chiqib, sahifa oxiridagi <b>'Topshirish (Submit)'</b> tugmasini bosing!</i>";
+
+            my $kb = {
+                inline_keyboard => [
+                    [ { text => "🚀 Darslik & Vazifani Ochish", url => $student_link } ]
+                ]
+            };
+
+            # Send to all enrolled students EXCEPT teacher
+            my @student_list = grep { $_ ne $teacher_id && $_ ne ($c->{teacher_id} || "") } @{ $c->{students} || [] };
+            for my $sid (@student_list) {
+                send_telegram_dm($sid, $student_msg, $kb);
+                $sent_count++;
+            }
+
+            # Send confirmation report to TEACHER
+            my $actual_teacher = $c->{teacher_id} || $teacher_id;
+            if ($actual_teacher) {
+                my $teacher_msg = "🚀 <b>VAZIFA O'QUVCHILARGA YETKAZILDI!</b>\n" .
+                    "━━━━━━━━━━━━━━━━━━━━\n" .
+                    "📚 <b>Mavzu:</b> $topic\n" .
+                    "👥 <b>Guruh:</b> " . ($c->{name} || "Sinf") . "\n" .
+                    "📨 <b>O'quvchilar:</b> " . ($sent_count > 0 ? "$sent_count ta o'quvchiga havola yuborildi." : "Hozircha guruhda o'quvchilar yo'q. Taklif havolasi orqali o'quvchilarni sinfga qo'shing.") . "\n\n" .
+                    "<i>O'quvchilar topshirgan zahoti, baholangan hisobot sizga kelib tushadi!</i>";
+                send_telegram_dm($actual_teacher, $teacher_msg);
+            }
+        }
+
+        my $res_body = encode_json({ ok => 1, sent_count => $sent_count });
+        print $client "HTTP/1.1 200 OK\r\n";
+        print $client "Content-Type: application/json; charset=utf-8\r\n";
+        print $client "Content-Length: " . length($res_body) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
+        print $client "Connection: close\r\n\r\n";
+        print $client $res_body;
         close $client;
         next;
     }
@@ -432,6 +545,7 @@ Respond with ONLY a valid, strict JSON object.};
         my $res_body;
         if ($curriculum && $curriculum->{slides}) {
             my $is_valid = defined($curriculum->{isValidTopic}) ? $curriculum->{isValidTopic} : 1;
+            # Guarantee exact slideCount returned ONLY if it is a valid topic
             if ($is_valid && !($is_valid eq "false" || $is_valid == 0)) {
                 my $slides = $curriculum->{slides};
                 while (scalar(@$slides) < $slideCount) {

@@ -11,7 +11,11 @@ perl server.pl &
 SERVER_PID=$!
 
 # Start Telegram Bot Poller
-perl bot/bot.pl &
+if [ -f "bot/bot.pl" ]; then
+    perl bot/bot.pl &
+elif [ -f "bot.pl" ]; then
+    perl bot.pl &
+fi
 BOT_PID=$!
 
 trap 'kill -TERM ${SERVER_PID} ${BOT_PID} 2>/dev/null; exit 0' SIGTERM SIGINT

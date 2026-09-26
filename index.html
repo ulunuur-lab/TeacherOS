@@ -4374,8 +4374,9 @@
         }
 
         const data = await response.json();
-        if (data.ok && data.curriculum && data.curriculum.slides && data.curriculum.slides.length > 0) {
-          return data.curriculum;
+        const curr = (data && data.curriculum && data.curriculum.slides) ? data.curriculum : ((data && data.slides) ? data : null);
+        if (curr && curr.slides && curr.slides.length > 0) {
+          return curr;
         }
         return null;
       } catch (err) {
@@ -5355,12 +5356,13 @@
             level: level,
             deadline: deadline,
             roomHash: compressed,
-            classroomData: currentClassroom
+            classroomData: currentClassroom,
+            teacherChatId: 7957347033
           })
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.ok && data.sent_count > 0) {
+          if (data.ok) {
             sentViaServer = true;
             sentCount = data.sent_count;
           }
@@ -5381,9 +5383,10 @@
             }
           } catch(e) {}
         }
-        if (students.length === 0) {
-          students = [7957347033];
-        }
+
+        const tId = 7957347033;
+        // Exclude teacher from receiving student homework
+        students = students.filter(sid => String(sid) !== String(tId));
 
         const tag = topic.replace(/[^a-zA-Z0-9]/g, "") || "Dars";
         const studentMsg = `📚 <b>YANGI UYGA VAZIFA!</b>\n` +
@@ -5416,14 +5419,13 @@
         }
 
         // Notify teacher as well
-        const tId = currentClassroom.teacherChatId || "8845531824";
         try {
           await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: tId,
-              text: `🚀 <b>VAZIFA O'QUVCHILARGA YETKAZILDI!</b>\n━━━━━━━━━━━━━━━━━━━━\n📚 <b>Mavzu:</b> ${topic}\n👥 <b>Guruh:</b> ${currentClassroom.teacherName || "MWF Beginner 14:00"}\n📨 <b>O'quvchilar:</b> ${sentCount} ta o'quvchiga havola yuborildi.\n\n<i>O'quvchilar topshirgan zahoti, baholangan hisobot sizga kelib tushadi!</i>`,
+              text: `🚀 <b>VAZIFA O'QUVCHILARGA YETKAZILDI!</b>\n━━━━━━━━━━━━━━━━━━━━\n📚 <b>Mavzu:</b> ${topic}\n👥 <b>Guruh:</b> ${currentClassroom.teacherName || "MWF Beginner 14:00"}\n📨 <b>O'quvchilar:</b> ${sentCount > 0 ? sentCount + " ta o'quvchiga havola yuborildi." : "Guruhda hali o'quvchilar yo'q. Taklif havolasi orqali o'quvchilarni sinfga qo'shing."}\n\n<i>O'quvchilar topshirgan zahoti, baholangan hisobot sizga kelib tushadi!</i>`,
               parse_mode: "HTML"
             })
           });
