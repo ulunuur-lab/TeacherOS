@@ -526,7 +526,7 @@ Respond with ONLY a valid, strict JSON object.};
             close $tf;
 
             for my $m (@models_to_try) {
-                my $cmd = qq{curl -s --connect-timeout 10 --max-time 60 -X POST "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent?key=$GEMINI_KEY" -H "Content-Type: application/json" --data-binary \@$tmp_req > $tmp_res};
+                my $cmd = qq{curl -s --connect-timeout 15 --max-time 90 -X POST "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent?key=$GEMINI_KEY" -H "Content-Type: application/json" --data-binary \@$tmp_req > $tmp_res};
                 system($cmd);
 
                 if (-f $tmp_res) {
@@ -538,7 +538,17 @@ Respond with ONLY a valid, strict JSON object.};
                         if ($g_data && $g_data->{candidates}) {
                             my $text = $g_data->{candidates}->[0]->{content}->{parts}->[0]->{text};
                             if ($text) {
+                                # Strip markdown code fences and whitespace
+                                $text =~ s/^\s*```(?:json)?\s*//is;
+                                $text =~ s/\s*```\s*$//s;
+                                $text =~ s/^\s+|\s+$//g;
+
                                 my $cand = eval { decode_json($text) };
+                                if (!$cand || ref($cand) ne "HASH") {
+                                    if ($text =~ /(\{.*\})/s) {
+                                        $cand = eval { decode_json($1) };
+                                    }
+                                }
                                 if (!$cand || ref($cand) ne "HASH") {
                                     $cand = eval { JSON::PP->new->incr_parse($text) };
                                 }

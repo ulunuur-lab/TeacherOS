@@ -3770,7 +3770,7 @@
         };
       } else {
         // Universal Smart Dynamic Grammar Compiler for Any Custom English Topic
-        const isGrammar = /\b(tense|zamon|grammar|grammatika|passive|conditional|modal|verb|clause|adverb|adjective|pronoun|preposition|article|conjunction|used to|qoida|perfect|continuous|simple|participle|inversion|speech)\b/i.test(topicInput);
+        const isGrammar = /\b(tense|zamon|grammar|grammatika|passives?|conditionals?|modals?|verbs?|clauses?|adverbs?|adjectives?|pronouns?|prepositions?|articles?|conjunctions?|used to|qoida|perfect|continuous|simple|participles?|inversion|speech|gerunds?|infinitives?|relative)\b/i.test(topicInput);
         raw = {
           topic: topicInput,
           level: level || "B1",
@@ -3895,28 +3895,41 @@
             { word: "fluent", pos: "adjective", uz: "ravon, erkin gapiruvchi", enEx: "Practice makes you fluent.", uzEx: "Mashq qilish sizni ravon gapirishga olib keladi." },
             { word: "accurate", pos: "adjective", uz: "aniq, xatosiz", enEx: "Aim for accurate sentences.", uzEx: "Xatosiz va aniq gaplar tuzishga intiling." }
           ],
-          quizPool: [
-            { q: `'${topicInput}' qoidasiga ko'ra qaysi gap to'g'ri tuzilgan?`, opts: ["Grammatik to'g'ri variant", "Xato zamon shakli", "Noto'g'ri fe'l shakli", "Chalkash predlog"], ans: "Grammatik to'g'ri variant", expl: `'${topicInput}' qoidasiga to'liq mos keladi.` },
-            { q: `'${topicInput}' mavzusida eng ko'p yo'l qo'yiladigan xato nima?`, opts: ["Moslashuv va zamon xatosi", "Katta harflar", "Tinish belgilari", "Nuqta qo'ymaslik"], ans: "Moslashuv va zamon xatosi", expl: "Kontekst va shaklni to'g'ri tanlash eng muhim omildir." },
-            { q: `Quyidagi variantlardan qaysi biri '${topicInput}' kontekstiga mos keladi?`, opts: ["Asosiy qoidaga mos gap", "Tushunarsiz tarjima", "Mavzuga aloqasiz jumla", "Noto'g'ri bog'lovchi"], ans: "Asosiy qoidaga mos gap", expl: "Mavzu strukturasiga qat'iy javob beradi." },
-            { q: `'${topicInput}' bo'yicha gap tuzishda birinchi navbatda nimaga qarash kerak?`, opts: ["Ega va fe'l mosligiga", "Gapning uzunligiga", "Lug'atning qiyinligiga", "Matn shriftiga"], ans: "Ega va fe'l mosligiga", expl: "Ega va fe'lning o'zaro to'g'ri bog'lanishi asosiy poydevor hisoblanadi." },
-            { q: `Ingliz tilida '${topicInput}' ifodalanganda qaysi element o'zgarmas qoladi?`, opts: ["Mantiqiy mazmun", "Har doim harf", "Faqat birinchi so'z", "Hech narsa"], ans: "Mantiqiy mazmun", expl: "Grammatik shakl o'zgargani bilan mazmun o'zgarmasligi lozim." },
-            { q: `'${topicInput}' mavzusini tez o'zlashtirishning eng yaxshi usuli qaysi?`, opts: ["Jonli muloqot va mashq", "Faqat qoidani yodlash", "Jim o'tirish", "Tarjimadan foydalanmaslik"], ans: "Jonli muloqot va mashq", expl: "Amaliyot orqali bilim mustahkamlanadi." }
+          quizPool: isGrammar ? [
+            { q: `Which sentence correctly demonstrates '${topicInput}'?`, opts: [`He explained the rule clearly so everyone understood.`, `He explaining the rule clear yesterday.`, `He did explain not anything.`, `He has explain it yesterday.`], ans: `He explained the rule clearly so everyone understood.`, expl: `'${topicInput}' qoidasiga ko'ra gap tuzilishi va zamon moslashuvi to'g'ri berilgan.` },
+            { q: `In English, what is a common mistake when using '${topicInput}'?`, opts: ["Translating word-for-word from native language", "Using proper punctuation", "Capitalizing the first word", "Speaking too clearly"], ans: "Translating word-for-word from native language", expl: "O'zbek tilidan so'zma-so'z tarjima qilish eng asosiy xatodir." },
+            { q: `Choose the sentence with correct word order for '${topicInput}':`, opts: [`The teacher asked us to review '${topicInput}' carefully.`, `The teacher asked carefully to us review.`, `Review carefully teacher asked us.`, `Us the teacher asked review carefully.`], ans: `The teacher asked us to review '${topicInput}' carefully.`, expl: "Ingliz tilida gap bo'laklari qat'iy tartibda kelishi lozim." },
+            { q: `Which factor is most critical when forming sentences with '${topicInput}'?`, opts: ["Subject-verb agreement and context", "Length of the sentence", "Font style", "Using difficult words"], ans: "Subject-verb agreement and context", expl: "Ega va fe'lning o'zaro to'g'ri bog'lanishi asosiy poydevor hisoblanadi." },
+            { q: `How should you practice '${topicInput}' to achieve fluency?`, opts: ["By making real-life example sentences and speaking", "By only memorizing rules silently", "By avoiding speaking", "By translating everything"], ans: "By making real-life example sentences and speaking", expl: "Jonli nutq va misollar orqali mavzu mustahkamlanadi." },
+            { q: `Select the most natural English sentence related to '${topicInput}':`, opts: [`Practice and active repetition lead to mastery.`, `Practicing make master.`, `Practice are good always.`, `Master makes practice.`], ans: `Practice and active repetition lead to mastery.`, expl: "Tabiiy inglizcha ibora va to'g'ri fe'l moslashuvi." }
+          ] : [
+            { q: `Which expression is most natural when discussing '${topicInput}'?`, opts: [`Active communication and practical usage`, `Silent repetition only`, `Translating every single letter`, `Avoiding conversations`], ans: `Active communication and practical usage`, expl: "Faol muloqot va amaliy qo'llanish asosiy omil." },
+            { q: `What is key to mastering vocabulary for '${topicInput}'?`, opts: ["Learning collocations in context", "Memorizing single isolated words", "Ignoring pronunciation", "Skipping practice"], ans: "Learning collocations in context", expl: "So'zlarni alohida emas, kontekstdagi iboralar bilan o'rganish lozim." },
+            { q: `When speaking about '${topicInput}', you should aim for:`, opts: ["Clear, confident and accurate expression", "Speaking extremely fast without clarity", "Using words you do not know", "Repeating one phrase"], ans: "Clear, confident and accurate expression", expl: "Aniq va ishonchli talaffuz muloqot samaradorligini oshiradi." },
+            { q: `How does practicing '${topicInput}' improve your English?`, opts: ["Builds active vocabulary and confidence", "Only helps with spelling", "Has no effect on fluency", "Limits communication"], ans: "Builds active vocabulary and confidence", expl: "Nutq va fikrni erkin bayon qilishni kuchaytiradi." },
+            { q: `Choose the correct advice for '${topicInput}':`, opts: ["Use phrases in your own daily sentences", "Never speak aloud", "Forget previous lessons", "Avoid feedback"], ans: "Use phrases in your own daily sentences", expl: "Kundalik misollar tuzish eng samarali yo'ldir." },
+            { q: `Consistency in studying '${topicInput}' ensures:`, opts: ["Long-term retention and natural speech", "Fast forgetting", "Confusion", "No progress"], ans: "Long-term retention and natural speech", expl: "Muntazamlik bilimlarni mustahkam saqlaydi." }
           ],
           transPool: [
-            { uz: `1. '${topicInput}' mavzusiga moslab birinchi namunaviy gapni tarjima qiling.`, hint: "Ega va fe'l mosligiga qarang" },
-            { uz: `2. Bu qoida ingliz tilida juda tez-tez ishlatiladi.`, hint: "This rule is used very frequently" },
+            { uz: `1. '${topicInput}' mavzusiga moslab birinchi namunaviy gapni tuzing va tarjima qiling.`, hint: "Ega va fe'l mosligiga qarang" },
+            { uz: `2. Bu qoida ingliz tilida juda tez-tez ishlatiladi.`, hint: "This rule is used very frequently in English" },
             { uz: `3. Agar tushunmasangiz, ustozingizdan yana bir bor so'rang.`, hint: "Ask your teacher again if you don't understand" },
             { uz: `4. Talabalar har kuni ushbu mavzuda mashq bajarishadi.`, hint: "Students practice this topic every day" },
-            { uz: `5. Xatolardan qo'rqmang, xatolar orqali o'rganiladi.`, hint: "Don't be afraid of mistakes" },
-            { uz: `6. Ushbu yangi bilimlarni keyingi darsda qo'llaymiz.`, hint: "We will apply this in the next lesson" }
+            { uz: `5. Xatolardan qo'rqmang, xatolar orqali o'rganiladi.`, hint: "Don't be afraid of mistakes, we learn from them" },
+            { uz: `6. Ushbu yangi bilimlarni keyingi darsda qo'llaymiz.`, hint: "We will apply this knowledge in the next lesson" }
           ],
-          errorsPool: [
-            `Typical sentence mistake #1 in ${topicInput}.`,
-            `Typical sentence mistake #2 in ${topicInput}.`,
-            `Typical sentence mistake #3 in ${topicInput}.`,
-            `Typical sentence mistake #4 in ${topicInput}.`,
-            `Typical sentence mistake #5 in ${topicInput}.`
+          errorsPool: isGrammar ? [
+            `❌ Direct word-for-word translation in ${topicInput} -> ✅ Use authentic English structure.`,
+            `❌ Subject-verb disagreement in ${topicInput} -> ✅ Match the verb form to the subject.`,
+            `❌ Omitting essential structural words in ${topicInput} -> ✅ Keep key grammatical connectors.`,
+            `❌ Incorrect word order in questions -> ✅ Place auxiliary verb before the subject.`,
+            `❌ Tense mixing without proper time markers -> ✅ Align verbs with their time context.`
+          ] : [
+            `❌ Misusing vocabulary collocations in ${topicInput}.`,
+            `❌ Using unnatural literal translations.`,
+            `❌ Inappropriate register (too informal for context).`,
+            `❌ Confusing words with similar pronunciations.`,
+            `❌ Lack of practical context when applying new expressions.`
           ]
         };
       }
@@ -4347,9 +4360,10 @@
 
     /* --- TeacherOS Gemini AI Backend Integration --- */
     async function fetchLiveGeminiCurriculum(topicInput, level, slideCount = 6, fcCount = 10, quizCount = 6) {
+      window.lastGeminiError = null;
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout: allow Gemini to generate fully
+        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout: allow Gemini to generate fully
 
         const response = await fetch("/api/generate-curriculum", {
           method: "POST",
@@ -4369,11 +4383,17 @@
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          console.warn("Backend curriculum API returned status:", response.status);
+          const errText = await response.text().catch(() => "");
+          console.warn("Backend curriculum API returned status:", response.status, errText);
+          window.lastGeminiError = `Server xatosi (${response.status})`;
           return null;
         }
 
         const data = await response.json();
+        if (data && data.ok === 0) {
+          window.lastGeminiError = data.error || "AI darslik yarata olmadi";
+          console.warn("Backend curriculum returned ok: 0:", data.error, data.debug);
+        }
         const curr = (data && data.curriculum && data.curriculum.slides) ? data.curriculum : ((data && data.slides) ? data : null);
         if (curr && curr.slides && curr.slides.length > 0) {
           return curr;
@@ -4381,6 +4401,7 @@
         return null;
       } catch (err) {
         console.warn("Backend curriculum fetch error:", err);
+        window.lastGeminiError = (err && err.name === 'AbortError') ? "So'rov vaqti (90s) tugadi" : (err && err.message ? err.message : "Tarmoq uzilishi");
         return null;
       }
     }
@@ -4587,10 +4608,11 @@
         if (geminiResult.blanks) currentClassroom.blanks = geminiResult.blanks;
         if (geminiResult.reorderItems) currentClassroom.reorderItems = geminiResult.reorderItems;
         if (geminiResult.essayPrompt) currentClassroom.essayPrompt = geminiResult.essayPrompt;
-        showToast(`✨ Google Gemini AI: "${topicInput}" uchun ${slideCount} ta yangi slayd yaratildi!`, "success");
+        showToast(`✨ Google Gemini AI: "${topicInput}" uchun ${slideCount} ta original slayd yaratildi!`, "success");
       } else {
         pack = compileDynamicCurriculum(topicInput, level, slideCount, fcCount, quizCount);
-        showToast(`⚡ Darslik Bazasi: "${topicInput}" darsi tayyorlandi! (${slideCount} ta slayd)`, "info");
+        const reason = window.lastGeminiError ? ` (${window.lastGeminiError})` : "";
+        showToast(`⚠️ Gemini AI uzilishi${reason}: Zaxira andoza yuklandi. Qayta urinib ko'rishingiz mumkin.`, "warning");
       }
 
       currentClassroom.topic = topicInput;
