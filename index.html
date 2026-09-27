@@ -4026,7 +4026,9 @@
             if (data.ok) {
               currentClassroom.teacherName = data.name || currentClassroom.teacherName;
               currentClassroom.teacherChatId = data.teacher_id || currentClassroom.teacherChatId;
-              currentClassroom.enrolledStudents = data.student_details || [];
+              currentClassroom.enrolledStudents = (data.student_details && data.student_details.length > 0)
+                ? data.student_details
+                : (data.students || []).map(sid => ({ id: sid, name: "O'quvchi (" + sid + ")" }));
               brandName = data.name || brandName;
               localStorage.setItem("tos_b_name", brandName);
 
@@ -5379,7 +5381,7 @@
             deadline: deadline,
             roomHash: compressed,
             classroomData: currentClassroom,
-            teacherChatId: 7957347033
+            teacherChatId: currentClassroom.teacherChatId || localStorage.getItem("tos_t_chat_id") || ""
           })
         });
         if (res.ok) {
@@ -5406,9 +5408,7 @@
           } catch(e) {}
         }
 
-        const tId = 7957347033;
-        // Exclude teacher from receiving student homework
-        students = students.filter(sid => String(sid) !== String(tId));
+        const tId = currentClassroom.teacherChatId || localStorage.getItem("tos_t_chat_id") || "";
 
         const tag = topic.replace(/[^a-zA-Z0-9]/g, "") || "Dars";
         const studentMsg = `📚 <b>YANGI UYGA VAZIFA!</b>\n` +

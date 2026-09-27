@@ -62,6 +62,10 @@ sub write_db {
 
 sub send_telegram_dm {
     my ($chat_id, $text, $keyboard) = @_;
+    return unless $chat_id;
+    if (main->can('send_msg')) {
+        return send_msg($chat_id, $text, $keyboard);
+    }
     my $payload = {
         chat_id    => $chat_id,
         text       => $text,
@@ -76,7 +80,7 @@ sub send_telegram_dm {
     print $tf $json_bytes;
     close $tf;
 
-    my $output = `curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" -H "Content-Type: application/json; charset=utf-8" --data-binary \@$tmp`;
+    my $output = `curl -s --connect-timeout 8 --max-time 15 -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" -H "Content-Type: application/json; charset=utf-8" --data-binary \@$tmp`;
     print "TG Send to $chat_id: $output\n";
     unlink $tmp;
 }
@@ -245,12 +249,22 @@ while (my $client = $server->accept()) {
         my $db = read_db();
         my $c = $rk ? $db->{classrooms}->{$rk} : undef;
         if ($c) {
+            my @student_details;
+            for my $sid (@{ $c->{students} || [] }) {
+                my $st = $db->{students}->{$sid} || $db->{students}->{"$sid"};
+                my $sname = $st ? $st->{name} : "O'quvchi ($sid)";
+                push @student_details, {
+                    id => $sid,
+                    name => $sname
+                };
+            }
             my $res_body = encode_json({
                 ok => 1,
                 name => $c->{name},
                 roomKey => $rk,
                 teacher_id => $c->{teacher_id},
                 students => $c->{students} || [],
+                student_details => \@student_details,
                 active_assignment => $c->{active_assignment}
             });
             print $client "HTTP/1.1 200 OK\r\n";
@@ -283,10 +297,10 @@ while (my $client = $server->accept()) {
         my $topic = $req->{topic} || "Dars";
         my $level = $req->{level} || "B1";
         my $deadline = $req->{deadline} || "Bugun";
-        my $teacher_id = $req->{teacherChatId} || 7957347033;
 
         my $db = read_db();
         my $c = $db->{classrooms}->{$rk};
+        my $teacher_id = $req->{teacherChatId} || ($c ? $c->{teacher_id} : "") || "";
         my $sent_count = 0;
 
         if ($c) {
@@ -298,7 +312,7 @@ while (my $client = $server->accept()) {
                 classroomData => $req->{classroomData},
                 assigned_at => time()
             };
-            $c->{teacher_id} //= $teacher_id;
+            $c->{teacher_id} //= $teacher_id if $teacher_id;
             write_db($db);
 
             my $student_link = "$PUBLIC_URL/index.html#class=$rk&role=student";
@@ -322,8 +336,9 @@ while (my $client = $server->accept()) {
                 ]
             };
 
-            # Send to all enrolled students EXCEPT teacher
-            my @student_list = grep { $_ ne $teacher_id && $_ ne ($c->{teacher_id} || "") } @{ $c->{students} || [] };
+            # Send to all enrolled students
+            my %seen_sid;
+            my @student_list = grep { $_ && !$seen_sid{$_}++ } @{ $c->{students} || [] };
             for my $sid (@student_list) {
                 send_telegram_dm($sid, $student_msg, $kb);
                 $sent_count++;
