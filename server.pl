@@ -246,6 +246,7 @@ while (my $client = $server->accept()) {
             $rk = $1;
         }
         $rk =~ s/^\s+|\s+$//g;
+        $rk = uc($rk);
         my $db = read_db();
         my $c = $rk ? $db->{classrooms}->{$rk} : undef;
         if ($c) {
@@ -293,7 +294,8 @@ while (my $client = $server->accept()) {
             read($client, $body, $content_length);
         }
         my $req = eval { decode_json($body) } || {};
-        my $rk = $req->{roomKey} || "";
+        my $rk = uc($req->{roomKey} || "");
+        $rk =~ s/^\s+|\s+$//g;
         my $topic = $req->{topic} || "Dars";
         my $level = $req->{level} || "B1";
         my $deadline = $req->{deadline} || "Bugun";
@@ -303,7 +305,37 @@ while (my $client = $server->accept()) {
         my $teacher_id = $req->{teacherChatId} || ($c ? $c->{teacher_id} : "") || "";
         my $sent_count = 0;
 
+        # Auto-rehydrate classroom if server restarted or container reloaded
+        if (!$c && $rk) {
+            my $cname = ($req->{classroomData} && $req->{classroomData}->{name}) ? $req->{classroomData}->{name} : "Sinf ($rk)";
+            $c = {
+                name       => $cname,
+                teacher_id => $teacher_id,
+                students   => []
+            };
+            $db->{classrooms}->{$rk} = $c;
+        }
+
         if ($c) {
+            # Merge any enrolled students passed from client
+            if ($req->{classroomData} && $req->{classroomData}->{enrolledStudents} && ref($req->{classroomData}->{enrolledStudents}) eq 'ARRAY') {
+                for my $st (@{ $req->{classroomData}->{enrolledStudents} }) {
+                    my $st_id = ref($st) eq 'HASH' ? ($st->{id} || $st->{chat_id}) : $st;
+                    if ($st_id && !grep { $_ eq $st_id } @{ $c->{students} || [] }) {
+                        push @{ $c->{students} }, $st_id;
+                        my $sname = (ref($st) eq 'HASH' && $st->{name}) ? $st->{name} : "O'quvchi ($st_id)";
+                        $db->{students}->{$st_id} //= { name => $sname, classrooms => [ $rk ] };
+                    }
+                }
+            }
+            if ($req->{students} && ref($req->{students}) eq 'ARRAY') {
+                for my $st_id (@{ $req->{students} }) {
+                    if ($st_id && !grep { $_ eq $st_id } @{ $c->{students} || [] }) {
+                        push @{ $c->{students} }, $st_id;
+                        $db->{students}->{$st_id} //= { name => "O'quvchi ($st_id)", classrooms => [ $rk ] };
+                    }
+                }
+            }
             $c->{active_assignment} = {
                 topic => $topic,
                 level => $level,

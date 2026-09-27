@@ -5370,6 +5370,7 @@
       let sentViaServer = false;
 
       // Method 1: Send via Server API
+      const studentIds = (currentClassroom.enrolledStudents || []).map(s => (typeof s === 'object' ? (s.id || s.chat_id) : s)).filter(Boolean);
       try {
         const res = await fetch("/api/assign-homework", {
           method: "POST",
@@ -5381,14 +5382,17 @@
             deadline: deadline,
             roomHash: compressed,
             classroomData: currentClassroom,
+            students: studentIds,
             teacherChatId: currentClassroom.teacherChatId || localStorage.getItem("tos_t_chat_id") || ""
           })
         });
         if (res.ok) {
           const data = await res.json();
           if (data.ok) {
-            sentViaServer = true;
             sentCount = data.sent_count;
+            if (sentCount > 0 || studentIds.length === 0) {
+              sentViaServer = true;
+            }
           }
         }
       } catch(e) {
@@ -5397,7 +5401,7 @@
 
       // Method 2: Fallback direct Telegram Bot API dispatch
       if (!sentViaServer) {
-        let students = (currentClassroom.enrolledStudents || []).map(s => s.id || s);
+        let students = studentIds;
         if (students.length === 0) {
           try {
             const cres = await fetch(`/api/classroom?key=${rk}`);

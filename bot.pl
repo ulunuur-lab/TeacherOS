@@ -622,6 +622,7 @@ sub create_new_teacher_classroom {
         name    => $className
     };
 
+    save_db($db);
     clear_user_state($chat_id, $db);
 
     (my $invite_key = $rk) =~ s/-/_/g;
@@ -669,6 +670,7 @@ sub link_teacher_to_existing_key {
         };
     }
 
+    save_db($db);
     clear_user_state($chat_id, $db);
 
     send_msg($chat_id, "<b>Sinf muvaffaqiyatli ulandi!</b> Siz endi <b>" . $c->{name} . "</b> sinf boshqaruviga egasiz.", {
@@ -698,6 +700,7 @@ sub register_student_to_classroom {
         push @{ $c->{students} }, $chat_id;
     }
 
+    save_db($db);
     clear_user_state($chat_id, $db);
 
     my $welcome_text = "<b>Tabriklaymiz, $name!</b>\n\n" .
