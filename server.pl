@@ -113,11 +113,19 @@ while (my $client = $server->accept()) {
     # API: Quick test Gemini connection & credentials
     if ($path eq "/api/test-gemini") {
         use MIME::Base64 qw(decode_base64);
+        my $leaked_key = "AIzaSyBmXda2F3ehCvoOaETwNV25YrFeMoKDEiE";
         my $k = $ENV{GEMINI_API_KEY} || "";
-        if (!$k || $k =~ /^AIza/) {
+        if (!$k || $k eq $leaked_key || length($k) < 20) {
             $k = decode_base64("QVEuQWI4Uk42S2lTVlB3ajBYM3ZCcUN3MnVIM21ONVFQdDAwZ0JpQ3V0ZFoydVh4b2I1U1E=");
         }
-        my $out = `curl -s --connect-timeout 5 --max-time 15 -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=$k" -H "Content-Type: application/json" -d '{"contents":[{"parts":[{"text":"Hello from Render"}]}]}'`;
+        my @test_models = ("gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-3.5-flash");
+        my $out = "";
+        for my $tm (@test_models) {
+            $out = `curl -s --connect-timeout 5 --max-time 15 -X POST "https://generativelanguage.googleapis.com/v1beta/models/$tm:generateContent?key=$k" -H "Content-Type: application/json" -d '{"contents":[{"parts":[{"text":"Hello from Render"}]}]}'`;
+            if ($out =~ /candidates/i) {
+                last;
+            }
+        }
         print $client "HTTP/1.1 200 OK\r\n";
         print $client "Content-Type: application/json; charset=utf-8\r\n";
         print $client "Content-Length: " . length($out) . "\r\n";
@@ -437,17 +445,26 @@ while (my $client = $server->accept()) {
         my $quizCount = int($req->{quizCount} || 6);
 
         use MIME::Base64 qw(decode_base64);
+        my $leaked_key = "AIzaSyBmXda2F3ehCvoOaETwNV25YrFeMoKDEiE";
         my $GEMINI_KEY = $ENV{GEMINI_API_KEY} || "";
-        if (!$GEMINI_KEY || $GEMINI_KEY =~ /^AIza/) {
+        if (!$GEMINI_KEY || $GEMINI_KEY eq $leaked_key || length($GEMINI_KEY) < 20) {
             $GEMINI_KEY = decode_base64("QVEuQWI4Uk42S2lTVlB3ajBYM3ZCcUN3MnVIM21ONVFQdDAwZ0JpQ3V0ZFoydVh4b2I1U1E=");
         }
-        my @models_to_try = ("gemini-3-flash-preview");
+        my @models_to_try = (
+            "gemini-3.1-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-flash-latest",
+            "gemini-3.5-flash-lite",
+            "gemini-3.5-flash",
+            "gemini-3.8-flash"
+        );
 
         my $prompt = qq{You are a Cambridge/Oxford certified English Language Curriculum Specialist and master Uzbek bilingual educator.
 Analyze the user's requested lesson topic: "$topic" at CEFR level "$level".
 
 STEP 1: PEDAGOGICAL VALIDITY CHECK
 Determine if "$topic" is a legitimate English language learning subject (grammar point, vocabulary theme, English tense, adverb/adjective, phrasal verbs, idioms, pronunciation, communication skills like IELTS, Job Interview, Travel English, Business English, etc.).
+NOTE: If user makes a minor spelling typo (e.g., 'Propositions of time' instead of 'Prepositions of time', 'Irreguler verbs' instead of 'Irregular verbs'), understand the intended pedagogical topic ('Prepositions of time') and generate the complete high-quality lesson for it!
 
 IF "$topic" IS COMPLETE GIBBERISH (e.g. 'asdfgh', 'dih', 'xyz123') OR COMPLETELY UNRELATED TO TEACHING ENGLISH (e.g. 'kartoshka yetishtirish', 'mashina motorini ta'mirlash'):
 Return a JSON object with EXACTLY this structure:
