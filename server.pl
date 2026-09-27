@@ -238,9 +238,10 @@ while (my $client = $server->accept()) {
     # API: Get Classroom by Key
     if ($method eq "GET" && $path =~ m{^/api/classroom}) {
         my $rk = "";
-        if ($path =~ m{key=([^&]+)}) {
+        if ($full_path =~ m{key=([^&]+)}) {
             $rk = $1;
         }
+        $rk =~ s/^\s+|\s+$//g;
         my $db = read_db();
         my $c = $rk ? $db->{classrooms}->{$rk} : undef;
         if ($c) {
