@@ -15,9 +15,20 @@ my $PUBLIC_URL = $ENV{PUBLIC_URL} || "https://teacheros-0l68.onrender.com";
 my @ADMIN_IDS = (7957347033, 8845531824);
 my %ADMIN_MAP = map { $_ => 1 } @ADMIN_IDS;
 my %ADMIN_USERNAMES = (
+    'ulunur'           => 1,
     'ahrormamazok1rov' => 1,
     'ulugb7k'          => 1
 );
+
+sub get_all_admin_ids {
+    my ($db) = @_;
+    my @targets = @ADMIN_IDS;
+    if ($db && $db->{admin_ids} && ref($db->{admin_ids}) eq 'ARRAY') {
+        push @targets, @{ $db->{admin_ids} };
+    }
+    my %seen;
+    return grep { $_ && !$seen{$_}++ } @targets;
+}
 
 my $json = JSON::PP->new->utf8->pretty;
 
@@ -112,6 +123,27 @@ sub handle_update {
     $db->{authorized_teachers} //= {};
     $db->{pending_authorizations} //= {};
 
+    # Auto-register admin if username matches @ulunur, @ahrormamazok1rov, or @ulugb7k
+    my $sender = $upd->{callback_query} ? $upd->{callback_query}->{from} : ($upd->{message} ? $upd->{message}->{from} : undef);
+    if ($sender && $sender->{username}) {
+        my $uname_clean = lc($sender->{username});
+        $uname_clean =~ s/^@//;
+        if ($ADMIN_USERNAMES{$uname_clean}) {
+            $db->{admin_ids} //= [];
+            my $sid = $sender->{id};
+            unless (grep { $_ eq $sid } @{ $db->{admin_ids} }) {
+                push @{ $db->{admin_ids} }, $sid;
+            }
+            $db->{authorized_teachers}->{$sid} = {
+                username     => '@' . $sender->{username},
+                name         => $sender->{first_name} || $uname_clean,
+                role         => 'admin',
+                activated_at => time()
+            };
+            save_db($db);
+        }
+    }
+
     # 1. Handle Callback Queries (Inline Buttons)
     if ($upd->{callback_query}) {
         my $cb = $upd->{callback_query};
@@ -138,7 +170,7 @@ sub handle_update {
                 $db->{user_state}->{$chat_id} = { state => 'AWAIT_ACTIVATION_PASSCODE' };
                 save_db($db);
 
-                # Alert Admins (Ahrorbek & Ulug'bek)
+                # Alert Admins (ulunur & ahrormamazok1rov & ulugb7k)
                 my $admin_alert = "🔔 <b>YANGI USTOZ SO'ROVI (TeacherOS Litsenziyasi)!</b>\n" .
                     "━━━━━━━━━━━━━━━━━━━━\n" .
                     "👤 <b>Ustoz:</b> $fName " . ($uName ? "($uName)" : "") . "\n" .
@@ -147,7 +179,7 @@ sub handle_update {
                     "💡 <i>Ushbu 6 xonali kodni to'lov qilgan ustozga bering. U ushbu kodni botga kiritgach, TeacherOS uning hisobiga biriktiriladi va to'liq ochiladi!</i>\n\n" .
                     "⚡ <i>To'g'ridan-to'g'ri faollashtirish uchun:</i>\n/grant $chat_id";
 
-                for my $adm_id (@ADMIN_IDS) {
+                for my $adm_id (get_all_admin_ids($db)) {
                     send_msg($adm_id, $admin_alert);
                 }
 
@@ -159,7 +191,7 @@ sub handle_update {
                     "🔑 <b>Faollashtirish kodi:</b>\n" .
                     "Platformani ishga tushirish uchun admin tomonidan taqdim etilgan <b>6 xonali maxfiy kodni</b> ushbu botga xabar sifatida yuboring.\n\n" .
                     "📞 <b>Litsenziya sotib olish yoki kodni olish uchun adminga murojaat qiling:</b>\n" .
-                    "👉 <b>Admin:</b> \@ahrormamazok1rov\n\n" .
+                    "👉 <b>Admin:</b> \@ulunur (\@ahrormamazok1rov)\n\n" .
                     "<i>(Kodni olganingizdan so'ng, shunchaki xabar sifatida ushbu chatga yuboring)</i>";
 
                 send_msg($chat_id, $teacher_msg);
@@ -324,7 +356,7 @@ sub handle_update {
                     "👤 Ustoz: $fName ($uName)\n" .
                     "🆔 ID: <code>$chat_id</code>\n" .
                     "Kodni to'g'ri kiritdi va litsenziyasi muvaffaqiyatli ishga tushdi.";
-                for my $adm_id (@ADMIN_IDS) {
+                for my $adm_id (get_all_admin_ids($db)) {
                     send_msg($adm_id, $admin_notify);
                 }
 
@@ -333,7 +365,7 @@ sub handle_update {
             } else {
                 my $fail_msg = "❌ <b>Noto'g'ri faollashtirish kodi kiritildi!</b>\n\n" .
                     "Kiritilgan kod mos kelmadi. Iltimos, qaytadan urinib ko'ring yoki litsenziya kodi olish uchun adminga murojaat qiling:\n" .
-                    "👉 <b>Admin:</b> \@ahrormamazok1rov";
+                    "👉 <b>Admin:</b> \@ulunur (\@ahrormamazok1rov)";
                 send_msg($chat_id, $fail_msg);
                 return;
             }
