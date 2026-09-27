@@ -1,32 +1,23 @@
 #!/bin/sh
 
 echo "=================================================="
-echo "🚀 TeacherOS Cloud Suite (Web + API + Telegram Bot)"
+echo "🚀 TeacherOS Cloud Suite (Web + API + Telegram Bot Webhook)"
 echo "Port: ${PORT:-8080}"
-echo "Public URL: ${PUBLIC_URL:-http://127.0.0.1:${PORT:-8080}}"
+echo "Public URL: ${PUBLIC_URL:-https://teacheros-0l68.onrender.com}"
 echo "=================================================="
 
-# Start Web and API Server
+# Start Web, API and Telegram Webhook Server
 perl server.pl &
 SERVER_PID=$!
 
-# Start Telegram Bot Poller
-if [ -f "bot/bot.pl" ]; then
-    perl bot/bot.pl &
-elif [ -f "bot.pl" ]; then
-    perl bot.pl &
-fi
-BOT_PID=$!
+trap 'kill -TERM ${SERVER_PID} 2>/dev/null; exit 0' SIGTERM SIGINT
 
-trap 'kill -TERM ${SERVER_PID} ${BOT_PID} 2>/dev/null; exit 0' SIGTERM SIGINT
+echo "TeacherOS Unified Server started (PID: $SERVER_PID)"
 
-echo "TeacherOS Server started (PID: $SERVER_PID)"
-echo "TeacherOS Telegram Bot started (PID: $BOT_PID)"
-
-while kill -0 "$SERVER_PID" 2>/dev/null && kill -0 "$BOT_PID" 2>/dev/null; do
+while kill -0 "$SERVER_PID" 2>/dev/null; do
     sleep 3
 done
 
 echo "Process terminated. Shutting down..."
-kill -TERM "$SERVER_PID" "$BOT_PID" 2>/dev/null
+kill -TERM "$SERVER_PID" 2>/dev/null
 exit 1

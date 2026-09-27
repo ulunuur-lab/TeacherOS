@@ -22,6 +22,20 @@ my $server = IO::Socket::INET->new(
 
 print "TeacherOS API & Web Server running on $PUBLIC_URL (listening on 0.0.0.0:$port)\n";
 
+# Load bot handler
+my $bot_script = -f "$BASE_DIR/bot.pl" ? "$BASE_DIR/bot.pl" : "$BASE_DIR/bot/bot.pl";
+if (-f $bot_script) {
+    require $bot_script;
+    print "TeacherOS Bot Handler loaded from $bot_script\n";
+}
+
+# Auto-configure Telegram Webhook to Render
+if ($PUBLIC_URL =~ /^https?:\/\//) {
+    my $wh_target = "$PUBLIC_URL/api/telegram-webhook";
+    my $wh_res = `curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/setWebhook?url=$wh_target"`;
+    print "Telegram Webhook configuration ($wh_target): $wh_res\n";
+}
+
 sub read_db {
     my $db = {};
     if (-f $DB_FILE) {
@@ -126,6 +140,44 @@ while (my $client = $server->accept()) {
                 last;
             }
         }
+        print $client "HTTP/1.1 200 OK\r\n";
+        print $client "Content-Type: application/json; charset=utf-8\r\n";
+        print $client "Content-Length: " . length($out) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
+        print $client "Connection: close\r\n\r\n";
+        print $client $out;
+        close $client;
+        next;
+    }
+
+    # API: Telegram Webhook receiver
+    if ($method eq "POST" && $path eq "/api/telegram-webhook") {
+        my $body = "";
+        if ($content_length > 0) {
+            read($client, $body, $content_length);
+        }
+        my $upd = eval { decode_json($body) };
+        if ($upd && main->can('handle_update')) {
+            eval { handle_update($upd) };
+            if ($@) {
+                print "TG Webhook update handling error: $@\n";
+            }
+        }
+        my $res_body = '{"ok":true}';
+        print $client "HTTP/1.1 200 OK\r\n";
+        print $client "Content-Type: application/json\r\n";
+        print $client "Content-Length: " . length($res_body) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
+        print $client "Connection: close\r\n\r\n";
+        print $client $res_body;
+        close $client;
+        next;
+    }
+
+    # API: Set Telegram Webhook trigger
+    if ($path eq "/api/set-telegram-webhook") {
+        my $wh_url = "$PUBLIC_URL/api/telegram-webhook";
+        my $out = `curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/setWebhook?url=$wh_url"`;
         print $client "HTTP/1.1 200 OK\r\n";
         print $client "Content-Type: application/json; charset=utf-8\r\n";
         print $client "Content-Length: " . length($out) . "\r\n";

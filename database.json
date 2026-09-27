@@ -443,5 +443,24 @@
       ]
     }
   },
-  "user_state": {}
+  "user_state": {},
+  "admin_ids": [
+    7957347033,
+    8845531824
+  ],
+  "authorized_teachers": {
+    "7957347033": {
+      "username": "@ahrormamazok1rov",
+      "name": "Ahrorbek",
+      "role": "admin",
+      "activated_at": 1790495709
+    },
+    "8845531824": {
+      "username": "@ulugb7k",
+      "name": "Ulug'bek",
+      "role": "admin",
+      "activated_at": 1790495709
+    }
+  },
+  "pending_authorizations": {}
 }
