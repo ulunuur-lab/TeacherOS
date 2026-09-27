@@ -377,7 +377,7 @@ while (my $client = $server->accept()) {
             }
 
             # Send confirmation report to TEACHER
-            my $actual_teacher = $c->{teacher_id} || $teacher_id;
+            my $actual_teacher = $teacher_id || $c->{teacher_id};
             if ($actual_teacher) {
                 my $teacher_msg = "🚀 <b>VAZIFA O'QUVCHILARGA YETKAZILDI!</b>\n" .
                     "━━━━━━━━━━━━━━━━━━━━\n" .
