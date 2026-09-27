@@ -9,8 +9,11 @@ use FindBin;
 
 my $BOT_TOKEN  = $ENV{BOT_TOKEN} || "8979510433:AAGd4TEZb_rx4b8lZrFFfJfAz-dAI2ZRzMw";
 my $BASE_DIR   = $ENV{BASE_DIR} || $FindBin::Bin;
-my $DB_FILE    = $ENV{DB_FILE} || (-f "$BASE_DIR/database.json" ? "$BASE_DIR/database.json" : (-f "$BASE_DIR/bot/database.json" ? "$BASE_DIR/bot/database.json" : "$BASE_DIR/../database.json"));
+my $DB_FILE    = $ENV{DB_FILE} || "$BASE_DIR/database.json";
 my $PUBLIC_URL = $ENV{PUBLIC_URL} || "https://teacheros-0l68.onrender.com";
+
+our %IN_MEMORY_STATE;
+our %PENDING_PASSCODES;
 
 my @ADMIN_IDS = (7957347033, 8845531824);
 my %ADMIN_MAP = map { $_ => 1 } @ADMIN_IDS;
@@ -19,6 +22,38 @@ my %ADMIN_USERNAMES = (
     'ahrormamazok1rov' => 1,
     'ulugb7k'          => 1
 );
+
+sub set_user_state {
+    my ($chat_id, $state_hash, $db) = @_;
+    my $cid = "$chat_id";
+    $IN_MEMORY_STATE{$cid} = $state_hash;
+    if ($db) {
+        $db->{user_state} //= {};
+        $db->{user_state}->{$cid} = $state_hash;
+        save_db($db);
+    }
+}
+
+sub get_user_state {
+    my ($chat_id, $db) = @_;
+    my $cid = "$chat_id";
+    return $IN_MEMORY_STATE{$cid} if $IN_MEMORY_STATE{$cid};
+    if ($db && $db->{user_state}) {
+        return $db->{user_state}->{$cid} || $db->{user_state}->{$chat_id};
+    }
+    return undef;
+}
+
+sub clear_user_state {
+    my ($chat_id, $db) = @_;
+    my $cid = "$chat_id";
+    delete $IN_MEMORY_STATE{$cid};
+    if ($db && $db->{user_state}) {
+        delete $db->{user_state}->{$cid};
+        delete $db->{user_state}->{$chat_id};
+        save_db($db);
+    }
+}
 
 sub get_all_admin_ids {
     my ($db) = @_;
@@ -32,23 +67,45 @@ sub get_all_admin_ids {
 
 my $json = JSON::PP->new->utf8->pretty;
 
-# Database loader and saver
+# Database loader and saver with two-way sync
 sub load_db {
-    if (-f $DB_FILE) {
-        open(my $fh, '<:raw', $DB_FILE) or return default_db();
-        my $content = do { local $/; <$fh> };
-        close($fh);
-        my $data = eval { decode_json($content) };
-        return $data if $data;
+    for my $f ($DB_FILE, "$BASE_DIR/database.json", "$BASE_DIR/bot/database.json") {
+        if ($f && -f $f) {
+            if (open(my $fh, '<:raw', $f)) {
+                my $content = do { local $/; <$fh> };
+                close($fh);
+                my $data = eval { decode_json($content) };
+                if ($data && ref($data) eq 'HASH') {
+                    $data->{user_state} //= {};
+                    for my $cid (keys %IN_MEMORY_STATE) {
+                        $data->{user_state}->{$cid} //= $IN_MEMORY_STATE{$cid};
+                    }
+                    return $data;
+                }
+            }
+        }
     }
     return default_db();
 }
 
 sub save_db {
     my ($data) = @_;
-    open(my $fh, '>:raw', $DB_FILE) or return;
-    print $fh encode_json($data);
-    close($fh);
+    my $json_text = eval { encode_json($data) };
+    return unless $json_text;
+
+    if (open(my $fh, '>:raw', $DB_FILE)) {
+        print $fh $json_text;
+        close($fh);
+    }
+    # Keep secondary copy in bot/database.json in sync if directory exists
+    if (-d "$BASE_DIR/bot") {
+        my $bot_copy = "$BASE_DIR/bot/database.json";
+        if ($bot_copy ne $DB_FILE && open(my $bfh, '>:raw', $bot_copy)) {
+            print $bfh $json_text;
+            close($bfh);
+        }
+    }
+    return 1;
 }
 
 sub default_db {
@@ -101,10 +158,12 @@ sub send_msg {
 
 sub is_admin {
     my ($chat_id, $username) = @_;
-    return 1 if $chat_id && $ADMIN_MAP{$chat_id};
+    return 1 if $chat_id && ($ADMIN_MAP{$chat_id} || "$chat_id" eq '7957347033' || "$chat_id" eq '8845531824');
     if ($username) {
-        $username =~ s/^@//;
-        return 1 if $ADMIN_USERNAMES{lc($username)};
+        my $clean = lc($username);
+        $clean =~ s/^@//;
+        $clean =~ s/\s+//g;
+        return 1 if $ADMIN_USERNAMES{$clean} || $clean eq 'ulunur' || $clean eq 'ahrormamazok1rov' || $clean eq 'ulugb7k';
     }
     return 0;
 }
@@ -112,7 +171,10 @@ sub is_admin {
 sub is_teacher_authorized {
     my ($chat_id, $db, $username) = @_;
     return 1 if is_admin($chat_id, $username);
-    return 1 if $db->{authorized_teachers} && $db->{authorized_teachers}->{$chat_id};
+    return 1 if $db && $db->{authorized_teachers} && (
+        $db->{authorized_teachers}->{$chat_id} ||
+        $db->{authorized_teachers}->{"$chat_id"}
+    );
     return 0;
 }
 
@@ -134,7 +196,7 @@ sub handle_update {
             unless (grep { $_ eq $sid } @{ $db->{admin_ids} }) {
                 push @{ $db->{admin_ids} }, $sid;
             }
-            $db->{authorized_teachers}->{$sid} = {
+            $db->{authorized_teachers}->{"$sid"} = {
                 username     => '@' . $sender->{username},
                 name         => $sender->{first_name} || $uname_clean,
                 role         => 'admin',
@@ -161,14 +223,14 @@ sub handle_update {
             } else {
                 # Generate 6-digit passcode
                 my $passcode = sprintf("%06d", int(rand(900000)) + 100000);
-                $db->{pending_authorizations}->{$chat_id} = {
+                $PENDING_PASSCODES{"$chat_id"} = {
                     passcode   => $passcode,
                     username   => $uName,
                     first_name => $fName,
                     created_at => time()
                 };
-                $db->{user_state}->{$chat_id} = { state => 'AWAIT_ACTIVATION_PASSCODE' };
-                save_db($db);
+                $db->{pending_authorizations}->{"$chat_id"} = $PENDING_PASSCODES{"$chat_id"};
+                set_user_state($chat_id, { state => 'AWAIT_ACTIVATION_PASSCODE' }, $db);
 
                 # Alert Admins (ulunur & ahrormamazok1rov & ulugb7k)
                 my $admin_alert = "🔔 <b>YANGI USTOZ SO'ROVI (TeacherOS Litsenziyasi)!</b>\n" .
@@ -198,8 +260,7 @@ sub handle_update {
             }
         }
         elsif ($data eq 'role_student') {
-            $db->{user_state}->{$chat_id} = { state => 'AWAIT_STUDENT_NAME' };
-            save_db($db);
+            set_user_state($chat_id, { state => 'AWAIT_STUDENT_NAME' }, $db);
             send_msg($chat_id, "<b>O'quvchi xush kelibsiz!</b>\n\nIltimos, o'z <b>Ism va Familiyangizni</b> kiriting:\n(Masalan: <i>Jasur Aliyev</i>)");
         }
         elsif ($data eq 'teacher_my_classes') {
@@ -214,8 +275,7 @@ sub handle_update {
                 send_msg($chat_id, "🔒 Avval TeacherOS ustoz litsenziyasini faollashtiring. /start");
                 return;
             }
-            $db->{user_state}->{$chat_id} = { state => 'AWAIT_CLASS_NAME' };
-            save_db($db);
+            set_user_state($chat_id, { state => 'AWAIT_CLASS_NAME' }, $db);
             send_msg($chat_id, "<b>Yangi Sinf Ochish</b>\n\nGuruh yoki sinf nomini kiriting:\n(Masalan: <i>Evening B1 IELTS</i>)");
         }
         elsif ($data eq 'teacher_join_code') {
@@ -223,8 +283,7 @@ sub handle_update {
                 send_msg($chat_id, "🔒 Avval TeacherOS ustoz litsenziyasini faollashtiring. /start");
                 return;
             }
-            $db->{user_state}->{$chat_id} = { state => 'AWAIT_TEACHER_KEY' };
-            save_db($db);
+            set_user_state($chat_id, { state => 'AWAIT_TEACHER_KEY' }, $db);
             send_msg($chat_id, "<b>Mavjud Sinfga Kirish</b>\n\nSinf Kodini (Classroom Key) kiriting:\n(Masalan: <code>TOS-K9X2-M4B7-Q8W1</code>)");
         }
         elsif ($data =~ /^view_class_(.+)$/) {
@@ -250,15 +309,13 @@ sub handle_update {
         if ($text =~ m{^/start\s+(.+)$}) {
             my $arg = $1;
             $arg =~ s/_/-/g;
-            $db->{user_state}->{$chat_id} = { state => 'AWAIT_STUDENT_NAME_DIRECT', roomKey => $arg };
-            save_db($db);
+            set_user_state($chat_id, { state => 'AWAIT_STUDENT_NAME_DIRECT', roomKey => $arg }, $db);
             send_msg($chat_id, "<b>TeacherOS Sinf Xonasiga Taklif!</b>\n\nSiz <code>$arg</code> sinfiga taklif qilindingiz!\nIltimos, <b>Ism va Familiyangizni</b> kiriting:");
             return;
         }
 
         # Clear state and show Main Role Selection
-        delete $db->{user_state}->{$chat_id};
-        save_db($db);
+        clear_user_state($chat_id, $db);
 
         my $keyboard = {
             inline_keyboard => [
@@ -273,14 +330,15 @@ sub handle_update {
     # Admin Command: /grant <chat_id>
     if ($text =~ m{^/grant\s+(\d+)} && is_admin($chat_id, $from->{username})) {
         my $target_id = $1;
-        $db->{authorized_teachers}->{$target_id} = {
+        $db->{authorized_teachers}->{"$target_id"} = {
             username     => "Admin Approved",
             name         => "Ustoz $target_id",
             activated_at => time()
         };
+        delete $db->{pending_authorizations}->{"$target_id"};
         delete $db->{pending_authorizations}->{$target_id};
-        delete $db->{user_state}->{$target_id};
-        save_db($db);
+        delete $PENDING_PASSCODES{"$target_id"};
+        clear_user_state($target_id, $db);
 
         send_msg($chat_id, "✅ Ustoz <code>$target_id</code> litsenziyasi muvaffaqiyatli faollashtirildi!");
         send_msg($target_id, "🎉 <b>TABRIKLAYMIZ! Litsenziyangiz admin tomonidan faollashtirildi!</b>\n\nBoshlash uchun: /start");
@@ -290,8 +348,9 @@ sub handle_update {
     # Admin Command: /revoke <chat_id>
     if ($text =~ m{^/revoke\s+(\d+)} && is_admin($chat_id, $from->{username})) {
         my $target_id = $1;
+        delete $db->{authorized_teachers}->{"$target_id"};
         delete $db->{authorized_teachers}->{$target_id};
-        save_db($db);
+        clear_user_state($target_id, $db);
         send_msg($chat_id, "⚠️ Ustoz <code>$target_id</code> litsenziyasi bekor qilindi.");
         send_msg($target_id, "⚠️ Sizning TeacherOS ustoz litsenziyangiz admin tomonidan to'xtatildi.");
         return;
@@ -328,23 +387,26 @@ sub handle_update {
     }
 
     # State Machine Handling
-    my $state_info = $db->{user_state}->{$chat_id};
+    my $state_info = get_user_state($chat_id, $db);
     if ($state_info) {
         my $st = $state_info->{state};
 
         # Teacher Activation Passcode Handling
         if ($st eq 'AWAIT_ACTIVATION_PASSCODE') {
-            my $expected = $db->{pending_authorizations}->{$chat_id}->{passcode};
+            my $pending = $PENDING_PASSCODES{"$chat_id"} || ($db->{pending_authorizations} ? ($db->{pending_authorizations}->{"$chat_id"} || $db->{pending_authorizations}->{$chat_id}) : undef);
+            my $expected = $pending ? $pending->{passcode} : undef;
+            (my $clean_input = $text) =~ s/\s+//g;
 
-            if (($expected && $text eq $expected) || $text eq "TOS2026") {
-                $db->{authorized_teachers}->{$chat_id} = {
+            if (($expected && $clean_input eq $expected) || uc($clean_input) eq "TOS2026" || is_admin($chat_id, $from->{username})) {
+                $db->{authorized_teachers}->{"$chat_id"} = {
                     username     => $uName,
                     name         => $fName,
                     activated_at => time()
                 };
+                delete $db->{pending_authorizations}->{"$chat_id"};
                 delete $db->{pending_authorizations}->{$chat_id};
-                delete $db->{user_state}->{$chat_id};
-                save_db($db);
+                delete $PENDING_PASSCODES{"$chat_id"};
+                clear_user_state($chat_id, $db);
 
                 my $success_msg = "🎉 <b>TABRIKLAYMIZ! Litsenziyangiz muvaffaqiyatli faollashtirildi!</b>\n" .
                     "━━━━━━━━━━━━━━━━━━━━\n" .
@@ -375,17 +437,21 @@ sub handle_update {
         elsif ($st eq 'AWAIT_STUDENT_NAME') {
             $state_info->{name} = $text;
             $state_info->{state} = 'AWAIT_STUDENT_KEY';
-            save_db($db);
+            set_user_state($chat_id, $state_info, $db);
             send_msg($chat_id, "Rahmat, <b>$text</b>!\n\nEndi ustozingiz bergan <b>Sinf Kodini</b> kiriting:\n(Masalan: <code>TOS-K9X2-M4B7-Q8W1</code>)");
             return;
         }
         elsif ($st eq 'AWAIT_STUDENT_KEY') {
             my $rk = uc($text);
+            $rk =~ s/\s+//g;
+            clear_user_state($chat_id, $db);
             register_student_to_classroom($chat_id, $state_info->{name}, $rk, $db);
             return;
         }
         elsif ($st eq 'AWAIT_STUDENT_NAME_DIRECT') {
             my $rk = uc($state_info->{roomKey});
+            $rk =~ s/\s+//g;
+            clear_user_state($chat_id, $db);
             register_student_to_classroom($chat_id, $text, $rk, $db);
             return;
         }
@@ -405,6 +471,8 @@ sub handle_update {
                 return;
             }
             my $rk = uc($text);
+            $rk =~ s/\s+//g;
+            clear_user_state($chat_id, $db);
             link_teacher_to_existing_key($chat_id, $rk, $db, $from);
             return;
         }
@@ -490,7 +558,8 @@ sub show_classroom_details {
     }
 
     my $st_count = scalar @{ $c->{students} || [] };
-    my $bot_invite = "https://t.me/teacherOS_tg_bot?start=" . ($rk =~ s/-/_/gr);
+    (my $clean_invite = $rk) =~ s/-/_/g;
+    my $bot_invite = "https://t.me/teacherOS_tg_bot?start=" . $clean_invite;
 
     # Direct Web Link to Teacher Studio on Render
     my $web_direct_url = "$PUBLIC_URL/index.html#class=" . $rk;
@@ -537,7 +606,7 @@ sub create_new_teacher_classroom {
         $rk .= "-" if $_ == 4 || $_ == 8;
     }
 
-    my $uName = $user->{username} ? '@' . $user->{username} : $user->{first_name};
+    my $uName = $user->{username} ? '@' . $user->{username} : ($user->{first_name} || "Ustoz");
 
     # Save to classrooms
     $db->{classrooms}->{$rk} = {
@@ -553,13 +622,13 @@ sub create_new_teacher_classroom {
         name    => $className
     };
 
-    delete $db->{user_state}->{$chat_id};
-    save_db($db);
+    clear_user_state($chat_id, $db);
 
-    my $bot_invite = "https://t.me/teacherOS_tg_bot?start=" . ($rk =~ s/-/_/gr);
+    (my $invite_key = $rk) =~ s/-/_/g;
+    my $bot_invite = "https://t.me/teacherOS_tg_bot?start=" . $invite_key;
 
     my $text = "<b>Yangi Sinf Muvaffaqiyatli Ochildi!</b>\n" .
-      "------------------------------------\n" .
+      "━━━━━━━━━━━━━━━━━━━━\n" .
       "<b>Sinf Nomi:</b> $className\n" .
       "<b>Sinf Kodi:</b> <code>$rk</code>\n\n" .
       "<b>O'quvchilarga yuborish uchun havola:</b>\n" .
@@ -600,8 +669,7 @@ sub link_teacher_to_existing_key {
         };
     }
 
-    delete $db->{user_state}->{$chat_id};
-    save_db($db);
+    clear_user_state($chat_id, $db);
 
     send_msg($chat_id, "<b>Sinf muvaffaqiyatli ulandi!</b> Siz endi <b>" . $c->{name} . "</b> sinf boshqaruviga egasiz.", {
         inline_keyboard => [ [ { text => "Sinflarimni Ko'rish", callback_data => "teacher_my_classes" } ] ]
@@ -614,8 +682,7 @@ sub register_student_to_classroom {
 
     if (!$c) {
         send_msg($chat_id, "<b>Bunday sinf kodi topilmadi!</b>\nIltimos, ustozingiz bergan kodni to'g'ri kiritganingizga ishonch hosil qiling.\nQayta urinish uchun: /start");
-        delete $db->{user_state}->{$chat_id};
-        save_db($db);
+        clear_user_state($chat_id, $db);
         return;
     }
 
@@ -631,8 +698,7 @@ sub register_student_to_classroom {
         push @{ $c->{students} }, $chat_id;
     }
 
-    delete $db->{user_state}->{$chat_id};
-    save_db($db);
+    clear_user_state($chat_id, $db);
 
     my $welcome_text = "<b>Tabriklaymiz, $name!</b>\n\n" .
       "Siz <b>" . $c->{name} . "</b> guruhiga muvaffaqiyatli qo'shildingiz!\n\n" .

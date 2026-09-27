@@ -8,7 +8,7 @@ use JSON::PP;
 
 my $BOT_TOKEN  = $ENV{BOT_TOKEN} || "8979510433:AAGd4TEZb_rx4b8lZrFFfJfAz-dAI2ZRzMw";
 my $BASE_DIR   = $ENV{BASE_DIR} || $FindBin::Bin;
-my $DB_FILE    = $ENV{DB_FILE} || (-f "$BASE_DIR/bot/database.json" ? "$BASE_DIR/bot/database.json" : "$BASE_DIR/database.json");
+my $DB_FILE    = $ENV{DB_FILE} || "$BASE_DIR/database.json";
 my $port       = $ENV{PORT} || 8080;
 my $PUBLIC_URL = $ENV{PUBLIC_URL} || "https://teacheros-0l68.onrender.com";
 
@@ -37,6 +37,9 @@ if ($PUBLIC_URL =~ /^https?:\/\//) {
 }
 
 sub read_db {
+    if (main->can('load_db')) {
+        return load_db();
+    }
     my $db = {};
     if (-f $DB_FILE) {
         open my $fh, "<:raw", $DB_FILE or return {};
@@ -44,16 +47,18 @@ sub read_db {
         close $fh;
         eval { $db = decode_json($content) };
     }
-    return $db;
+    return $db || {};
 }
 
 sub write_db {
     my ($data) = @_;
+    if (main->can('save_db')) {
+        return save_db($data);
+    }
     open(my $fh, '>:raw', $DB_FILE) or return;
     print $fh encode_json($data);
     close($fh);
 }
-*save_db = \&write_db;
 
 sub send_telegram_dm {
     my ($chat_id, $text, $keyboard) = @_;
@@ -226,6 +231,10 @@ while (my $client = $server->accept()) {
             print $client "Connection: close\r\n\r\n";
             print $client $res_body;
         }
+        close $client;
+        next;
+    }
+
     # API: Get Classroom by Key
     if ($method eq "GET" && $path =~ m{^/api/classroom}) {
         my $rk = "";
@@ -703,5 +712,4 @@ Respond with ONLY a valid, strict JSON object.};
         print $client $not_found;
     }
     close $client;
-}
 }
