@@ -602,6 +602,7 @@ Return a complete, authentic, pedagogically flawless curriculum:
   "isValidTopic": true,
   "slides": EXACTLY $slideCount rich, visually structured presentation slides (numbered 1 to $slideCount).
      Make each slide INTERACTIVE and VISUALLY RICH with styled HTML card containers, colorful badges, key formula callouts, bold English sentence examples, and clear natural Uzbek explanations.
+     CRITICAL THEME RULE: The presentation slides run on a modern DARK THEME. NEVER use white or light backgrounds (#fff, #ffffff, #f0f9ff, #ecfdf5, #f8fafc, white). Containers inside slides MUST use sleek dark translucent backgrounds (e.g. rgba(15, 23, 42, 0.75), rgba(99, 102, 241, 0.12), rgba(16, 185, 129, 0.12)) with high-contrast vibrant text (#ffffff, #f8fafc, #38bdf8, #a5b4fc, #6ee7b7).
   "rules": 2 or 3 rules. Each: "title", "desc", "examples" (array of 2 strings).
   "flashcards": Exactly $fcCount cards directly relevant to "$topic". Each: "word", "pos", "uz", "enEx", "uzEx".
   "quizPool": Exactly $quizCount MCQs. Each: "q", "opts" (4 options), "ans" (exact string), "expl" (Uzbek explanation).
@@ -689,7 +690,7 @@ Respond with ONLY a valid, strict JSON object.};
                     push @$slides, {
                         tag   => "$sNum. AMALIYOT & TAHLIL",
                         title => "$topic — Amaliy Mustahkamlash ($sNum-Qism)",
-                        body  => "<div class='card'><b>$topic</b> qoidasiga oid qo'shimcha hayotiy mashq va tushuntirish. Dars davomida o'quvchilar bilan birgalikda tahlil qiling.</div>"
+                        body  => "<div class='card' style='background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(99, 102, 241, 0.25); color: #f1f5f9;'><b style='color: #38bdf8;'>$topic</b> qoidasiga oid qo'shimcha hayotiy mashq va tushuntirish. Dars davomida o'quvchilar bilan birgalikda tahlil qiling.</div>"
                     };
                 }
                 if (scalar(@$slides) > $slideCount) {

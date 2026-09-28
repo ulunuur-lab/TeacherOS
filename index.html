@@ -779,15 +779,98 @@
     }
 
     .slide-visual-card {
-      background: #0d1527;
-      border: 1px solid var(--border);
+      background: #0d1527 !important;
+      border: 1px solid var(--border) !important;
       border-radius: var(--radius-md);
       padding: 1.5rem 2rem;
       width: 100%;
       max-width: 760px;
       line-height: 1.7;
-      color: #cbd5e1;
+      color: #cbd5e1 !important;
       font-size: 1.05rem;
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.6);
+    }
+
+    /* Presentation Slides: Sleek dark theme enforcement on all child cards, boxes and tables */
+    .slide-visual-card .card,
+    .slide-visual-card div,
+    .slide-visual-card section,
+    .slide-visual-card article {
+      border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* Force override on any inline white/light backgrounds from AI or external styling */
+    .slide-visual-card [style*="background: #fff"],
+    .slide-visual-card [style*="background:#fff"],
+    .slide-visual-card [style*="background: white"],
+    .slide-visual-card [style*="background:white"],
+    .slide-visual-card [style*="background: #ffffff"],
+    .slide-visual-card [style*="background:#ffffff"],
+    .slide-visual-card [style*="background: #f8fafc"],
+    .slide-visual-card [style*="background:#f8fafc"],
+    .slide-visual-card [style*="background: #f1f5f9"],
+    .slide-visual-card [style*="background:#f1f5f9"],
+    .slide-visual-card [style*="background: #f0f9ff"],
+    .slide-visual-card [style*="background:#f0f9ff"],
+    .slide-visual-card [style*="background: #ecfdf5"],
+    .slide-visual-card [style*="background:#ecfdf5"],
+    .slide-visual-card [style*="background: #eff6ff"],
+    .slide-visual-card [style*="background:#eff6ff"],
+    .slide-visual-card [style*="background: #fef2f2"],
+    .slide-visual-card [style*="background:#fef2f2"],
+    .slide-visual-card [style*="background: #fffbeb"],
+    .slide-visual-card [style*="background:#fffbeb"],
+    .slide-visual-card [style*="background: rgb(255"],
+    .slide-visual-card [style*="background-color: #fff"],
+    .slide-visual-card [style*="background-color:#fff"],
+    .slide-visual-card [style*="background-color: white"],
+    .slide-visual-card [style*="background-color:white"],
+    .slide-visual-card [style*="background-color: #ffffff"],
+    .slide-visual-card [style*="background-color:#ffffff"],
+    .slide-visual-card [style*="background-color: #f"],
+    .slide-visual-card [style*="background-color:#f"],
+    .slide-visual-card [style*="background-color: rgb(255"] {
+      background: rgba(15, 23, 42, 0.85) !important;
+      color: #f1f5f9 !important;
+      border-color: rgba(99, 102, 241, 0.25) !important;
+    }
+
+    .slide-visual-card h1,
+    .slide-visual-card h2,
+    .slide-visual-card h3,
+    .slide-visual-card h4 {
+      color: #a5b4fc !important;
+    }
+
+    .slide-visual-card b,
+    .slide-visual-card strong {
+      color: #38bdf8 !important;
+    }
+
+    .slide-visual-card code {
+      background: rgba(0, 0, 0, 0.4) !important;
+      color: #38bdf8 !important;
+      border: 1px solid rgba(56, 189, 248, 0.2) !important;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .slide-visual-card table {
+      background: rgba(15, 23, 42, 0.8) !important;
+      color: #cbd5e1 !important;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .slide-visual-card th,
+    .slide-visual-card td {
+      border: 1px solid var(--border) !important;
+      padding: 8px 12px;
+    }
+
+    .slide-visual-card th {
+      background: rgba(30, 41, 59, 0.9) !important;
+      color: #f8fafc !important;
     }
 
     /* Magnificent AI Curriculum Generation Animations */
@@ -5787,6 +5870,66 @@
       updateDynamicTopicChips(currentClassroom.topic || "Present Perfect");
     }
 
+    function sanitizeSlideBody(rawHtml) {
+      if (!rawHtml || typeof rawHtml !== "string") return rawHtml || "";
+      try {
+        const temp = document.createElement("div");
+        temp.innerHTML = rawHtml;
+
+        const allElements = temp.querySelectorAll("*");
+        allElements.forEach(el => {
+          const bg = (el.style.background || el.style.backgroundColor || "").toLowerCase();
+          if (
+            bg.includes("#fff") ||
+            bg.includes("white") ||
+            bg.includes("#f8") ||
+            bg.includes("#f9") ||
+            bg.includes("#f0") ||
+            bg.includes("#fa") ||
+            bg.includes("#ec") ||
+            bg.includes("#ef") ||
+            bg.includes("#eb") ||
+            bg.includes("rgb(255") ||
+            bg.includes("rgba(255, 255, 255") ||
+            bg.includes("rgba(255,255,255")
+          ) {
+            el.style.background = "rgba(15, 23, 42, 0.85)";
+            el.style.backgroundColor = "rgba(15, 23, 42, 0.85)";
+            el.style.borderColor = "rgba(99, 102, 241, 0.3)";
+          }
+
+          const col = (el.style.color || "").toLowerCase();
+          if (
+            col.includes("#000") ||
+            col.includes("black") ||
+            col.includes("#111") ||
+            col.includes("#1e293b") ||
+            col.includes("#0f172a") ||
+            col.includes("#1f2937") ||
+            col.includes("#333") ||
+            col.includes("#334155") ||
+            col.includes("#475569") ||
+            col.includes("rgb(0") ||
+            col.includes("rgb(1") ||
+            col.includes("rgb(2") ||
+            col.includes("rgb(3") ||
+            col.includes("rgb(4") ||
+            col.includes("rgb(5")
+          ) {
+            el.style.color = "#f1f5f9";
+          }
+        });
+
+        let sanitized = temp.innerHTML
+          .replace(/background(-color)?\s*:\s*(#ffffff|#fff|white|#f8fafc|#f1f5f9|#f0f9ff|#ecfdf5|#eff6ff|#fef2f2|#fffbeb|rgb\s*\(\s*255\s*,\s*255\s*,\s*255\s*\))/gi, "background: rgba(15, 23, 42, 0.85)")
+          .replace(/color\s*:\s*(#000000|#000|black|#111111|#111|#1e293b|#0f172a|#1f2937|#333333|#333|#334155|#475569)/gi, "color: #f1f5f9");
+
+        return sanitized;
+      } catch (err) {
+        return rawHtml;
+      }
+    }
+
     function renderSlideTS() {
       const slides = currentClassroom.slides || [];
       if (slideIdxTS >= slides.length) slideIdxTS = 0;
@@ -5798,7 +5941,7 @@
       document.getElementById("ts-slide-body-content").innerHTML = `
         <div class="slide-tag-pill">${s.tag}</div>
         <div class="slide-title-text">${s.title}</div>
-        <div class="slide-visual-card">${s.body}</div>
+        <div class="slide-visual-card">${sanitizeSlideBody(s.body)}</div>
       `;
     }
 
@@ -6010,7 +6153,7 @@
       document.getElementById("slide-body-content").innerHTML = `
         <div class="slide-tag-pill">${s.tag}</div>
         <div class="slide-title-text">${s.title}</div>
-        <div class="slide-visual-card">${s.body}</div>
+        <div class="slide-visual-card">${sanitizeSlideBody(s.body)}</div>
       `;
     }
 
