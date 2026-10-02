@@ -488,6 +488,51 @@ sub handle_update {
         return;
     }
 
+    # /hw or /vazifa or /homework (Student active homework inquiry)
+    if ($text =~ m{^/(hw|vazifa|homework|vazifalar)}) {
+        my $st = $db->{students}->{$chat_id};
+        if ($st && $st->{classrooms} && @{ $st->{classrooms} }) {
+            my $found = 0;
+            for my $rk (@{ $st->{classrooms} }) {
+                my $c = $db->{classrooms}->{$rk};
+                if ($c && $c->{active_assignment}) {
+                    $found = 1;
+                    my $as = $c->{active_assignment};
+                    my $topic = $as->{topic} || "Dars";
+                    my $level = $as->{level} || "B1";
+                    my $deadline = $as->{deadline} || "Bugun";
+                    my $tag = $topic;
+                    $tag =~ s/[^a-zA-Z0-9]//g;
+                    my $student_link = "$PUBLIC_URL/index.html#class=$rk&role=student";
+
+                    my $hw_msg = "📚 <b>FAOL UYGA VAZIFANGIZ</b>\n" .
+                        "━━━━━━━━━━━━━━━━━━━━\n" .
+                        "👥 <b>Sinf:</b> " . ($c->{name} || "Sinf") . "\n" .
+                        "📌 <b>Mavzu:</b> $topic (#$tag)\n" .
+                        "🎯 <b>Daraja:</b> $level\n" .
+                        "⏳ <b>Muddat:</b> $deadline\n" .
+                        "━━━━━━━━━━━━━━━━━━━━\n" .
+                        "👇 <b>Topshirish havolasi:</b>\n$student_link\n\n" .
+                        "<i>💡 Havolani ochib vazifani topshiring!</i>";
+
+                    my $hw_kb = {
+                        inline_keyboard => [
+                            [ { text => "🚀 Darslik & Vazifani Ochish", url => $student_link } ]
+                        ]
+                    };
+                    send_msg($chat_id, $hw_msg, $hw_kb);
+                }
+            }
+            if (!$found) {
+                send_msg($chat_id, "ℹ️ <b>Hozircha faol vazifalar yo'q.</b>\nUstozingiz yangi vazifa berganda bot sizga avtomatik tarzda xabar beradi.");
+            }
+            return;
+        } else {
+            send_msg($chat_id, "ℹ️ Siz hali birorta sinfga qo'shilmagansiz. Qo'shilish uchun ustozingiz yuborgan taklif havolasini oching yoki /start bosing.");
+            return;
+        }
+    }
+
     # Default fallback message
     my $kb = {
         inline_keyboard => [
@@ -708,6 +753,35 @@ sub register_student_to_classroom {
       "Endi ustozingiz dars va vazifa berganda, bot avtomatik ravishda sizga barcha havolalarni yetkazib beradi!";
 
     send_msg($chat_id, $welcome_text);
+
+    # If there is already an active assignment, immediately send it to the new student!
+    if ($c->{active_assignment}) {
+        my $as = $c->{active_assignment};
+        my $topic = $as->{topic} || "Dars";
+        my $level = $as->{level} || "B1";
+        my $deadline = $as->{deadline} || "Bugun";
+        my $tag = $topic;
+        $tag =~ s/[^a-zA-Z0-9]//g;
+        my $student_link = "$PUBLIC_URL/index.html#class=$rk&role=student";
+
+        my $hw_msg = "📚 <b>GURUHDAGI FAOL UYGA VAZIFA!</b>\n" .
+            "━━━━━━━━━━━━━━━━━━━━\n" .
+            "👥 <b>Sinf:</b> " . ($c->{name} || "Sinf") . "\n" .
+            "📌 <b>Mavzu:</b> $topic (#$tag)\n" .
+            "🎯 <b>Daraja:</b> $level\n" .
+            "⏳ <b>Topshirish muddati:</b> $deadline (#Deadline)\n" .
+            "━━━━━━━━━━━━━━━━━━━━\n" .
+            "👇 <b>Darslik va vazifani ochish uchun bosing:</b>\n" .
+            "$student_link\n\n" .
+            "<i>💡 Havolani oching, slaydlar va darsni o'rganib chiqib, sahifa oxiridagi <b>'Topshirish (Submit)'</b> tugmasini bosing!</i>";
+
+        my $hw_kb = {
+            inline_keyboard => [
+                [ { text => "🚀 Darslik & Vazifani Ochish", url => $student_link } ]
+            ]
+        };
+        send_msg($chat_id, $hw_msg, $hw_kb);
+    }
 
     # Notify teacher
     if ($c->{teacher_id}) {

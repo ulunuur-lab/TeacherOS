@@ -5834,7 +5834,7 @@
       window.location.hash = "room=" + compressed;
       saveClassroomToRegistry(currentClassroom);
 
-      const studentLink = window.location.origin + window.location.pathname + "#room=" + compressed + "&class=" + rk + "&role=student";
+      const studentLink = window.location.origin + window.location.pathname + "#class=" + rk + "&role=student";
       const topic = currentClassroom.topic || "Present Perfect";
       const level = currentClassroom.level || "B1";
 
@@ -6192,9 +6192,7 @@
     }
 
     function copyFullShareLink() {
-      const jsonStr = JSON.stringify(currentClassroom);
-      const compressed = LZString.compressToEncodedURIComponent(jsonStr);
-      const url = window.location.origin + window.location.pathname + "#room=" + compressed;
+      const url = window.location.origin + window.location.pathname + "#class=" + currentClassroom.roomKey + "&role=student";
 
       navigator.clipboard.writeText(url).then(() => {
         showToast("🔗 To'liq Sinf Havolasi nusxalandi!", "success");
@@ -6202,9 +6200,7 @@
     }
 
     function shareToTelegramGroup() {
-      const jsonStr = JSON.stringify(currentClassroom);
-      const compressed = LZString.compressToEncodedURIComponent(jsonStr);
-      const url = window.location.origin + window.location.pathname + "#room=" + compressed;
+      const url = window.location.origin + window.location.pathname + "#class=" + currentClassroom.roomKey + "&role=student";
       const text = `🎓 Ustoz (${currentClassroom.teacherUsername}) sizni dars va vazifalar xonasiga taklif qildi!\n📚 Mavzu: ${currentClassroom.topic}\n🔑 Sinf Kodi: ${currentClassroom.roomKey}\n👇 Havolani bosing:`;
       window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, "_blank");
     }

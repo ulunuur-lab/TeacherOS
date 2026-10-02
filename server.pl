@@ -83,6 +83,7 @@ sub send_telegram_dm {
     my $output = `curl -s --connect-timeout 8 --max-time 15 -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" -H "Content-Type: application/json; charset=utf-8" --data-binary \@$tmp`;
     print "TG Send to $chat_id: $output\n";
     unlink $tmp;
+    return eval { decode_json($output) };
 }
 
 while (my $client = $server->accept()) {
@@ -347,7 +348,7 @@ while (my $client = $server->accept()) {
             $c->{teacher_id} //= $teacher_id if $teacher_id;
             write_db($db);
 
-            my $student_link = $req->{roomHash} ? "$PUBLIC_URL/index.html#room=" . $req->{roomHash} . "&class=$rk&role=student" : "$PUBLIC_URL/index.html#class=$rk&role=student";
+            my $student_link = "$PUBLIC_URL/index.html#class=$rk&role=student";
             my $tag = $topic;
             $tag =~ s/[^a-zA-Z0-9]//g;
 
@@ -372,8 +373,13 @@ while (my $client = $server->accept()) {
             my %seen_sid;
             my @student_list = grep { $_ && !$seen_sid{$_}++ } @{ $c->{students} || [] };
             for my $sid (@student_list) {
-                send_telegram_dm($sid, $student_msg, $kb);
-                $sent_count++;
+                my $tg_res = send_telegram_dm($sid, $student_msg, $kb);
+                if ($tg_res && $tg_res->{ok}) {
+                    $sent_count++;
+                } else {
+                    my $err_desc = $tg_res ? ($tg_res->{description} || "unknown") : "no response";
+                    print STDERR "Failed to send homework to student $sid: $err_desc\n";
+                }
             }
 
             # Send confirmation report to TEACHER
