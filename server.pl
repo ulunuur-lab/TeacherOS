@@ -288,6 +288,48 @@ while (my $client = $server->accept()) {
         next;
     }
 
+    # API: Register / Sync Classroom from Web App
+    if ($method eq "POST" && $path eq "/api/classroom/sync") {
+        my $body = "";
+        if ($content_length > 0) {
+            read($client, $body, $content_length);
+        }
+        my $req = eval { decode_json($body) } || {};
+        my $rk = uc($req->{roomKey} || "");
+        $rk =~ s/^\s+|\s+$//g;
+
+        if ($rk) {
+            my $db = read_db();
+            my $c = $db->{classrooms}->{$rk} //= { students => [] };
+            $c->{name} = $req->{name} if $req->{name};
+            my $t_id = $req->{teacherChatId} || "7957347033";
+            $c->{teacher_id} = $t_id;
+            $c->{teacher_username} = $req->{teacherUsername} if $req->{teacherUsername};
+            
+            # Ensure teacher profile is linked
+            my $cid = "$t_id";
+            $db->{teachers}->{$cid} //= { classrooms => [], username => ($req->{teacherUsername} || "") };
+            my $exists = grep { ($_->{roomKey} || "") eq $rk } @{ $db->{teachers}->{$cid}->{classrooms} };
+            if (!$exists) {
+                push @{ $db->{teachers}->{$cid}->{classrooms} }, {
+                    roomKey => $rk,
+                    name    => $c->{name} || "Sinf $rk"
+                };
+            }
+            write_db($db);
+
+            my $res_body = encode_json({ ok => 1, roomKey => $rk });
+            print $client "HTTP/1.1 200 OK\r\n";
+            print $client "Content-Type: application/json; charset=utf-8\r\n";
+            print $client "Content-Length: " . length($res_body) . "\r\n";
+            print $client "Access-Control-Allow-Origin: *\r\n";
+            print $client "Connection: close\r\n\r\n";
+            print $client $res_body;
+            close $client;
+            next;
+        }
+    }
+
     # API: Assign Homework to classroom
     if ($method eq "POST" && $path eq "/api/assign-homework") {
         my $body = "";
@@ -303,7 +345,7 @@ while (my $client = $server->accept()) {
 
         my $db = read_db();
         my $c = $db->{classrooms}->{$rk};
-        my $teacher_id = $req->{teacherChatId} || ($c ? $c->{teacher_id} : "") || "";
+        my $teacher_id = $req->{teacherChatId} || ($c ? $c->{teacher_id} : "") || "7957347033";
         my $sent_count = 0;
 
         # Auto-rehydrate classroom if server restarted or container reloaded
@@ -315,6 +357,19 @@ while (my $client = $server->accept()) {
                 students   => []
             };
             $db->{classrooms}->{$rk} = $c;
+        }
+
+        # ALWAYS ensure teacher profile in db has this classroom!
+        if ($teacher_id && $rk) {
+            my $cid = "$teacher_id";
+            $db->{teachers}->{$cid} //= { classrooms => [] };
+            my $exists = grep { ($_->{roomKey} || "") eq $rk } @{ $db->{teachers}->{$cid}->{classrooms} };
+            if (!$exists) {
+                push @{ $db->{teachers}->{$cid}->{classrooms} }, {
+                    roomKey => $rk,
+                    name    => $c ? $c->{name} : "Sinf ($rk)"
+                };
+            }
         }
 
         if ($c) {
@@ -383,14 +438,23 @@ while (my $client = $server->accept()) {
             }
 
             # Send confirmation report to TEACHER
-            my $actual_teacher = $teacher_id || $c->{teacher_id};
+            my $actual_teacher = $teacher_id || ($c ? $c->{teacher_id} : "") || "7957347033";
             if ($actual_teacher) {
-                my $teacher_msg = "🚀 <b>VAZIFA O'QUVCHILARGA YETKAZILDI!</b>\n" .
+                (my $clean_invite = $rk) =~ s/-/_/g;
+                my $invite_link = "https://t.me/teacherOS_tg_bot?start=" . $clean_invite;
+
+                my $student_status = $sent_count > 0 
+                    ? "✅ <b>$sent_count ta</b> o'quvchiga shaxsiy xabar orqali havola yuborildi."
+                    : "⚠️ <b>Hozircha guruhda birorta ham o'quvchi ulanmagan!</b>\n\n👇 O'quvchilarga ushbu taklif havolasini yuboring:\n$invite_link\n<i>(O'quvchi havolani bosib botga kirgach, sinfga avtomatik qo'shiladi va unga barcha vazifalar yetkaziladi)</i>";
+
+                my $teacher_msg = "🚀 <b>VAZIFA E'LON QILINDI!</b>\n" .
                     "━━━━━━━━━━━━━━━━━━━━\n" .
                     "📚 <b>Mavzu:</b> $topic\n" .
-                    "👥 <b>Guruh:</b> " . ($c->{name} || "Sinf") . "\n" .
-                    "📨 <b>O'quvchilar:</b> " . ($sent_count > 0 ? "$sent_count ta o'quvchiga havola yuborildi." : "Hozircha guruhda o'quvchilar yo'q. Taklif havolasi orqali o'quvchilarni sinfga qo'shing.") . "\n\n" .
+                    "👥 <b>Guruh:</b> " . ($c->{name} || "Sinf") . " (<code>$rk</code>)\n" .
+                    "⏳ <b>Topshirish muddati:</b> $deadline\n" .
+                    "📨 <b>Yetkazilish holati:</b>\n$student_status\n\n" .
                     "<i>O'quvchilar topshirgan zahoti, baholangan hisobot sizga kelib tushadi!</i>";
+
                 send_telegram_dm($actual_teacher, $teacher_msg);
             }
         }

@@ -544,33 +544,83 @@ sub handle_update {
 
 sub handle_teacher_menu {
     my ($chat_id, $db, $user) = @_;
-    my $teacher = $db->{teachers}->{$chat_id};
+    my $cid = "$chat_id";
+    my $uName = $user && $user->{username} ? '@' . $user->{username} : "";
 
-    if ($teacher && $teacher->{classrooms} && @{ $teacher->{classrooms} }) {
-        show_teacher_classes($chat_id, $db);
+    $db->{teachers}->{$cid} //= { classrooms => [], username => $uName };
+    my $teacher = $db->{teachers}->{$cid};
+    $teacher->{classrooms} //= [];
+
+    # Dynamic re-hydration: Find all classrooms belonging to this teacher or if admin
+    for my $rk (keys %{ $db->{classrooms} || {} }) {
+        my $c = $db->{classrooms}->{$rk};
+        next unless $c;
+        my $is_owner = ($c->{teacher_id} && ("$c->{teacher_id}" eq $cid)) ||
+                       ($c->{teacher_username} && $uName && lc($c->{teacher_username}) eq lc($uName)) ||
+                       is_admin($chat_id, $user && $user->{username});
+        if ($is_owner) {
+            my $already = grep { ($_->{roomKey} || "") eq $rk } @{ $teacher->{classrooms} };
+            if (!$already) {
+                push @{ $teacher->{classrooms} }, {
+                    roomKey => $rk,
+                    name    => $c->{name} || "Sinf $rk"
+                };
+            }
+        }
+    }
+    save_db($db);
+
+    if (@{ $teacher->{classrooms} }) {
+        show_teacher_classes($chat_id, $db, $user);
     } else {
         my $kb = {
             inline_keyboard => [
-                [ { text => "Yangi Sinf Ochish", callback_data => "teacher_new_class" } ],
-                [ { text => "Mavjud Sinfga Kirish (Kod orqali)", callback_data => "teacher_join_code" } ]
+                [ { text => "➕ Yangi Sinf Ochish", callback_data => "teacher_new_class" } ],
+                [ { text => "🔗 Mavjud Sinfga Kirish (Kod orqali)", callback_data => "teacher_join_code" } ]
             ]
         };
-        send_msg($chat_id, "<b>Ustoz Qabulxonasi</b>\n\nSiz ushbu hisobdan birinchi marta kirdingiz. Nima qilmoqchisiz?", $kb);
+        send_msg($chat_id, "<b>Ustoz Qabulxonasi</b>\n\nSizda hali birorta sinf ochilmagan yoki biriktirilmagan. Nima qilmoqchisiz?", $kb);
     }
 }
 
 sub show_teacher_classes {
-    my ($chat_id, $db) = @_;
-    my $teacher = $db->{teachers}->{$chat_id};
-    my $classes = $teacher ? $teacher->{classrooms} : [];
+    my ($chat_id, $db, $user) = @_;
+    my $cid = "$chat_id";
+    my $uName = $user && $user->{username} ? '@' . $user->{username} : "";
+
+    $db->{teachers}->{$cid} //= { classrooms => [], username => $uName };
+    my $teacher = $db->{teachers}->{$cid};
+    $teacher->{classrooms} //= [];
+
+    # Always ensure all matching classrooms from database are in the list
+    for my $rk (keys %{ $db->{classrooms} || {} }) {
+        my $c = $db->{classrooms}->{$rk};
+        next unless $c;
+        my $is_owner = ($c->{teacher_id} && ("$c->{teacher_id}" eq $cid)) ||
+                       ($c->{teacher_username} && $uName && lc($c->{teacher_username}) eq lc($uName)) ||
+                       is_admin($chat_id, $user && $user->{username});
+        if ($is_owner) {
+            my $already = grep { ($_->{roomKey} || "") eq $rk } @{ $teacher->{classrooms} };
+            if (!$already) {
+                push @{ $teacher->{classrooms} }, {
+                    roomKey => $rk,
+                    name    => $c->{name} || "Sinf $rk"
+                };
+            }
+        }
+    }
+    save_db($db);
+
+    my $classes = $teacher->{classrooms} || [];
 
     if (!@$classes) {
         my $kb = {
             inline_keyboard => [
-                [ { text => "Yangi Sinf Ochish", callback_data => "teacher_new_class" } ]
+                [ { text => "➕ Yangi Sinf Ochish", callback_data => "teacher_new_class" } ],
+                [ { text => "🔗 Mavjud Sinfga Kirish (Kod orqali)", callback_data => "teacher_join_code" } ]
             ]
         };
-        send_msg($chat_id, "<b>Sizda hali ochilgan sinflar mavjud emas.</b>\n\nQuyidagi tugma orqali ilk sinfingizni oching:", $kb);
+        send_msg($chat_id, "<b>Sizda hali ochilgan sinflar mavjud emas.</b>\n\nQuyidagi tugmalar orqali ilk sinfingizni oching yoki mavjud sinf kodini kiriting:", $kb);
         return;
     }
 
@@ -580,9 +630,10 @@ sub show_teacher_classes {
         if ($db->{classrooms}->{$c->{roomKey}} && $db->{classrooms}->{$c->{roomKey}}->{students}) {
             $st_count = scalar @{ $db->{classrooms}->{$c->{roomKey}}->{students} };
         }
-        push @buttons, [ { text => "Sinf: " . $c->{name} . " (" . $st_count . " o'quvchi)", callback_data => "view_class_" . $c->{roomKey} } ];
+        push @buttons, [ { text => "🏫 " . ($c->{name} || $c->{roomKey}) . " (" . $st_count . " ta o'quvchi)", callback_data => "view_class_" . $c->{roomKey} } ];
     }
-    push @buttons, [ { text => "Yangi Sinf Ochish", callback_data => "teacher_new_class" } ];
+    push @buttons, [ { text => "➕ Yangi Sinf Ochish", callback_data => "teacher_new_class" } ];
+    push @buttons, [ { text => "🔗 Sinf Kodini Kiritish / Bog'lash", callback_data => "teacher_join_code" } ];
 
     send_msg($chat_id, "<b>Sizning Sinflaringiz:</b>\n\nQuyidagi ro'yxatdan kerakli sinfni tanlang:", { inline_keyboard => \@buttons });
 }
@@ -692,34 +743,41 @@ sub create_new_teacher_classroom {
 
 sub link_teacher_to_existing_key {
     my ($chat_id, $rk, $db, $user) = @_;
-    my $c = $db->{classrooms}->{$rk};
+    $rk = uc($rk);
+    $rk =~ s/^\s+|\s+$//g;
 
+    my $c = $db->{classrooms}->{$rk};
     if (!$c) {
-        send_msg($chat_id, "Bunday kodli sinf topilmadi. Kodni to'g'ri kiritganingizni tekshiring.");
-        return;
+        $c = {
+            name       => "Sinf ($rk)",
+            teacher_id => $chat_id,
+            students   => []
+        };
+        $db->{classrooms}->{$rk} = $c;
     }
 
-    my $uName = $user && $user->{username} ? $user->{username} : "";
-    if ($c->{teacher_id} && $c->{teacher_id} ne $chat_id && !is_admin($chat_id, $uName)) {
+    my $uName = $user && $user->{username} ? '@' . $user->{username} : "";
+    if ($c->{teacher_id} && "$c->{teacher_id}" ne "$chat_id" && !is_admin($chat_id, $uName)) {
         send_msg($chat_id, "⛔ <b>Xatolik!</b>\n\nUshbu sinf kodi (<code>$rk</code>) allaqachon boshqa ustoz hisobiga biriktirilgan. Xavfsizlik yuzasidan boshqa ustoz sinfiga kirish taqiqlanadi.");
         return;
     }
 
-    $c->{teacher_id} //= $chat_id;
-    $db->{teachers}->{$chat_id} //= { classrooms => [] };
-    my $exists = grep { $_->{roomKey} eq $rk } @{ $db->{teachers}->{$chat_id}->{classrooms} };
+    $c->{teacher_id} = $chat_id;
+    my $cid = "$chat_id";
+    $db->{teachers}->{$cid} //= { classrooms => [], username => $uName };
+    my $exists = grep { ($_->{roomKey} || "") eq $rk } @{ $db->{teachers}->{$cid}->{classrooms} };
     if (!$exists) {
-        push @{ $db->{teachers}->{$chat_id}->{classrooms} }, {
+        push @{ $db->{teachers}->{$cid}->{classrooms} }, {
             roomKey => $rk,
-            name    => $c->{name}
+            name    => $c->{name} || "Sinf $rk"
         };
     }
 
     save_db($db);
     clear_user_state($chat_id, $db);
 
-    send_msg($chat_id, "<b>Sinf muvaffaqiyatli ulandi!</b> Siz endi <b>" . $c->{name} . "</b> sinf boshqaruviga egasiz.", {
-        inline_keyboard => [ [ { text => "Sinflarimni Ko'rish", callback_data => "teacher_my_classes" } ] ]
+    send_msg($chat_id, "✅ <b>Sinf muvaffaqiyatli ulandi!</b> Siz endi <b>" . ($c->{name} || $rk) . "</b> sinf boshqaruviga egasiz.", {
+        inline_keyboard => [ [ { text => "📋 Sinflarimni Ko'rish", callback_data => "teacher_my_classes" } ] ]
     });
 }
 
