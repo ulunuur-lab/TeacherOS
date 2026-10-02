@@ -1455,8 +1455,9 @@
         <div style="display: flex; align-items: center; gap: 0.85rem;">
           <div class="logo-badge" style="width: 48px; height: 48px; font-size: 1.35rem; background: linear-gradient(135deg, var(--primary), var(--accent));">👨‍🏫</div>
           <div>
-            <div style="font-size: 1.35rem; font-weight: 900; color: #fff; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px;" id="ts-header-group-name">
-              MWF Beginner 14:00
+            <div style="font-size: 1.35rem; font-weight: 900; color: #fff; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px;">
+              <span id="ts-header-group-name">MWF Beginner 14:00</span>
+              <button class="btn btn-secondary btn-sm" onclick="renameCurrentClassroom()" title="Sinf nomini o'zgartirish" style="padding: 2px 7px; font-size: 0.72rem; border-radius: 6px;">✏️ Nomlash</button>
             </div>
             <div style="font-size: 0.88rem; color: #94a3b8; margin-top: 3px; display: flex; align-items: center; gap: 6px;">
               <span>📚 Bugungi Mavzu:</span>
@@ -1467,12 +1468,21 @@
           </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-          <span style="font-size: 0.75rem; background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); padding: 5px 14px; border-radius: var(--radius-full); font-weight: 700;" id="ts-header-students-pill">
-            👥 1 ta o'quvchi
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="btn btn-primary btn-sm" onclick="openStudentInviteModal()" style="font-weight: 700; box-shadow: 0 0 15px rgba(99,102,241,0.4); background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+            🔗 O'quvchilarni Taklif Qilish
+          </button>
+          <span style="font-size: 0.75rem; background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); padding: 5px 12px; border-radius: var(--radius-full); font-weight: 700; cursor: pointer;" id="ts-header-students-pill" onclick="openStudentInviteModal()">
+            👥 0 ta o'quvchi
           </span>
+          <button class="btn btn-secondary btn-sm" onclick="openMyClassroomsModal()" title="Barcha sinflarim">
+            📚 Sinflarim
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="openNewClassroomPrompt()" title="Yangi sinf ochish">
+            ➕ Yangi Sinf
+          </button>
           <button class="btn btn-emerald btn-sm" onclick="enterStudentRoomAsCurrent()">
-            🎓 O'quvchi Ko'rinishida Sinash
+            🎓 O'quvchi Ko'rinishi
           </button>
           <button class="btn btn-secondary btn-sm" onclick="navigateTo('teacher-options')">
             Chiqish
@@ -2069,9 +2079,89 @@
         <button class="btn btn-telegram btn-sm" onclick="sendClassroomsListToTelegram()">
           📲 Telegramimga Barcha Sinflarni Yuborish
         </button>
-        <button class="btn btn-primary btn-sm" onclick="closeMyClassroomsModal(); navigateTo('teacher-create');">
+        <button class="btn btn-primary btn-sm" onclick="openNewClassroomPrompt();">
           ➕ Yangi Sinf Ochish
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Invite Modal -->
+  <div id="modal-student-invite" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10001; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="card" style="max-width: 620px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; border-color: rgba(99, 102, 241, 0.6); box-shadow: 0 25px 60px rgba(0,0,0,0.95); background: #0c1427;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🔗</div>
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 0;">O'quvchilarni Sinfga Taklif Qilish</h2>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin: 2px 0 0 0;" id="invite-modal-subtitle">Sinf kodi: TOS-...</p>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="closeStudentInviteModal()">✕ Yopish</button>
+      </div>
+
+      <div style="overflow-y: auto; flex: 1; padding-right: 4px; display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Primary: Telegram Bot Invite -->
+        <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 1.1rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.95rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+              <span>📲</span> Telegram Bot Taklif Havolasi (Tavsiya etiladi)
+            </span>
+            <span style="font-size: 0.7rem; background: #0284c7; color: #fff; padding: 2px 8px; border-radius: 10px; font-weight: 700;">100% Avtomatik</span>
+          </div>
+          <p style="font-size: 0.82rem; color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.5;">
+            O'quvchilar bu havolani bosishganda bot ularning ismini so'rab ushbu sinfga ro'yxatga oladi. Siz darsdan so'ng <b>"Vazifani E'lon Qilish"</b> tugmasini bosganingizda, vazifa har bir o'quvchining shaxsiy Telegramiga yetib boradi!
+          </p>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <input type="text" id="invite-tg-link-input" readonly style="background: #060b17; border: 1px solid rgba(14, 165, 233, 0.4); color: #7dd3fc; font-family: monospace; font-size: 0.85rem; padding: 0.65rem 0.85rem; border-radius: 8px; flex: 1; font-weight: 600;" value="" />
+            <button class="btn btn-telegram btn-sm" onclick="copyTgInviteLink()" style="white-space: nowrap; padding: 0.65rem 1rem;">
+              📋 Nusxa
+            </button>
+          </div>
+          <div style="margin-top: 0.75rem;">
+            <button class="btn btn-telegram" style="width: 100%; justify-content: center; font-weight: 700; padding: 0.7rem;" onclick="shareTgInviteDirect()">
+              ✈️ Telegram Guruhga / O'quvchilarga Jo'natish
+            </button>
+          </div>
+        </div>
+
+        <!-- Secondary: Web Direct Link -->
+        <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 1.1rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.95rem; font-weight: 800; color: #a5b4fc; display: flex; align-items: center; gap: 6px;">
+              <span>🌐</span> To'g'ridan-to'g'ri Veb Havolasi (Brauzer)
+            </span>
+          </div>
+          <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.75rem; line-height: 1.5;">
+            Telegrami yo'q o'quvchilar ushbu havola orqali brauzerdan to'g'ridan-to'g'ri darslik va topshiriqlarni ochishi mumkin:
+          </p>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <input type="text" id="invite-web-link-input" readonly style="background: #060b17; border: 1px solid rgba(99, 102, 241, 0.3); color: #cbd5e1; font-family: monospace; font-size: 0.8rem; padding: 0.65rem 0.85rem; border-radius: 8px; flex: 1;" value="" />
+            <button class="btn btn-secondary btn-sm" onclick="copyWebInviteLink()" style="white-space: nowrap; padding: 0.65rem 1rem;">
+              📋 Nusxa
+            </button>
+          </div>
+        </div>
+
+        <!-- Enrolled Students Live Section -->
+        <div style="border-top: 1px solid var(--border); padding-top: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+            <div style="font-size: 0.9rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+              <span>👥</span> Ushbu Sinfga Uланган O'quvchilar:
+              <span id="invite-modal-student-count" style="font-size: 0.75rem; background: rgba(16, 185, 129, 0.2); color: #6ee7b7; padding: 2px 8px; border-radius: 10px; font-weight: 700;">0 ta</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="refreshClassroomStudents(true)" style="padding: 3px 10px; font-size: 0.75rem;">
+              🔄 Yangilash
+            </button>
+          </div>
+          <div id="modal-enrolled-students-list" style="max-height: 160px; overflow-y: auto; background: #070c18; border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem;">
+            <!-- Student rows injected by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.75rem; display: flex; justify-content: flex-end;">
+        <button class="btn btn-secondary btn-sm" onclick="closeStudentInviteModal()">Yopish</button>
       </div>
     </div>
   </div>
@@ -4696,10 +4786,91 @@
             roomKey: roomObj.roomKey,
             name: roomObj.teacherName || roomObj.name || brandName || "MWF Beginner 14:00",
             teacherChatId: roomObj.teacherChatId || localStorage.getItem("tos_t_chat_id") || "7957347033",
-            teacherUsername: roomObj.teacherUsername || teacherUsername || "@fahrormamazok1rov"
+            teacherUsername: roomObj.teacherUsername || teacherUsername || "@ahrormamazok1rov"
           })
         }).catch(() => {});
       }
+    }
+
+    function openNewClassroomPrompt() {
+      const cName = prompt("Yangi sinf nomini kiriting:\n(Masalan: IELTS Band 7 yoki Elementary 18:00)", "Yangi Sinf " + new Date().toLocaleDateString('uz-UZ'));
+      if (!cName || !cName.trim()) return;
+
+      const newKey = generateSecureRoomKey();
+      const pack = masterCurriculums.present_perfect;
+      const cleanName = cName.trim();
+
+      currentClassroom = {
+        roomKey: newKey,
+        name: cleanName,
+        teacherName: cleanName,
+        topic: pack.topic,
+        level: pack.level,
+        focus: pack.focus,
+        teacherUsername: teacherUsername || "@ahrormamazok1rov",
+        teacherChatId: teacherChatId || "7957347033",
+        enrolledStudents: [],
+        slides: pack.slides,
+        rules: pack.rules,
+        flashcards: pack.flashcards,
+        quiz: pack.quizPool.slice(0, 6),
+        translations: pack.transPool.slice(0, 6),
+        errors: pack.errorsPool.slice(0, 5)
+      };
+
+      brandName = cleanName;
+      localStorage.setItem("tos_b_name", cleanName);
+      saveClassroomToRegistry(currentClassroom);
+      window.location.hash = "#class=" + newKey;
+
+      // Sync to backend server
+      fetch("/api/classroom/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomKey: newKey,
+          name: cleanName,
+          teacherChatId: teacherChatId || "7957347033",
+          teacherUsername: teacherUsername || "@ahrormamazok1rov"
+        })
+      }).catch(() => {});
+
+      renderTeacherStudio();
+      closeMyClassroomsModal();
+      navigateTo('teacher-studio');
+      showToast(`🎉 "${cleanName}" sinfi ochildi! Kodi: ${newKey}`, "success");
+      setTimeout(openStudentInviteModal, 600);
+    }
+
+    function renameCurrentClassroom() {
+      const currentName = currentClassroom.name || currentClassroom.teacherName || "";
+      const newName = prompt("Sinf uchun yangi nom kiriting:", currentName);
+      if (!newName || !newName.trim()) return;
+
+      const cleanName = newName.trim();
+      currentClassroom.name = cleanName;
+      currentClassroom.teacherName = cleanName;
+      brandName = cleanName;
+      localStorage.setItem("tos_b_name", cleanName);
+
+      const groupEl = document.getElementById("ts-header-group-name");
+      if (groupEl) groupEl.textContent = cleanName;
+
+      saveClassroomToRegistry(currentClassroom);
+
+      // Sync to server
+      fetch("/api/classroom/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomKey: currentClassroom.roomKey,
+          name: cleanName,
+          teacherChatId: currentClassroom.teacherChatId || "7957347033",
+          teacherUsername: currentClassroom.teacherUsername || "@ahrormamazok1rov"
+        })
+      }).catch(() => {});
+
+      showToast(`✅ Sinf nomi o'zgartirildi: "${cleanName}"`, "success");
     }
 
     function openMyClassroomsModal() {
@@ -4748,21 +4919,49 @@
       document.getElementById("modal-my-classrooms").style.display = "none";
     }
 
-    function loadClassroomByKey(key) {
+    async function loadClassroomByKey(key) {
       const compressed = localStorage.getItem("tos_room_data_" + key);
       if (compressed) {
         try {
           const decompressed = LZString.decompressFromEncodedURIComponent(compressed);
           if (decompressed) {
             currentClassroom = JSON.parse(decompressed);
-            window.location.hash = "room=" + compressed;
+            window.location.hash = "#class=" + key;
             closeMyClassroomsModal();
-            showToast("✅ Sinf xonasi muvaffaqiyatli ochildi!", "success");
+            renderTeacherStudio();
+            showToast("✅ Sinf xonasi ochildi!", "success");
             navigateTo('teacher-studio');
             return;
           }
         } catch(e) {}
       }
+      // Fallback: fetch from server by key
+      try {
+        const res = await fetch(`/api/classroom?key=${key}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.ok) {
+            currentClassroom.roomKey = key;
+            currentClassroom.name = data.name || key;
+            currentClassroom.teacherName = data.name || key;
+            currentClassroom.enrolledStudents = data.student_details || [];
+            if (data.active_assignment) {
+              const as = data.active_assignment;
+              currentClassroom.topic = as.topic || currentClassroom.topic;
+              currentClassroom.level = as.level || currentClassroom.level;
+              if (as.classroomData) {
+                currentClassroom = { ...currentClassroom, ...as.classroomData };
+              }
+            }
+            window.location.hash = "#class=" + key;
+            closeMyClassroomsModal();
+            renderTeacherStudio();
+            showToast("✅ Sinf serverdan yuklandi!", "success");
+            navigateTo('teacher-studio');
+            return;
+          }
+        }
+      } catch(e) {}
       showToast("⚠️ Sinf ma'lumotlari topilmadi", "warning");
     }
 
@@ -6497,10 +6696,165 @@ Return ONLY valid JSON.`;
       window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, "_blank");
     }
 
+    /* --- Student Invite Modal & Polling Logic --- */
+    function getTelegramBotInviteUrl(rk) {
+      const cleanKey = (rk || currentClassroom.roomKey || "").replace(/-/g, "_");
+      return `https://t.me/teacherOS_tg_bot?start=${cleanKey}`;
+    }
+
+    function getWebStudentUrl(rk) {
+      const key = rk || currentClassroom.roomKey || "";
+      return window.location.origin + window.location.pathname + "#class=" + key + "&role=student";
+    }
+
+    function openStudentInviteModal() {
+      const rk = currentClassroom.roomKey || "";
+      const modal = document.getElementById("modal-student-invite");
+      if (!modal) return;
+
+      const subTitle = document.getElementById("invite-modal-subtitle");
+      if (subTitle) {
+        const cName = currentClassroom.name || currentClassroom.teacherName || brandName || "Sinf";
+        subTitle.textContent = `${cName} • Kodi: ${rk}`;
+      }
+
+      const tgInput = document.getElementById("invite-tg-link-input");
+      if (tgInput) tgInput.value = getTelegramBotInviteUrl(rk);
+
+      const webInput = document.getElementById("invite-web-link-input");
+      if (webInput) webInput.value = getWebStudentUrl(rk);
+
+      renderEnrolledStudentsInModal();
+      modal.style.display = "flex";
+
+      // Also trigger a fresh fetch
+      refreshClassroomStudents(false);
+    }
+
+    function closeStudentInviteModal() {
+      const modal = document.getElementById("modal-student-invite");
+      if (modal) modal.style.display = "none";
+    }
+
+    function copyTgInviteLink() {
+      const rk = currentClassroom.roomKey || "";
+      const url = getTelegramBotInviteUrl(rk);
+      navigator.clipboard.writeText(url).then(() => {
+        showToast("📋 Telegram Bot taklif havolasi nusxalandi!", "success");
+      });
+    }
+
+    function copyWebInviteLink() {
+      const rk = currentClassroom.roomKey || "";
+      const url = getWebStudentUrl(rk);
+      navigator.clipboard.writeText(url).then(() => {
+        showToast("🌐 Veb havola nusxalandi!", "success");
+      });
+    }
+
+    function shareTgInviteDirect() {
+      const rk = currentClassroom.roomKey || "";
+      const url = getTelegramBotInviteUrl(rk);
+      const cName = currentClassroom.name || currentClassroom.teacherName || brandName || "Ingliz Tili";
+      const topic = currentClassroom.topic || "Ingliz Tili Darsi";
+      const text = `🎓 Assalomu alaykum! Ustoz sizni "${cName}" guruhiga taklif qildi!\n\n📚 Mavzu: ${topic}\n🔑 Sinf Kodi: ${rk}\n\n👇 Quyidagi havolani bosing va o'z ismingizni kiritib darsga qo'shiling:\n${url}`;
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, "_blank");
+    }
+
+    function renderEnrolledStudentsInModal() {
+      const listEl = document.getElementById("modal-enrolled-students-list");
+      const countEl = document.getElementById("invite-modal-student-count");
+      const students = currentClassroom.enrolledStudents || [];
+
+      if (countEl) countEl.textContent = `${students.length} ta`;
+      if (!listEl) return;
+
+      if (!students || students.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 1rem;">
+            ⏳ Hozircha hech qaysi o'quvchi ulanmagan.<br>
+            <span style="font-size: 0.8rem; color: #a5b4fc;">Yuqoridagi Telegram havolasini o'quvchilaringizga yuboring! Ular ulanishi bilan shu yerda paydo bo'ladi.</span>
+          </div>`;
+        return;
+      }
+
+      let html = `<div style="display: flex; flex-direction: column; gap: 0.4rem;">`;
+      students.forEach((st, idx) => {
+        const sName = typeof st === "object" ? (st.name || st.id) : st;
+        html += `
+          <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.04); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">${idx + 1}.</span>
+              <span style="font-size: 0.9rem; font-weight: 700; color: #fff;">👤 ${sName}</span>
+            </div>
+            <span style="font-size: 0.75rem; color: #6ee7b7; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 8px; border-radius: 10px;">Faol</span>
+          </div>`;
+      });
+      html += `</div>`;
+      listEl.innerHTML = html;
+    }
+
+    let isPollingClassroomStudents = false;
+    async function refreshClassroomStudents(showNotify = false) {
+      const rk = currentClassroom.roomKey;
+      if (!rk || isPollingClassroomStudents) return;
+
+      const tsView = document.getElementById("view-teacher-studio");
+      const modal = document.getElementById("modal-student-invite");
+      const isVisible = (tsView && tsView.style.display !== "none") || (modal && modal.style.display === "flex");
+      if (!isVisible) return;
+
+      isPollingClassroomStudents = true;
+      try {
+        const res = await fetch(`/api/classroom?key=${encodeURIComponent(rk)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.ok) {
+            const prevCount = (currentClassroom.enrolledStudents || []).length;
+            const newStudents = (data.student_details && data.student_details.length > 0)
+              ? data.student_details
+              : (data.students || []).map(sid => ({ id: sid, name: "O'quvchi (" + sid + ")" }));
+
+            currentClassroom.enrolledStudents = newStudents;
+            if (data.name) {
+              currentClassroom.teacherName = data.name;
+              currentClassroom.name = data.name;
+            }
+
+            const newCount = newStudents.length;
+            const stPill = document.getElementById("ts-header-students-pill");
+            if (stPill) {
+              stPill.textContent = `👥 ${newCount > 0 ? newCount + " ta o'quvchi ulandi" : "O'quvchilar ulanmagan"}`;
+            }
+            const hwStSpan = document.getElementById("ts-hw-students-count");
+            if (hwStSpan) {
+              hwStSpan.textContent = `👥 ${newCount > 0 ? newCount + " ta o'quvchi ro'yxatda" : "O'quvchilar ulanmagan"}`;
+            }
+
+            renderEnrolledStudentsInModal();
+
+            if (showNotify) {
+              showToast(`🔄 Sinf ma'lumotlari yangilandi! (${newCount} ta o'quvchi)`, "success");
+            } else if (newCount > prevCount) {
+              showToast(`🎉 Yangi o'quvchi sinfga qo'shildi! Jami: ${newCount} ta`, "success");
+            }
+          }
+        }
+      } catch(e) {
+        if (showNotify) showToast("⚠️ Bog'lanishda xatolik", "warning");
+      } finally {
+        isPollingClassroomStudents = false;
+      }
+    }
+
+    // Auto-poll students every 4 seconds
+    setInterval(refreshClassroomStudents, 4000);
+
     /* --- Teacher Studio Renderer --- */
     function renderTeacherStudio() {
+      const groupName = currentClassroom.name || currentClassroom.teacherName || brandName || "Mening Sinfim";
       const groupEl = document.getElementById("ts-header-group-name");
-      if (groupEl) groupEl.textContent = currentClassroom.teacherName || "MWF Beginner 14:00";
+      if (groupEl) groupEl.textContent = groupName;
 
       const topicEl = document.getElementById("ts-header-topic");
       if (topicEl) topicEl.textContent = currentClassroom.topic || "Present Perfect";
@@ -6509,7 +6863,7 @@ Return ONLY valid JSON.`;
       if (lvlEl) lvlEl.textContent = (currentClassroom.level || "B1") + " Daraja";
 
       const subEl = document.getElementById("ts-header-sub");
-      if (subEl) subEl.textContent = `${currentClassroom.teacherName} • ${currentClassroom.level}`;
+      if (subEl) subEl.textContent = `${groupName} • ${currentClassroom.level || "B1"}`;
 
       const codePill = document.getElementById("ts-header-code-pill");
       if (codePill) codePill.textContent = `🔒 ${currentClassroom.roomKey}`;
