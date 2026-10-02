@@ -381,28 +381,17 @@ sub handle_update {
 
     # /start command
     if ($text =~ m{^/start}) {
-        # Check deep-link parameter: /start TOS_XXXX
+        # Check deep-link parameter: /start TOS_XXXX (ALWAYS Student Enrollment)
         if ($text =~ m{^/start\s+(.+)$}) {
             my $arg = uc($1);
             $arg =~ s/_/-/g;
             $arg =~ s/^\s+|\s+$//g;
 
-            # If user is an authorized teacher or admin:
-            if (is_teacher_authorized($chat_id, $db, $from->{username})) {
-                link_teacher_to_existing_key($chat_id, $arg, $db, $from);
-                (my $clean_arg = $arg) =~ s/-/_/g;
-                my $kb = {
-                    inline_keyboard => [
-                        [ { text => "📋 Sinflarimni Ko'rish", callback_data => "teacher_my_classes" } ],
-                        [ { text => "🎓 O'quvchi sifatida sinovdan o'tish", callback_data => "as_student_" . $arg } ]
-                    ]
-                };
-                send_msg($chat_id, "👨‍🏫 <b>Assalomu alaykum, Ustoz!</b>\n\nSiz <code>$arg</code> sinfiga o'z hisobingizdan kirdingiz. Sinf muvaffaqiyatli profilingizga ulandi!\n\n👥 <b>O'quvchilarga yuborish uchun taklif havolasi:</b>\nhttps://t.me/teacherOS_tg_bot?start=$clean_arg", $kb);
-                return;
-            }
+            my $c = $db->{classrooms}->{$arg};
+            my $cName = $c ? ($c->{name} || "Sinf") : "Sinf ($arg)";
 
             set_user_state($chat_id, { state => 'AWAIT_STUDENT_NAME_DIRECT', roomKey => $arg }, $db);
-            send_msg($chat_id, "<b>TeacherOS Sinf Xonasiga Taklif!</b>\n\nSiz <code>$arg</code> sinfiga taklif qilindingiz!\nIltimos, o'zingizning <b>Ism va Familiyangizni</b> kiriting:\n(Masalan: <i>Jasur Aliyev</i>)");
+            send_msg($chat_id, "🎓 <b>TeacherOS Sinf Xonasiga Taklif!</b>\n\nSiz <b>$cName</b> (<code>$arg</code>) guruhiga taklif qilindingiz!\n\nIltimos, o'zingizning <b>Ism va Familiyangizni</b> kiriting:\n(Masalan: <i>Jasur Aliyev</i>)");
             return;
         }
 
@@ -911,8 +900,8 @@ sub register_student_to_classroom {
 
     # Add to classroom students list
     $c->{students} //= [];
-    unless (grep { $_ eq $chat_id } @{ $c->{students} }) {
-        push @{ $c->{students} }, $chat_id;
+    unless (grep { "$_" eq "$chat_id" } @{ $c->{students} }) {
+        push @{ $c->{students} }, "$chat_id";
     }
 
     save_db($db);
@@ -954,9 +943,9 @@ sub register_student_to_classroom {
     }
 
     # Notify teacher
-    if ($c->{teacher_id}) {
-        send_msg($c->{teacher_id}, "<b>Yangi o'quvchi qo'shildi!</b>\n\nO'quvchi: <b>$name</b>\nGuruh: <b>" . $c->{name} . "</b>");
-    }
+    my $target_t = $c->{teacher_id} || "7957347033";
+    my $total_count = scalar @{ $c->{students} || [] };
+    send_msg($target_t, "👥 <b>Yangi o'quvchi qo'shildi!</b>\n\n👤 O'quvchi: <b>$name</b>\n📚 Guruh: <b>" . ($c->{name} || $rk) . "</b>\n🔑 Kod: <code>$rk</code>\n👥 Jami o'quvchilar: <b>$total_count ta</b>");
 }
 
 # Standalone execution vs Required module
