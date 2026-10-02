@@ -27,6 +27,9 @@ my $bot_script = -f "$BASE_DIR/bot.pl" ? "$BASE_DIR/bot.pl" : "$BASE_DIR/bot/bot
 if (-f $bot_script) {
     require $bot_script;
     print "TeacherOS Bot Handler loaded from $bot_script\n";
+    if (main->can('pull_cloud_database')) {
+        pull_cloud_database();
+    }
 }
 
 # Auto-configure Telegram Webhook to Render

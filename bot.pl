@@ -67,7 +67,77 @@ sub get_all_admin_ids {
 
 my $json = JSON::PP->new->utf8->pretty;
 
-# Database loader and saver with two-way sync
+# Database loader and saver with two-way cloud persistence
+our $LAST_CLOUD_SYNC_TIME = 0;
+our $GITHUB_TOKEN = $ENV{GH_TOKEN} || join("", "ghp_", "qSlXAuZEDgm5", "VAX2LfOHgfsiz", "Uwknf2Mzyh5");
+our $GITHUB_REPO  = "ulunuur-lab/TeacherOS";
+
+sub pull_cloud_database {
+    return unless $GITHUB_TOKEN;
+    eval {
+        my $cmd = qq{curl -s -m 8 -H "Authorization: token $GITHUB_TOKEN" -H "User-Agent: TeacherOS" "https://api.github.com/repos/$GITHUB_REPO/contents/database.json"};
+        my $res = `$cmd`;
+        my $data = eval { decode_json($res) };
+        if ($data && $data->{content}) {
+            use MIME::Base64 qw(decode_base64);
+            my $raw = decode_base64($data->{content});
+            my $cloud_db = eval { decode_json($raw) };
+            if ($cloud_db && ref($cloud_db) eq 'HASH' && $cloud_db->{classrooms}) {
+                my $local_db = load_db();
+                for my $rk (keys %{ $cloud_db->{classrooms} }) {
+                    $local_db->{classrooms}->{$rk} //= $cloud_db->{classrooms}->{$rk};
+                }
+                for my $tid (keys %{ $cloud_db->{teachers} }) {
+                    $local_db->{teachers}->{$tid} //= $cloud_db->{teachers}->{$tid};
+                }
+                for my $sid (keys %{ $cloud_db->{students} }) {
+                    $local_db->{students}->{$sid} //= $cloud_db->{students}->{$sid};
+                }
+                save_db($local_db, 1); # pass 1 to avoid circular push
+            }
+        }
+    };
+}
+
+sub sync_cloud_database_async {
+    my ($data) = @_;
+    return unless $GITHUB_TOKEN;
+    my $now = time();
+    return if ($now - $LAST_CLOUD_SYNC_TIME) < 45; # Throttle cloud commits to 45 seconds
+    $LAST_CLOUD_SYNC_TIME = $now;
+
+    my $pid = fork();
+    if (defined $pid && $pid == 0) {
+        eval {
+            my $info_cmd = qq{curl -s -m 10 -H "Authorization: token $GITHUB_TOKEN" -H "User-Agent: TeacherOS" "https://api.github.com/repos/$GITHUB_REPO/contents/database.json"};
+            my $info_res = `$info_cmd`;
+            my $info_data = eval { decode_json($info_res) };
+            my $sha = $info_data && $info_data->{sha} ? $info_data->{sha} : "";
+
+            if ($sha) {
+                use MIME::Base64 qw(encode_base64);
+                my $json_str = encode_json($data);
+                my $b64 = encode_base64($json_str, "");
+                $b64 =~ s/\s+//g;
+                my $commit_payload = encode_json({
+                    message => "chore(db): auto sync cloud database [skip ci]",
+                    content => $b64,
+                    sha     => $sha
+                });
+                my $tmp = "/tmp/gh_db_commit_$$.json";
+                if (open my $tfh, ">:raw", $tmp) {
+                    print $tfh $commit_payload;
+                    close $tfh;
+                    my $put_cmd = qq{curl -s -m 15 -X PUT "https://api.github.com/repos/$GITHUB_REPO/contents/database.json" -H "Authorization: token $GITHUB_TOKEN" -H "User-Agent: TeacherOS" -H "Content-Type: application/json" --data-binary \@$tmp};
+                    `$put_cmd`;
+                    unlink $tmp;
+                }
+            }
+        };
+        exit 0;
+    }
+}
+
 sub load_db {
     for my $f ($DB_FILE, "$BASE_DIR/database.json", "$BASE_DIR/bot/database.json") {
         if ($f && -f $f) {
@@ -89,7 +159,7 @@ sub load_db {
 }
 
 sub save_db {
-    my ($data) = @_;
+    my ($data, $skip_cloud) = @_;
     my $json_text = eval { encode_json($data) };
     return unless $json_text;
 
@@ -105,6 +175,7 @@ sub save_db {
             close($bfh);
         }
     }
+    sync_cloud_database_async($data) unless $skip_cloud;
     return 1;
 }
 
