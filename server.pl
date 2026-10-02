@@ -347,7 +347,7 @@ while (my $client = $server->accept()) {
             $c->{teacher_id} //= $teacher_id if $teacher_id;
             write_db($db);
 
-            my $student_link = "$PUBLIC_URL/index.html#class=$rk&role=student";
+            my $student_link = $req->{roomHash} ? "$PUBLIC_URL/index.html#room=" . $req->{roomHash} . "&class=$rk&role=student" : "$PUBLIC_URL/index.html#class=$rk&role=student";
             my $tag = $topic;
             $tag =~ s/[^a-zA-Z0-9]//g;
 
