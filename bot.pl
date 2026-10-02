@@ -361,6 +361,11 @@ sub handle_update {
             my $rk = $1;
             show_classroom_details($chat_id, $rk, $db, $from);
         }
+        elsif ($data =~ /^as_student_(.+)$/) {
+            my $rk = $1;
+            set_user_state($chat_id, { state => 'AWAIT_STUDENT_NAME_DIRECT', roomKey => $rk }, $db);
+            send_msg($chat_id, "🎓 <b>Sinfga O'quvchi Sifatida Qo'shilish</b>\n\nSiz <code>$rk</code> sinfiga ulanmoqdasiz.\nIltimos, o'zingizning <b>Ism va Familiyangizni</b> kiriting:\n(Masalan: <i>Jasur Aliyev</i>)");
+        }
         return;
     }
 
@@ -378,10 +383,26 @@ sub handle_update {
     if ($text =~ m{^/start}) {
         # Check deep-link parameter: /start TOS_XXXX
         if ($text =~ m{^/start\s+(.+)$}) {
-            my $arg = $1;
+            my $arg = uc($1);
             $arg =~ s/_/-/g;
+            $arg =~ s/^\s+|\s+$//g;
+
+            # If user is an authorized teacher or admin:
+            if (is_teacher_authorized($chat_id, $db, $from->{username})) {
+                link_teacher_to_existing_key($chat_id, $arg, $db, $from);
+                (my $clean_arg = $arg) =~ s/-/_/g;
+                my $kb = {
+                    inline_keyboard => [
+                        [ { text => "📋 Sinflarimni Ko'rish", callback_data => "teacher_my_classes" } ],
+                        [ { text => "🎓 O'quvchi sifatida sinovdan o'tish", callback_data => "as_student_" . $arg } ]
+                    ]
+                };
+                send_msg($chat_id, "👨‍🏫 <b>Assalomu alaykum, Ustoz!</b>\n\nSiz <code>$arg</code> sinfiga o'z hisobingizdan kirdingiz. Sinf muvaffaqiyatli profilingizga ulandi!\n\n👥 <b>O'quvchilarga yuborish uchun taklif havolasi:</b>\nhttps://t.me/teacherOS_tg_bot?start=$clean_arg", $kb);
+                return;
+            }
+
             set_user_state($chat_id, { state => 'AWAIT_STUDENT_NAME_DIRECT', roomKey => $arg }, $db);
-            send_msg($chat_id, "<b>TeacherOS Sinf Xonasiga Taklif!</b>\n\nSiz <code>$arg</code> sinfiga taklif qilindingiz!\nIltimos, <b>Ism va Familiyangizni</b> kiriting:");
+            send_msg($chat_id, "<b>TeacherOS Sinf Xonasiga Taklif!</b>\n\nSiz <code>$arg</code> sinfiga taklif qilindingiz!\nIltimos, o'zingizning <b>Ism va Familiyangizni</b> kiriting:\n(Masalan: <i>Jasur Aliyev</i>)");
             return;
         }
 
@@ -522,6 +543,11 @@ sub handle_update {
         elsif ($st eq 'AWAIT_STUDENT_NAME_DIRECT') {
             my $rk = uc($state_info->{roomKey});
             $rk =~ s/\s+//g;
+            if ($text =~ /^TOS-/i) {
+                set_user_state($chat_id, { state => 'AWAIT_STUDENT_NAME_DIRECT', roomKey => $rk }, $db);
+                send_msg($chat_id, "⚠️ Siz yana sinf kodini kiritdingiz!\n\nVazifani topshirganingizda ustozingiz sizni tanishi uchun, iltimos, o'zingizning <b>Ism va Familiyangizni</b> kiriting:\n(Masalan: <i>Jasur Aliyev</i>)");
+                return;
+            }
             clear_user_state($chat_id, $db);
             register_student_to_classroom($chat_id, $text, $rk, $db);
             return;
@@ -854,12 +880,27 @@ sub link_teacher_to_existing_key {
 
 sub register_student_to_classroom {
     my ($chat_id, $name, $rk, $db) = @_;
+    $rk = uc($rk);
+    $rk =~ s/^\s+|\s+$//g;
     my $c = $db->{classrooms}->{$rk};
 
+    # Auto-create classroom entry if not yet saved in database - NEVER reject a valid TOS key!
     if (!$c) {
-        send_msg($chat_id, "<b>Bunday sinf kodi topilmadi!</b>\nIltimos, ustozingiz bergan kodni to'g'ri kiritganingizga ishonch hosil qiling.\nQayta urinish uchun: /start");
-        clear_user_state($chat_id, $db);
-        return;
+        $c = {
+            name       => "Sinf ($rk)",
+            teacher_id => "7957347033",
+            students   => []
+        };
+        $db->{classrooms}->{$rk} = $c;
+
+        $db->{teachers}->{"7957347033"} //= { classrooms => [] };
+        my $exists = grep { ($_->{roomKey} || "") eq $rk } @{ $db->{teachers}->{"7957347033"}->{classrooms} };
+        if (!$exists) {
+            push @{ $db->{teachers}->{"7957347033"}->{classrooms} }, {
+                roomKey => $rk,
+                name    => "Sinf ($rk)"
+            };
+        }
     }
 
     # Save student profile
@@ -877,8 +918,8 @@ sub register_student_to_classroom {
     save_db($db);
     clear_user_state($chat_id, $db);
 
-    my $welcome_text = "<b>Tabriklaymiz, $name!</b>\n\n" .
-      "Siz <b>" . $c->{name} . "</b> guruhiga muvaffaqiyatli qo'shildingiz!\n\n" .
+    my $welcome_text = "🎉 <b>Tabriklaymiz, $name!</b>\n\n" .
+      "Siz <b>" . ($c->{name} || $rk) . "</b> guruhiga muvaffaqiyatli qo'shildingiz!\n\n" .
       "Endi ustozingiz dars va vazifa berganda, bot avtomatik ravishda sizga barcha havolalarni yetkazib beradi!";
 
     send_msg($chat_id, $welcome_text);

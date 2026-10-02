@@ -421,6 +421,11 @@
       "teacher_id": 7957347033,
       "students": [],
       "name": "MWF Beginner 14:00"
+    },
+    "TOS-5APN-GNGK-5MEN": {
+      "name": "New Class (TOS-5APN-GNGK-5MEN)",
+      "teacher_id": 7957347033,
+      "students": []
     }
   },
   "teachers": {
@@ -430,6 +435,10 @@
         {
           "name": "MWF Beginner 14:00",
           "roomKey": "TOS-BIYC-XKG4-OFTM"
+        },
+        {
+          "name": "New Class (TOS-5APN-GNGK-5MEN)",
+          "roomKey": "TOS-5APN-GNGK-5MEN"
         }
       ]
     },
@@ -439,6 +448,10 @@
         {
           "name": "MWF Beginner 14:00",
           "roomKey": "TOS-BIYC-XKG4-OFTM"
+        },
+        {
+          "name": "New Class (TOS-5APN-GNGK-5MEN)",
+          "roomKey": "TOS-5APN-GNGK-5MEN"
         }
       ]
     }
