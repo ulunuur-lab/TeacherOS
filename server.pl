@@ -566,11 +566,9 @@ while (my $client = $server->accept()) {
             $GEMINI_KEY = decode_base64("QVEuQWI4Uk42S2lTVlB3ajBYM3ZCcUN3MnVIM21ONVFQdDAwZ0JpQ3V0ZFoydVh4b2I1U1E=");
         }
         my @models_to_try = (
-            "gemini-3.1-flash-lite",
-            "gemini-flash-lite-latest",
-            "gemini-flash-latest",
-            "gemini-3.5-flash-lite",
             "gemini-3.5-flash",
+            "gemini-3.1-flash-lite",
+            "gemini-flash-latest",
             "gemini-3.8-flash"
         );
 
@@ -722,6 +720,161 @@ Respond with ONLY a valid, strict JSON object.};
                 error => "AI generation unavailable",
                 debug => substr($last_raw_err, 0, 300),
                 fallback => 1
+            });
+        }
+
+        print $client "HTTP/1.1 200 OK\r\n";
+        print $client "Content-Type: application/json; charset=utf-8\r\n";
+        print $client "Content-Length: " . length($res_body) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
+        print $client "Connection: close\r\n\r\n";
+        print $client $res_body;
+        close $client;
+        next;
+    }
+
+    # API: Generate Homework Tasks with Gemini AI
+    if ($method eq "POST" && $path eq "/api/generate-homework") {
+        my $body = "";
+        if ($content_length > 0) {
+            read($client, $body, $content_length);
+        }
+        my $req = eval { decode_json($body) } || {};
+        my $topic = $req->{topic} || "Present Perfect";
+        my $level = $req->{level} || "B1";
+        my $mcqCount = int($req->{mcqCount} || 6);
+        my $transCount = int($req->{transCount} || 6);
+        my $errCount = int($req->{errCount} || 5);
+        my $blanksCount = int($req->{blanksCount} || 5);
+        my $isEssayOn = defined($req->{isEssayOn}) ? $req->{isEssayOn} : 1;
+        my $isQuestionsOn = defined($req->{isQuestionsOn}) ? $req->{isQuestionsOn} : 1;
+        my $isReorderOn = defined($req->{isReorderOn}) ? $req->{isReorderOn} : 1;
+        my $reorderCount = $isReorderOn ? 3 : 0;
+
+        use MIME::Base64 qw(decode_base64);
+        my $leaked_key = "AIzaSyBmXda2F3ehCvoOaETwNV25YrFeMoKDEiE";
+        my $GEMINI_KEY = $ENV{GEMINI_API_KEY} || "";
+        if (!$GEMINI_KEY || $GEMINI_KEY eq $leaked_key || length($GEMINI_KEY) < 20) {
+            $GEMINI_KEY = decode_base64("QVEuQWI4Uk42S2lTVlB3ajBYM3ZCcUN3MnVIM21ONVFQdDAwZ0JpQ3V0ZFoydVh4b2I1U1E=");
+        }
+        my @models_to_try = (
+            "gemini-3.5-flash",
+            "gemini-3.1-flash-lite",
+            "gemini-flash-latest",
+            "gemini-3.8-flash"
+        );
+
+        my $prompt = qq{You are an expert Cambridge/Oxford certified English Language examiner and curriculum designer.
+Generate a comprehensive, pedagogically authentic homework assignment for Uzbek EFL students.
+LESSON TOPIC: "$topic"
+CEFR LEVEL: "$level"
+
+CRITICAL REQUIREMENTS:
+1. Every single question, translation, error trap, and blank MUST be 100% focused on "$topic". DO NOT include unrelated filler questions from other topics!
+2. All questions and prompts must be completely unique and non-repeating.
+3. Explanations and translation sentences must be in natural Uzbek.
+4. Output must be a STRICT, VALID JSON object with NO markdown fences.
+
+GENERATE EXACT COUNTS:
+- mcqs: Exactly $mcqCount multiple-choice questions. Each object has:
+  "q": Clear English question sentence (DO NOT prepend question numbers like '1.' or '1)').
+  "opts": Array of exactly 4 options.
+  "ans": The exact correct answer string matching one of the options.
+  "expl": Brief pedagogical explanation in Uzbek explaining WHY this answer is correct and which rule applies.
+- translations: Exactly $transCount sentences for students to translate from Uzbek to English. Each object has:
+  "uz": Natural Uzbek sentence specifically using "$topic" grammar/vocabulary (DO NOT prepend numbers).
+  "hint": Helpful English clue or key words in parentheses.
+- errors: Exactly $errCount error-correction traps showing typical mistakes made by Uzbek learners on "$topic".
+  Format each item as: "Wrong sentence -> ✅ Correct sentence (Rule explanation in Uzbek)"
+  (DO NOT prepend '❌' symbol or quote marks).
+- blanks: Exactly $blanksCount fill-in-the-blank sentences. Each object has:
+  "s": English sentence with '______ (base_verb/word)' where the blank should be filled.
+  "a": The exact correct answer word or phrase.
+- reorderItems: Exactly $reorderCount sentence-unscramble challenge items. Each object has:
+  "words": Array of scrambled words from the sentence.
+  "correct": The complete, grammatically correct sentence.
+- essayPrompt: Practical mini-essay prompt in Uzbek (8-10 sentences) instructing the student to write about their life or goals using "$topic".
+- questionsPrompt: "Ustozingizga '$topic' mavzusida tushunmagan yoki qiziqtirgan kamida 2 ta savolingizni yozing."
+
+Return ONLY valid JSON.};
+
+        my $payload = {
+            contents => [
+                { parts => [ { text => $prompt } ] }
+            ],
+            generationConfig => {
+                response_mime_type => "application/json",
+                temperature => 0.3
+            }
+        };
+
+        my $json_payload = encode_json($payload);
+        my $tmp_req = "/tmp/gemini_hw_req_$$.json";
+        my $tmp_res = "/tmp/gemini_hw_res_$$.json";
+
+        my $hw_data = undef;
+        my $last_raw_err = "";
+        if (open my $tf, ">:raw", $tmp_req) {
+            print $tf $json_payload;
+            close $tf;
+
+            for my $m (@models_to_try) {
+                my $cmd = qq{curl -s --connect-timeout 15 --max-time 90 -X POST "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent?key=$GEMINI_KEY" -H "Content-Type: application/json" --data-binary \@$tmp_req > $tmp_res};
+                system($cmd);
+
+                if (-f $tmp_res) {
+                    if (open my $rf, "<:raw", $tmp_res) {
+                        my $raw_res = do { local $/; <$rf> };
+                        close $rf;
+                        $last_raw_err = $raw_res;
+                        my $g_data = eval { decode_json($raw_res) };
+                        if ($g_data && $g_data->{candidates}) {
+                            my $text = $g_data->{candidates}->[0]->{content}->{parts}->[0]->{text};
+                            if ($text) {
+                                $text =~ s/^\s*```(?:json)?\s*//is;
+                                $text =~ s/\s*```\s*$//s;
+                                $text =~ s/^\s+|\s+$//g;
+
+                                my $cand = eval { decode_json($text) };
+                                if (!$cand || ref($cand) ne "HASH") {
+                                    if ($text =~ /(\{.*\})/s) {
+                                        $cand = eval { decode_json($1) };
+                                    }
+                                }
+                                if ($cand && ($cand->{mcqs} || $cand->{translations})) {
+                                    $hw_data = $cand;
+                                    print "Gemini homework successfully generated with $m for '$topic'\n";
+                                    unlink $tmp_res;
+                                    last;
+                                }
+                            }
+                        }
+                    }
+                    unlink $tmp_res;
+                }
+            }
+            unlink $tmp_req;
+        }
+
+        my $res_body;
+        if ($hw_data) {
+            $res_body = encode_json({
+                ok => 1,
+                topic => $topic,
+                level => $level,
+                mcqs => $hw_data->{mcqs} || [],
+                translations => $hw_data->{translations} || [],
+                errors => $hw_data->{errors} || [],
+                blanks => $hw_data->{blanks} || [],
+                reorderItems => $hw_data->{reorderItems} || [],
+                essayPrompt => $hw_data->{essayPrompt} || "",
+                questionsPrompt => $hw_data->{questionsPrompt} || ""
+            });
+        } else {
+            $res_body = encode_json({
+                ok => 0,
+                error => "AI homework generation failed",
+                debug => substr($last_raw_err, 0, 300)
             });
         }
 
