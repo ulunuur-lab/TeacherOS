@@ -243,6 +243,20 @@ while (my $client = $server->accept()) {
         next;
     }
 
+    # API: Debug Database State
+    if ($method eq "GET" && $path eq "/api/debug-db") {
+        my $db = read_db();
+        my $res_body = encode_json($db);
+        print $client "HTTP/1.1 200 OK\r\n";
+        print $client "Content-Type: application/json; charset=utf-8\r\n";
+        print $client "Content-Length: " . length($res_body) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
+        print $client "Connection: close\r\n\r\n";
+        print $client $res_body;
+        close $client;
+        next;
+    }
+
     # API: Get Classroom by Key
     if ($method eq "GET" && $path =~ m{^/api/classroom}) {
         my $rk = "";
