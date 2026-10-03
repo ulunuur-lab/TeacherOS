@@ -361,6 +361,10 @@ sub handle_update {
             my $rk = $1;
             show_classroom_details($chat_id, $rk, $db, $from);
         }
+        elsif ($data =~ /^delete_class_(.+)$/) {
+            my $rk = $1;
+            delete_teacher_classroom($chat_id, $rk, $db);
+        }
         elsif ($data =~ /^as_student_(.+)$/) {
             my $rk = $1;
             set_user_state($chat_id, { state => 'AWAIT_STUDENT_NAME_DIRECT', roomKey => $rk }, $db);
@@ -637,23 +641,26 @@ sub handle_teacher_menu {
     my $teacher = $db->{teachers}->{$cid};
     $teacher->{classrooms} //= [];
 
-    # Dynamic re-hydration: Find all classrooms belonging to this teacher or if admin
+    # Prune any deleted or stale classrooms
+    my @valid_classes = grep { $_->{roomKey} && $db->{classrooms}->{$_->{roomKey}} } @{ $teacher->{classrooms} || [] };
+
+    # Re-hydrate classrooms belonging specifically to this teacher
     for my $rk (keys %{ $db->{classrooms} || {} }) {
         my $c = $db->{classrooms}->{$rk};
         next unless $c;
         my $is_owner = ($c->{teacher_id} && ("$c->{teacher_id}" eq $cid)) ||
-                       ($c->{teacher_username} && $uName && lc($c->{teacher_username}) eq lc($uName)) ||
-                       is_admin($chat_id, $user && $user->{username});
+                       ($c->{teacher_username} && $uName && lc($c->{teacher_username}) eq lc($uName));
         if ($is_owner) {
-            my $already = grep { ($_->{roomKey} || "") eq $rk } @{ $teacher->{classrooms} };
+            my $already = grep { ($_->{roomKey} || "") eq $rk } @valid_classes;
             if (!$already) {
-                push @{ $teacher->{classrooms} }, {
+                push @valid_classes, {
                     roomKey => $rk,
                     name    => $c->{name} || "Sinf $rk"
                 };
             }
         }
     }
+    $teacher->{classrooms} = \@valid_classes;
     save_db($db);
 
     if (@{ $teacher->{classrooms} }) {
@@ -678,23 +685,16 @@ sub show_teacher_classes {
     my $teacher = $db->{teachers}->{$cid};
     $teacher->{classrooms} //= [];
 
-    # Always ensure all matching classrooms from database are in the list
-    for my $rk (keys %{ $db->{classrooms} || {} }) {
-        my $c = $db->{classrooms}->{$rk};
-        next unless $c;
-        my $is_owner = ($c->{teacher_id} && ("$c->{teacher_id}" eq $cid)) ||
-                       ($c->{teacher_username} && $uName && lc($c->{teacher_username}) eq lc($uName)) ||
-                       is_admin($chat_id, $user && $user->{username});
-        if ($is_owner) {
-            my $already = grep { ($_->{roomKey} || "") eq $rk } @{ $teacher->{classrooms} };
-            if (!$already) {
-                push @{ $teacher->{classrooms} }, {
-                    roomKey => $rk,
-                    name    => $c->{name} || "Sinf $rk"
-                };
-            }
+    # Prune any deleted classrooms
+    my @valid_classes;
+    for my $c (@{ $teacher->{classrooms} || [] }) {
+        my $rk = $c->{roomKey} || "";
+        if ($rk && $db->{classrooms}->{$rk}) {
+            $c->{name} = $db->{classrooms}->{$rk}->{name} || $c->{name};
+            push @valid_classes, $c;
         }
     }
+    $teacher->{classrooms} = \@valid_classes;
     save_db($db);
 
     my $classes = $teacher->{classrooms} || [];
@@ -734,7 +734,7 @@ sub show_classroom_details {
 
     # Strict Ownership Check: Only classroom's teacher or admin can view
     my $uName = $user && $user->{username} ? $user->{username} : "";
-    if ($c->{teacher_id} && $c->{teacher_id} ne $chat_id && !is_admin($chat_id, $uName)) {
+    if ($c->{teacher_id} && "$c->{teacher_id}" ne "$chat_id" && !is_admin($chat_id, $uName)) {
         send_msg($chat_id, "⛔ <b>Ruxsat etilmagan!</b>\n\nUshbu sinf boshqa ustozga tegishli. Siz faqat o'z hisobingizga biriktirilgan sinflarni boshqara olasiz.");
         return;
     }
@@ -750,7 +750,7 @@ sub show_classroom_details {
     if ($c->{students} && @{ $c->{students} }) {
         my $i = 1;
         for my $st_id (@{ $c->{students} }) {
-            my $st_info = $db->{students}->{$st_id};
+            my $st_info = $db->{students}->{$st_id} || $db->{students}->{"$st_id"};
             my $st_name = $st_info ? $st_info->{name} : "O'quvchi ($st_id)";
             $student_list_text .= "$i. 👤 <b>$st_name</b>\n";
             $i++;
@@ -759,7 +759,7 @@ sub show_classroom_details {
         $student_list_text = "<i>(Hozircha o'quvchilar qo'shilmagan)</i>\n";
     }
 
-    my $text = "<b>📚 Sinf: " . $c->{name} . "</b>\n" .
+    my $text = "<b>📚 Sinf: " . ($c->{name} || $rk) . "</b>\n" .
       "━━━━━━━━━━━━━━━━━━━━\n" .
       "🔑 <b>Sinf Kodi:</b> <code>$rk</code>\n" .
       "👥 <b>O'quvchilar:</b> <b>$st_count ta</b>\n\n" .
@@ -771,14 +771,29 @@ sub show_classroom_details {
     my $kb = {
         inline_keyboard => [
             [ { text => "💻 Ustoz Studiyasini Ochish", url => $web_direct_url } ],
+            [ { text => "🗑️ Sinfni O'chirish", callback_data => "delete_class_" . $rk } ],
             [ { text => "◀ Sinflar Ro'yxatiga Qaytish", callback_data => "teacher_my_classes" } ]
         ]
     };
     send_msg($chat_id, $text, $kb);
 }
 
+sub delete_teacher_classroom {
+    my ($chat_id, $rk, $db) = @_;
+    my $cid = "$chat_id";
+    if ($db->{teachers}->{$cid} && $db->{teachers}->{$cid}->{classrooms}) {
+        my @kept = grep { ($_->{roomKey} || "") ne $rk } @{ $db->{teachers}->{$cid}->{classrooms} };
+        $db->{teachers}->{$cid}->{classrooms} = \@kept;
+    }
+    delete $db->{classrooms}->{$rk};
+    save_db($db);
+    send_msg($chat_id, "🗑️ <b>Sinf muvaffaqiyatli o'chirildi!</b>");
+    show_teacher_classes($chat_id, $db);
+}
+
 sub create_new_teacher_classroom {
     my ($chat_id, $className, $db, $user) = @_;
+    my $cid = "$chat_id";
 
     # Generate Secure Room Key
     my @chars = ('A'..'Z', '2'..'9');
@@ -793,13 +808,13 @@ sub create_new_teacher_classroom {
     # Save to classrooms
     $db->{classrooms}->{$rk} = {
         name       => $className,
-        teacher_id => $chat_id,
+        teacher_id => $cid,
         students   => []
     };
 
     # Save to teacher profile
-    $db->{teachers}->{$chat_id} //= { classrooms => [], username => $uName };
-    push @{ $db->{teachers}->{$chat_id}->{classrooms} }, {
+    $db->{teachers}->{$cid} //= { classrooms => [], username => $uName };
+    push @{ $db->{teachers}->{$cid}->{classrooms} }, {
         roomKey => $rk,
         name    => $className
     };
@@ -809,8 +824,9 @@ sub create_new_teacher_classroom {
 
     (my $invite_key = $rk) =~ s/-/_/g;
     my $bot_invite = "https://t.me/teacherOS_tg_bot?start=" . $invite_key;
+    my $web_direct_url = "$PUBLIC_URL/index.html#class=" . $rk;
 
-    my $text = "<b>Yangi Sinf Muvaffaqiyatli Ochildi!</b>\n" .
+    my $text = "<b>🎉 Yangi Sinf Muvaffaqiyatli Ochildi!</b>\n" .
       "━━━━━━━━━━━━━━━━━━━━\n" .
       "<b>Sinf Nomi:</b> $className\n" .
       "<b>Sinf Kodi:</b> <code>$rk</code>\n\n" .
@@ -820,8 +836,9 @@ sub create_new_teacher_classroom {
 
     my $kb = {
         inline_keyboard => [
-            [ { text => "Sinf Tafsilotlari & Vebga Kirish", callback_data => "view_class_" . $rk } ],
-            [ { text => "Mening Barcha Sinflarim", callback_data => "teacher_my_classes" } ]
+            [ { text => "💻 Ustoz Studiyasini Ochish", url => $web_direct_url } ],
+            [ { text => "📋 Sinf Tafsilotlari", callback_data => "view_class_" . $rk } ],
+            [ { text => "◀ Mening Barcha Sinflarim", callback_data => "teacher_my_classes" } ]
         ]
     };
     send_msg($chat_id, $text, $kb);

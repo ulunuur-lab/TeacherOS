@@ -1456,7 +1456,7 @@
           <div class="logo-badge" style="width: 48px; height: 48px; font-size: 1.35rem; background: linear-gradient(135deg, var(--primary), var(--accent));">👨‍🏫</div>
           <div>
             <div style="font-size: 1.35rem; font-weight: 900; color: #fff; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px;">
-              <span id="ts-header-group-name">MWF Beginner 14:00</span>
+              <span id="ts-header-group-name">Yuklanmoqda...</span>
               <button class="btn btn-secondary btn-sm" onclick="renameCurrentClassroom()" title="Sinf nomini o'zgartirish" style="padding: 2px 7px; font-size: 0.72rem; border-radius: 6px;">✏️ Nomlash</button>
             </div>
             <div style="font-size: 0.88rem; color: #94a3b8; margin-top: 3px; display: flex; align-items: center; gap: 6px;">
@@ -4564,7 +4564,8 @@
           if (res.ok) {
             const data = await res.json();
             if (data.ok) {
-              currentClassroom.teacherName = data.name || currentClassroom.teacherName;
+              currentClassroom.name = data.name || currentClassroom.name || "Sinf";
+              currentClassroom.teacherName = data.name || currentClassroom.teacherName || currentClassroom.name || "Sinf";
               currentClassroom.teacherChatId = data.teacher_id || currentClassroom.teacherChatId;
               currentClassroom.enrolledStudents = (data.student_details && data.student_details.length > 0)
                 ? data.student_details
@@ -4613,10 +4614,12 @@
         if (tBrandEl) tBrandEl.value = brandName;
         const dCodeEl = document.getElementById("display-room-code");
         if (dCodeEl) dCodeEl.textContent = currentClassroom.roomKey;
+        const hGroupEl = document.getElementById("ts-header-group-name");
+        if (hGroupEl) hGroupEl.textContent = currentClassroom.name || currentClassroom.teacherName || "Sinf";
         updateDynamicTopicChips(currentClassroom.topic || "Present Perfect");
 
         navigateTo('teacher-studio');
-        showToast(`👨‍🏫 Xush kelibsiz! Sinf: ${currentClassroom.teacherName || rk}`, "info");
+        showToast(`👨‍🏫 Xush kelibsiz! Sinf: ${currentClassroom.name || currentClassroom.teacherName || rk}`, "info");
         return;
       }
 
@@ -4784,7 +4787,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             roomKey: roomObj.roomKey,
-            name: roomObj.teacherName || roomObj.name || brandName || "MWF Beginner 14:00",
+            name: roomObj.name || roomObj.teacherName || brandName || "Sinf",
             teacherChatId: roomObj.teacherChatId || localStorage.getItem("tos_t_chat_id") || "7957347033",
             teacherUsername: roomObj.teacherUsername || teacherUsername || "@ahrormamazok1rov"
           })
@@ -6303,10 +6306,10 @@ Return ONLY valid JSON.`;
 
       showToast("🚀 Vazifa o'quvchilarga avtomat tarzda tarqatilmoqda...", "info");
 
-      // 1. Pack state into URL hash
+      // 1. Pack state and preserve classroom hash
       const jsonStr = JSON.stringify(currentClassroom);
       const compressed = LZString.compressToEncodedURIComponent(jsonStr);
-      window.location.hash = "room=" + compressed;
+      window.location.hash = "#class=" + rk;
       saveClassroomToRegistry(currentClassroom);
 
       const studentLink = window.location.origin + window.location.pathname + "#class=" + rk + "&role=student";
@@ -6366,7 +6369,7 @@ Return ONLY valid JSON.`;
         const tag = topic.replace(/[^a-zA-Z0-9]/g, "") || "Dars";
         const studentMsg = `📚 <b>YANGI UYGA VAZIFA!</b>\n` +
           `━━━━━━━━━━━━━━━━━━━━\n` +
-          `👥 <b>Sinf:</b> ${currentClassroom.teacherName || "MWF Beginner 14:00"}\n` +
+          `👥 <b>Sinf:</b> ${currentClassroom.name || currentClassroom.teacherName || "Sinf"}\n` +
           `📌 <b>Mavzu:</b> ${topic} (#${tag})\n` +
           `🎯 <b>Daraja:</b> ${level}\n` +
           `⏳ <b>Topshirish muddati:</b> ${deadline} (#Deadline)\n` +
@@ -6406,7 +6409,7 @@ Return ONLY valid JSON.`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: targetTeacherId,
-          text: `🚀 <b>VAZIFA E'LON QILINDI!</b>\n━━━━━━━━━━━━━━━━━━━━\n📚 <b>Mavzu:</b> ${topic}\n👥 <b>Guruh:</b> ${currentClassroom.teacherName || "MWF Beginner 14:00"} (<code>${rk}</code>)\n⏳ <b>Topshirish muddati:</b> ${deadline}\n📨 <b>Yetkazilish holati:</b>\n${deliveryNote}\n\n<i>O'quvchilar topshirgan zahoti, baholangan hisobot sizga kelib tushadi!</i>`,
+          text: `🚀 <b>VAZIFA E'LON QILINDI!</b>\n━━━━━━━━━━━━━━━━━━━━\n📚 <b>Mavzu:</b> ${topic}\n👥 <b>Guruh:</b> ${currentClassroom.name || currentClassroom.teacherName || "Sinf"} (<code>${rk}</code>)\n⏳ <b>Topshirish muddati:</b> ${deadline}\n📨 <b>Yetkazilish holati:</b>\n${deliveryNote}\n\n<i>O'quvchilar topshirgan zahoti, baholangan hisobot sizga kelib tushadi!</i>`,
           parse_mode: "HTML"
         })
       }).catch(e => console.warn("Teacher direct TG dispatch err", e));
@@ -7641,7 +7644,7 @@ Return ONLY valid JSON.`;
         `━━━━━━━━━━━━━━━━━━━━\n` +
         `👤 <b>O'quvchi:</b> ${sName}\n` +
         `👨‍🏫 <b>Ustoz:</b> ${currentClassroom.teacherUsername || teacherUsername}\n` +
-        `👥 <b>Guruh:</b> ${currentClassroom.teacherName || "MWF Beginner 14:00"}\n` +
+        `👥 <b>Guruh:</b> ${currentClassroom.name || currentClassroom.teacherName || "Sinf"}\n` +
         `📚 <b>Mavzu:</b> ${currentClassroom.topic} (${currentClassroom.level})\n` +
         `⏳ <b>Deadline:</b> ${currentClassroom.deadline || "Belgilanmagan"}\n` +
         `📊 <b>Baho:</b> <b>${score}/100</b> (${grade})\n` +
