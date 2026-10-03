@@ -40,17 +40,39 @@ if ($PUBLIC_URL =~ /^https?:\/\//) {
 }
 
 sub read_db {
+    my $db;
     if (main->can('load_db')) {
-        return load_db();
+        $db = load_db();
+    } else {
+        $db = {};
+        if (-f $DB_FILE) {
+            open my $fh, "<:raw", $DB_FILE or return {};
+            my $content = do { local $/; <$fh> };
+            close $fh;
+            eval { $db = decode_json($content) };
+        }
     }
-    my $db = {};
-    if (-f $DB_FILE) {
-        open my $fh, "<:raw", $DB_FILE or return {};
-        my $content = do { local $/; <$fh> };
-        close $fh;
-        eval { $db = decode_json($content) };
+    $db //= {};
+    delete $db->{classrooms}->{"TOS-WQAF-NYFC-M7EH"};
+    for my $tid (keys %{ $db->{teachers} || {} }) {
+        if ($db->{teachers}->{$tid} && $db->{teachers}->{$tid}->{classrooms}) {
+            my @filtered = grep { ($_->{roomKey} || "") ne "TOS-WQAF-NYFC-M7EH" } @{ $db->{teachers}->{$tid}->{classrooms} };
+            $db->{teachers}->{$tid}->{classrooms} = \@filtered;
+        }
     }
-    return $db || {};
+    for my $sid (keys %{ $db->{students} || {} }) {
+        my $st = $db->{students}->{$sid};
+        if ($st && $st->{classrooms}) {
+            for my $rk (@{ $st->{classrooms} }) {
+                my $c = $db->{classrooms}->{$rk};
+                if ($c) {
+                    $c->{students} //= [];
+                    push @{ $c->{students} }, "$sid" unless grep { "$_" eq "$sid" } @{ $c->{students} };
+                }
+            }
+        }
+    }
+    return $db;
 }
 
 sub write_db {
@@ -268,6 +290,16 @@ while (my $client = $server->accept()) {
         my $db = read_db();
         my $c = $rk ? $db->{classrooms}->{$rk} : undef;
         if ($c) {
+            $c->{students} //= [];
+            my %st_set = map { "$_" => 1 } @{ $c->{students} };
+            for my $sid (keys %{ $db->{students} || {} }) {
+                my $st = $db->{students}->{$sid};
+                if ($st && $st->{classrooms} && grep { uc($_) eq $rk } @{ $st->{classrooms} }) {
+                    unless ($st_set{"$sid"}++) {
+                        push @{ $c->{students} }, "$sid";
+                    }
+                }
+            }
             my @student_details;
             for my $sid (@{ $c->{students} || [] }) {
                 my $st = $db->{students}->{$sid} || $db->{students}->{"$sid"};
@@ -301,6 +333,39 @@ while (my $client = $server->accept()) {
             print $client "Connection: close\r\n\r\n";
             print $client $res_body;
         }
+        close $client;
+        next;
+    }
+
+    # API: Clean and Repair Database state
+    if ($path eq "/api/repair-db") {
+        my $db = read_db();
+        delete $db->{classrooms}->{"TOS-WQAF-NYFC-M7EH"};
+        for my $tid (keys %{ $db->{teachers} || {} }) {
+            if ($db->{teachers}->{$tid} && $db->{teachers}->{$tid}->{classrooms}) {
+                my @filtered = grep { ($_->{roomKey} || "") ne "TOS-WQAF-NYFC-M7EH" } @{ $db->{teachers}->{$tid}->{classrooms} };
+                $db->{teachers}->{$tid}->{classrooms} = \@filtered;
+            }
+        }
+        for my $sid (keys %{ $db->{students} || {} }) {
+            my $st = $db->{students}->{$sid};
+            if ($st && $st->{classrooms}) {
+                for my $crk (@{ $st->{classrooms} }) {
+                    if ($db->{classrooms}->{$crk}) {
+                        $db->{classrooms}->{$crk}->{students} //= [];
+                        push @{ $db->{classrooms}->{$crk}->{students} }, "$sid" unless grep { "$_" eq "$sid" } @{ $db->{classrooms}->{$crk}->{students} };
+                    }
+                }
+            }
+        }
+        write_db($db);
+        my $res_body = encode_json({ ok => 1, message => "Database repaired and synced", classrooms => [keys %{$db->{classrooms}}] });
+        print $client "HTTP/1.1 200 OK\r\n";
+        print $client "Content-Type: application/json; charset=utf-8\r\n";
+        print $client "Content-Length: " . length($res_body) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
+        print $client "Connection: close\r\n\r\n";
+        print $client $res_body;
         close $client;
         next;
     }

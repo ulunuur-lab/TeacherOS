@@ -164,6 +164,27 @@ sub load_db {
                     for my $cid (keys %IN_MEMORY_STATE) {
                         $data->{user_state}->{$cid} //= $IN_MEMORY_STATE{$cid};
                     }
+                    # Always purge obsolete/test room TOS-WQAF-NYFC-M7EH
+                    delete $data->{classrooms}->{"TOS-WQAF-NYFC-M7EH"};
+                    for my $tid (keys %{ $data->{teachers} || {} }) {
+                        if ($data->{teachers}->{$tid} && $data->{teachers}->{$tid}->{classrooms}) {
+                            my @filtered = grep { ($_->{roomKey} || "") ne "TOS-WQAF-NYFC-M7EH" } @{ $data->{teachers}->{$tid}->{classrooms} };
+                            $data->{teachers}->{$tid}->{classrooms} = \@filtered;
+                        }
+                    }
+                    # Auto-sync enrolled students to classrooms
+                    for my $sid (keys %{ $data->{students} || {} }) {
+                        my $st = $data->{students}->{$sid};
+                        if ($st && $st->{classrooms}) {
+                            for my $rk (@{ $st->{classrooms} }) {
+                                my $c = $data->{classrooms}->{$rk};
+                                if ($c) {
+                                    $c->{students} //= [];
+                                    push @{ $c->{students} }, "$sid" unless grep { "$_" eq "$sid" } @{ $c->{students} };
+                                }
+                            }
+                        }
+                    }
                     return $data;
                 }
             }
@@ -671,28 +692,39 @@ sub handle_teacher_menu {
     }
 
     my %seen_keys;
+    my %seen_names;
     my @valid_classes;
     for my $c (@{ $teacher->{classrooms} || [] }) {
         my $rk = $c->{roomKey} || "";
+        next if $rk eq "TOS-WQAF-NYFC-M7EH";
         if ($rk && $db->{classrooms}->{$rk} && !$seen_keys{$rk}++) {
             $c->{name} = $db->{classrooms}->{$rk}->{name} || $c->{name};
-            push @valid_classes, $c;
+            my $norm_name = lc($c->{name} || "");
+            $norm_name =~ s/\s+//g;
+            if (!$seen_names{$norm_name}++) {
+                push @valid_classes, $c;
+            }
         }
     }
     my $is_admin_user = is_admin($chat_id, $user && $user->{username});
 
     # Re-hydrate classrooms belonging specifically to this teacher or if admin
     for my $rk (keys %{ $db->{classrooms} || {} }) {
+        next if $rk eq "TOS-WQAF-NYFC-M7EH";
         my $c = $db->{classrooms}->{$rk};
         next unless $c;
         my $is_owner = ($c->{teacher_id} && ("$c->{teacher_id}" eq $cid)) ||
                        ($c->{teacher_username} && $uName && lc($c->{teacher_username}) eq lc($uName)) ||
                        $is_admin_user;
         if ($is_owner && !$seen_keys{$rk}++) {
-            push @valid_classes, {
-                roomKey => $rk,
-                name    => $c->{name} || "Sinf $rk"
-            };
+            my $norm_name = lc($c->{name} || "Sinf $rk");
+            $norm_name =~ s/\s+//g;
+            if (!$seen_names{$norm_name}++) {
+                push @valid_classes, {
+                    roomKey => $rk,
+                    name    => $c->{name} || "Sinf $rk"
+                };
+            }
         }
     }
     $teacher->{classrooms} = \@valid_classes;
@@ -737,27 +769,38 @@ sub show_teacher_classes {
 
     my $is_admin_user = is_admin($chat_id, $user && $user->{username});
 
-    # Prune and deduplicate classrooms
+    # Prune and deduplicate classrooms strictly
     my %seen_keys;
+    my %seen_names;
     my @valid_classes;
     for my $c (@{ $teacher->{classrooms} || [] }) {
         my $rk = $c->{roomKey} || "";
+        next if $rk eq "TOS-WQAF-NYFC-M7EH";
         if ($rk && $db->{classrooms}->{$rk} && !$seen_keys{$rk}++) {
             $c->{name} = $db->{classrooms}->{$rk}->{name} || $c->{name};
-            push @valid_classes, $c;
+            my $norm_name = lc($c->{name} || "");
+            $norm_name =~ s/\s+//g;
+            if (!$seen_names{$norm_name}++) {
+                push @valid_classes, $c;
+            }
         }
     }
     for my $rk (keys %{ $db->{classrooms} || {} }) {
+        next if $rk eq "TOS-WQAF-NYFC-M7EH";
         my $c = $db->{classrooms}->{$rk};
         next unless $c;
         my $is_owner = ($c->{teacher_id} && ("$c->{teacher_id}" eq $cid)) ||
                        ($c->{teacher_username} && $uName && lc($c->{teacher_username}) eq lc($uName)) ||
                        $is_admin_user;
         if ($is_owner && !$seen_keys{$rk}++) {
-            push @valid_classes, {
-                roomKey => $rk,
-                name    => $c->{name} || "Sinf $rk"
-            };
+            my $norm_name = lc($c->{name} || "Sinf $rk");
+            $norm_name =~ s/\s+//g;
+            if (!$seen_names{$norm_name}++) {
+                push @valid_classes, {
+                    roomKey => $rk,
+                    name    => $c->{name} || "Sinf $rk"
+                };
+            }
         }
     }
     $teacher->{classrooms} = \@valid_classes;
@@ -778,9 +821,20 @@ sub show_teacher_classes {
 
     my @buttons;
     for my $c (@$classes) {
+        my $rk = $c->{roomKey};
         my $st_count = 0;
-        if ($db->{classrooms}->{$c->{roomKey}} && $db->{classrooms}->{$c->{roomKey}}->{students}) {
-            $st_count = scalar @{ $db->{classrooms}->{$c->{roomKey}}->{students} };
+        if ($db->{classrooms}->{$rk}) {
+            $db->{classrooms}->{$rk}->{students} //= [];
+            my %st_set = map { "$_" => 1 } @{ $db->{classrooms}->{$rk}->{students} };
+            for my $sid (keys %{ $db->{students} || {} }) {
+                my $st = $db->{students}->{$sid};
+                if ($st && $st->{classrooms} && grep { $_ eq $rk } @{ $st->{classrooms} }) {
+                    unless ($st_set{"$sid"}++) {
+                        push @{ $db->{classrooms}->{$rk}->{students} }, "$sid";
+                    }
+                }
+            }
+            $st_count = scalar @{ $db->{classrooms}->{$rk}->{students} };
         }
         push @buttons, [ { text => "🏫 " . ($c->{name} || $c->{roomKey}) . " (" . $st_count . " ta o'quvchi)", callback_data => "view_class_" . $c->{roomKey} } ];
     }
