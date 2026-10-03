@@ -7,10 +7,6 @@
         {
           "name": "CEFR C1",
           "roomKey": "TOS-3SGX-IENT-9VI3"
-        },
-        {
-          "name": "CEFR C1",
-          "roomKey": "TOS-WQAF-NYFC-M7EH"
         }
       ]
     },
@@ -20,10 +16,6 @@
         {
           "name": "CEFR C1",
           "roomKey": "TOS-3SGX-IENT-9VI3"
-        },
-        {
-          "name": "CEFR C1",
-          "roomKey": "TOS-WQAF-NYFC-M7EH"
         }
       ]
     },
@@ -33,15 +25,24 @@
         {
           "name": "CEFR C1",
           "roomKey": "TOS-3SGX-IENT-9VI3"
-        },
-        {
-          "name": "CEFR C1",
-          "roomKey": "TOS-WQAF-NYFC-M7EH"
         }
       ]
     }
   },
-  "students": {},
+  "students": {
+    "1465352022": {
+      "name": "Shaxzoda Olimova",
+      "classrooms": [
+        "TOS-3SGX-IENT-9VI3"
+      ]
+    },
+    "8845531824": {
+      "name": "Cristiano Ronaldo",
+      "classrooms": [
+        "TOS-3SGX-IENT-9VI3"
+      ]
+    }
+  },
   "pending_authorizations": {},
   "authorized_teachers": {
     "6315515792": {
@@ -78,13 +79,10 @@
       "name": "CEFR C1",
       "teacher_username": "@ulunur",
       "teacher_id": "6315515792",
-      "students": []
-    },
-    "TOS-WQAF-NYFC-M7EH": {
-      "teacher_id": "7957347033",
-      "name": "CEFR C1",
-      "students": [],
-      "teacher_username": "@ahrormamazok1rov"
+      "students": [
+        "1465352022",
+        "8845531824"
+      ]
     }
   }
 }

@@ -15,7 +15,7 @@ my $PUBLIC_URL = $ENV{PUBLIC_URL} || "https://teacheros-0l68.onrender.com";
 our %IN_MEMORY_STATE;
 our %PENDING_PASSCODES;
 
-my @ADMIN_IDS = (7957347033, 8845531824);
+my @ADMIN_IDS = (7957347033, 8845531824, 6315515792);
 my %ADMIN_MAP = map { $_ => 1 } @ADMIN_IDS;
 my %ADMIN_USERNAMES = (
     'ulunur'           => 1,
@@ -85,7 +85,14 @@ sub pull_cloud_database {
             if ($cloud_db && ref($cloud_db) eq 'HASH' && $cloud_db->{classrooms}) {
                 my $local_db = load_db();
                 for my $rk (keys %{ $cloud_db->{classrooms} }) {
-                    $local_db->{classrooms}->{$rk} //= $cloud_db->{classrooms}->{$rk};
+                    if (!$local_db->{classrooms}->{$rk}) {
+                        $local_db->{classrooms}->{$rk} = $cloud_db->{classrooms}->{$rk};
+                    } else {
+                        my %merged_st = map { "$_" => 1 } @{ $local_db->{classrooms}->{$rk}->{students} || [] };
+                        for my $st_id (@{ $cloud_db->{classrooms}->{$rk}->{students} || [] }) {
+                            push @{ $local_db->{classrooms}->{$rk}->{students} }, "$st_id" unless $merged_st{"$st_id"}++;
+                        }
+                    }
                 }
                 for my $tid (keys %{ $cloud_db->{teachers} }) {
                     $local_db->{teachers}->{$tid} //= { classrooms => [] };
@@ -110,39 +117,39 @@ sub sync_cloud_database_async {
     my ($data) = @_;
     return unless $GITHUB_TOKEN;
     my $now = time();
-    return if ($now - $LAST_CLOUD_SYNC_TIME) < 15; # Throttle cloud commits to 15 seconds
+    return if ($now - $LAST_CLOUD_SYNC_TIME) < 10;
     $LAST_CLOUD_SYNC_TIME = $now;
 
-    my $pid = fork();
-    if (defined $pid && $pid == 0) {
-        eval {
-            my $info_cmd = qq{curl -s -m 10 -H "Authorization: token $GITHUB_TOKEN" -H "User-Agent: TeacherOS" "https://api.github.com/repos/$GITHUB_REPO/contents/database.json?ref=db-storage"};
-            my $info_res = `$info_cmd`;
-            my $info_data = eval { decode_json($info_res) };
-            my $sha = $info_data && $info_data->{sha} ? $info_data->{sha} : "";
+    eval {
+        my $json_str = eval { encode_json($data) };
+        return unless $json_str;
 
-            use MIME::Base64 qw(encode_base64);
-            my $json_str = encode_json($data);
-            my $b64 = encode_base64($json_str, "");
-            $b64 =~ s/\s+//g;
-            my $payload_hash = {
-                message => "chore(db): auto sync cloud database",
-                content => $b64,
-                branch  => "db-storage"
-            };
-            $payload_hash->{sha} = $sha if $sha;
-            my $commit_payload = encode_json($payload_hash);
-            my $tmp = "/tmp/gh_db_commit_$$.json";
-            if (open my $tfh, ">:raw", $tmp) {
-                print $tfh $commit_payload;
-                close $tfh;
-                my $put_cmd = qq{curl -s -m 15 -X PUT "https://api.github.com/repos/$GITHUB_REPO/contents/database.json" -H "Authorization: token $GITHUB_TOKEN" -H "User-Agent: TeacherOS" -H "Content-Type: application/json" --data-binary \@$tmp};
-                `$put_cmd`;
-                unlink $tmp;
-            }
+        use MIME::Base64 qw(encode_base64);
+        my $b64 = encode_base64($json_str, "");
+        $b64 =~ s/\s+//g;
+
+        my $info_cmd = qq{curl -s -m 8 -H "Authorization: token $GITHUB_TOKEN" -H "User-Agent: TeacherOS" "https://api.github.com/repos/$GITHUB_REPO/contents/database.json?ref=db-storage"};
+        my $info_res = `$info_cmd`;
+        my $info_data = eval { decode_json($info_res) };
+        my $sha = $info_data && $info_data->{sha} ? $info_data->{sha} : "";
+
+        my $payload_hash = {
+            message => "chore(db): auto sync cloud database",
+            content => $b64,
+            branch  => "db-storage"
         };
-        exit 0;
-    }
+        $payload_hash->{sha} = $sha if $sha;
+        my $commit_payload = eval { encode_json($payload_hash) };
+        return unless $commit_payload;
+
+        my $tmp = "/tmp/gh_db_commit_$$.json";
+        if (open my $tfh, ">:raw", $tmp) {
+            print $tfh $commit_payload;
+            close $tfh;
+            my $put_cmd = qq{(curl -s -m 15 -X PUT "https://api.github.com/repos/$GITHUB_REPO/contents/database.json" -H "Authorization: token $GITHUB_TOKEN" -H "User-Agent: TeacherOS" -H "Content-Type: application/json" --data-binary \@$tmp; rm -f $tmp) >/dev/null 2>&1 &};
+            system($put_cmd);
+        }
+    };
 }
 
 sub load_db {
@@ -648,8 +655,30 @@ sub handle_teacher_menu {
     my $teacher = $db->{teachers}->{$cid};
     $teacher->{classrooms} //= [];
 
-    # Prune any deleted or stale classrooms
-    my @valid_classes = grep { $_->{roomKey} && $db->{classrooms}->{$_->{roomKey}} } @{ $teacher->{classrooms} || [] };
+    # Auto-sync students between classrooms and students table
+    for my $sid (keys %{ $db->{students} || {} }) {
+        my $st = $db->{students}->{$sid};
+        if ($st && $st->{classrooms}) {
+            for my $crk (@{ $st->{classrooms} }) {
+                if ($db->{classrooms}->{$crk}) {
+                    $db->{classrooms}->{$crk}->{students} //= [];
+                    unless (grep { "$_" eq "$sid" } @{ $db->{classrooms}->{$crk}->{students} }) {
+                        push @{ $db->{classrooms}->{$crk}->{students} }, "$sid";
+                    }
+                }
+            }
+        }
+    }
+
+    my %seen_keys;
+    my @valid_classes;
+    for my $c (@{ $teacher->{classrooms} || [] }) {
+        my $rk = $c->{roomKey} || "";
+        if ($rk && $db->{classrooms}->{$rk} && !$seen_keys{$rk}++) {
+            $c->{name} = $db->{classrooms}->{$rk}->{name} || $c->{name};
+            push @valid_classes, $c;
+        }
+    }
     my $is_admin_user = is_admin($chat_id, $user && $user->{username});
 
     # Re-hydrate classrooms belonging specifically to this teacher or if admin
@@ -659,14 +688,11 @@ sub handle_teacher_menu {
         my $is_owner = ($c->{teacher_id} && ("$c->{teacher_id}" eq $cid)) ||
                        ($c->{teacher_username} && $uName && lc($c->{teacher_username}) eq lc($uName)) ||
                        $is_admin_user;
-        if ($is_owner) {
-            my $already = grep { ($_->{roomKey} || "") eq $rk } @valid_classes;
-            if (!$already) {
-                push @valid_classes, {
-                    roomKey => $rk,
-                    name    => $c->{name} || "Sinf $rk"
-                };
-            }
+        if ($is_owner && !$seen_keys{$rk}++) {
+            push @valid_classes, {
+                roomKey => $rk,
+                name    => $c->{name} || "Sinf $rk"
+            };
         }
     }
     $teacher->{classrooms} = \@valid_classes;
@@ -694,13 +720,29 @@ sub show_teacher_classes {
     my $teacher = $db->{teachers}->{$cid};
     $teacher->{classrooms} //= [];
 
+    # Auto-sync students between classrooms and students table
+    for my $sid (keys %{ $db->{students} || {} }) {
+        my $st = $db->{students}->{$sid};
+        if ($st && $st->{classrooms}) {
+            for my $crk (@{ $st->{classrooms} }) {
+                if ($db->{classrooms}->{$crk}) {
+                    $db->{classrooms}->{$crk}->{students} //= [];
+                    unless (grep { "$_" eq "$sid" } @{ $db->{classrooms}->{$crk}->{students} }) {
+                        push @{ $db->{classrooms}->{$crk}->{students} }, "$sid";
+                    }
+                }
+            }
+        }
+    }
+
     my $is_admin_user = is_admin($chat_id, $user && $user->{username});
 
-    # Prune any deleted classrooms
+    # Prune and deduplicate classrooms
+    my %seen_keys;
     my @valid_classes;
     for my $c (@{ $teacher->{classrooms} || [] }) {
         my $rk = $c->{roomKey} || "";
-        if ($rk && $db->{classrooms}->{$rk}) {
+        if ($rk && $db->{classrooms}->{$rk} && !$seen_keys{$rk}++) {
             $c->{name} = $db->{classrooms}->{$rk}->{name} || $c->{name};
             push @valid_classes, $c;
         }
@@ -711,14 +753,11 @@ sub show_teacher_classes {
         my $is_owner = ($c->{teacher_id} && ("$c->{teacher_id}" eq $cid)) ||
                        ($c->{teacher_username} && $uName && lc($c->{teacher_username}) eq lc($uName)) ||
                        $is_admin_user;
-        if ($is_owner) {
-            my $already = grep { ($_->{roomKey} || "") eq $rk } @valid_classes;
-            if (!$already) {
-                push @valid_classes, {
-                    roomKey => $rk,
-                    name    => $c->{name} || "Sinf $rk"
-                };
-            }
+        if ($is_owner && !$seen_keys{$rk}++) {
+            push @valid_classes, {
+                roomKey => $rk,
+                name    => $c->{name} || "Sinf $rk"
+            };
         }
     }
     $teacher->{classrooms} = \@valid_classes;
@@ -764,6 +803,17 @@ sub show_classroom_details {
     if ($c->{teacher_id} && "$c->{teacher_id}" ne "$chat_id" && !is_admin($chat_id, $uName)) {
         send_msg($chat_id, "⛔ <b>Ruxsat etilmagan!</b>\n\nUshbu sinf boshqa ustozga tegishli. Siz faqat o'z hisobingizga biriktirilgan sinflarni boshqara olasiz.");
         return;
+    }
+
+    # Auto-sync enrolled students from students table
+    for my $sid (keys %{ $db->{students} || {} }) {
+        my $st = $db->{students}->{$sid};
+        if ($st && $st->{classrooms} && grep { $_ eq $rk } @{ $st->{classrooms} }) {
+            $c->{students} //= [];
+            unless (grep { "$_" eq "$sid" } @{ $c->{students} }) {
+                push @{ $c->{students} }, "$sid";
+            }
+        }
     }
 
     my $st_count = scalar @{ $c->{students} || [] };
