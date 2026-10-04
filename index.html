@@ -6323,8 +6323,24 @@ Return ONLY valid JSON.`;
       let sentCount = 0;
       let sentViaServer = false;
 
+      // Ensure studentIds is fresh from currentClassroom or fetched from classroom API
+      let studentIds = (currentClassroom.enrolledStudents || []).map(s => (typeof s === 'object' ? (s.id || s.chat_id) : s)).filter(Boolean);
+      if (studentIds.length === 0) {
+        try {
+          const cres = await fetch(`/api/classroom?key=${rk}`);
+          if (cres.ok) {
+            const cdata = await cres.json();
+            if (cdata.ok && cdata.students && cdata.students.length > 0) {
+              studentIds = cdata.students;
+              currentClassroom.enrolledStudents = (cdata.student_details && cdata.student_details.length > 0)
+                ? cdata.student_details
+                : cdata.students.map(sid => ({ id: sid, name: "O'quvchi (" + sid + ")" }));
+            }
+          }
+        } catch(e) {}
+      }
+
       // Method 1: Send via Server API
-      const studentIds = (currentClassroom.enrolledStudents || []).map(s => (typeof s === 'object' ? (s.id || s.chat_id) : s)).filter(Boolean);
       try {
         const res = await fetch("/api/assign-homework", {
           method: "POST",
@@ -6343,8 +6359,8 @@ Return ONLY valid JSON.`;
         if (res.ok) {
           const data = await res.json();
           if (data.ok) {
-            sentCount = data.sent_count;
-            if (sentCount > 0 || studentIds.length === 0) {
+            sentCount = data.sent_count || 0;
+            if (sentCount > 0) {
               sentViaServer = true;
             }
           }

@@ -468,12 +468,22 @@ while (my $client = $server->accept()) {
         }
 
         if ($c) {
+            $c->{students} //= [];
+            my %st_set = map { "$_" => 1 } @{ $c->{students} };
+            for my $sid (keys %{ $db->{students} || {} }) {
+                my $st = $db->{students}->{$sid};
+                if ($st && $st->{classrooms} && grep { uc($_) eq $rk } @{ $st->{classrooms} }) {
+                    unless ($st_set{"$sid"}++) {
+                        push @{ $c->{students} }, "$sid";
+                    }
+                }
+            }
             # Merge any enrolled students passed from client
             if ($req->{classroomData} && $req->{classroomData}->{enrolledStudents} && ref($req->{classroomData}->{enrolledStudents}) eq 'ARRAY') {
                 for my $st (@{ $req->{classroomData}->{enrolledStudents} }) {
                     my $st_id = ref($st) eq 'HASH' ? ($st->{id} || $st->{chat_id}) : $st;
-                    if ($st_id && !grep { $_ eq $st_id } @{ $c->{students} || [] }) {
-                        push @{ $c->{students} }, $st_id;
+                    if ($st_id && !$st_set{"$st_id"}++) {
+                        push @{ $c->{students} }, "$st_id";
                         my $sname = (ref($st) eq 'HASH' && $st->{name}) ? $st->{name} : "O'quvchi ($st_id)";
                         $db->{students}->{$st_id} //= { name => $sname, classrooms => [ $rk ] };
                     }
@@ -481,8 +491,8 @@ while (my $client = $server->accept()) {
             }
             if ($req->{students} && ref($req->{students}) eq 'ARRAY') {
                 for my $st_id (@{ $req->{students} }) {
-                    if ($st_id && !grep { $_ eq $st_id } @{ $c->{students} || [] }) {
-                        push @{ $c->{students} }, $st_id;
+                    if ($st_id && !$st_set{"$st_id"}++) {
+                        push @{ $c->{students} }, "$st_id";
                         $db->{students}->{$st_id} //= { name => "O'quvchi ($st_id)", classrooms => [ $rk ] };
                     }
                 }
