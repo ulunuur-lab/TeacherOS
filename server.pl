@@ -32,12 +32,24 @@ if (-f $bot_script) {
     }
 }
 
-# Auto-configure Telegram Webhook to Render
-if ($PUBLIC_URL =~ /^https?:\/\//) {
+# Auto-configure Telegram Webhook to Render with self-healing heartbeat
+our $LAST_WEBHOOK_CHECK_TIME = 0;
+sub ensure_telegram_webhook {
+    return unless $PUBLIC_URL && $PUBLIC_URL =~ /^https?:\/\//;
+    my $now = time();
+    return if ($now - $LAST_WEBHOOK_CHECK_TIME) < 60;
+    $LAST_WEBHOOK_CHECK_TIME = $now;
+
     my $wh_target = "$PUBLIC_URL/api/telegram-webhook";
-    my $wh_res = `curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/setWebhook?url=$wh_target"`;
-    print "Telegram Webhook configuration ($wh_target): $wh_res\n";
+    my $info_res = `curl -s -m 5 "https://api.telegram.org/bot$BOT_TOKEN/getWebhookInfo"`;
+    my $info = eval { decode_json($info_res) };
+    if (!$info || !$info->{result} || ($info->{result}->{url} || "") ne $wh_target) {
+        my $set_res = `curl -s -m 8 -X POST "https://api.telegram.org/bot$BOT_TOKEN/setWebhook?url=$wh_target"`;
+        print "Telegram Webhook auto-restored ($wh_target): $set_res\n";
+    }
 }
+
+ensure_telegram_webhook();
 
 sub read_db {
     my $db;
@@ -112,6 +124,7 @@ sub send_telegram_dm {
 }
 
 while (my $client = $server->accept()) {
+    eval { ensure_telegram_webhook(); };
     my $req_line = <$client>;
     next unless $req_line;
 
