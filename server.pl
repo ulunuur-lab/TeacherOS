@@ -198,6 +198,19 @@ while (my $client = $server->accept()) {
         next;
     }
 
+    # API: Health check endpoint
+    if ($path eq "/api/health") {
+        my $res_body = '{"ok":true,"status":"healthy","time":' . time() . '}';
+        print $client "HTTP/1.1 200 OK\r\n";
+        print $client "Content-Type: application/json\r\n";
+        print $client "Content-Length: " . length($res_body) . "\r\n";
+        print $client "Access-Control-Allow-Origin: *\r\n";
+        print $client "Connection: close\r\n\r\n";
+        print $client $res_body;
+        close $client;
+        next;
+    }
+
     # API: Telegram Webhook receiver
     if ($method eq "POST" && $path eq "/api/telegram-webhook") {
         my $body = "";
