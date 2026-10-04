@@ -4042,7 +4042,10 @@
         ...res,
         slides,
         flashcards,
-        quiz
+        quiz,
+        hwMcqs: (res.hwMcqs && res.hwMcqs.length > 0) ? res.hwMcqs : quiz,
+        translations: (res.translations && res.translations.length > 0) ? res.translations : (res.transPool || []).slice(0, 6),
+        errors: (res.errors && res.errors.length > 0) ? res.errors : (res.errorsPool || []).slice(0, 5)
       };
     }
 
@@ -4216,6 +4219,11 @@
         return "narrative_tenses";
       }
 
+      // Future Forms & Plans (Highest priority before continuous or generic tenses)
+      if (lower.includes("future") || lower.includes("kelasi") || lower.includes("kelajak") || lower.includes("will") || lower.includes("going to") || lower.includes("plan") || lower.includes("arrangement")) {
+        return "future_simple";
+      }
+
       // 1. Past Perfect (Highest priority before single 'past' word)
       if (lower.includes("past perfect") || lower.includes("had + v3") || lower.includes("had v3") || lower.includes("had done") || lower.includes("before past") || lower.includes("o'tmishdan oldingi")) {
         return "past_perfect";
@@ -4250,10 +4258,6 @@
       // 8. Passive Voice
       if (lower.includes("passiv") || lower.includes("majhul") || lower.includes("am/is/are + v3") || lower.includes("was/were + v3") || lower.includes("is spoken") || lower.includes("are made")) {
         return "passive_voice";
-      }
-      // 9. Future Forms
-      if (lower.includes("future") || lower.includes("kelasi") || lower.includes("kelajak") || lower.includes("will") || lower.includes("going to")) {
-        return "future_simple";
       }
       // 10. Past Simple (only when not caught by past perfect, past continuous, etc.)
       if (lower.includes("past simple") || lower.includes("irregular") || lower.includes("v2") || lower.includes("yesterday") || lower === "past" || lower.startsWith("past ") || lower.includes("o'tgan oddiy")) {
@@ -4578,7 +4582,8 @@
                 const as = data.active_assignment;
                 currentClassroom.topic = as.topic || currentClassroom.topic;
                 currentClassroom.level = as.level || currentClassroom.level;
-                if (as.classroomData) {
+                currentClassroom.deadline = as.deadline || currentClassroom.deadline;
+                if (as.classroomData && as.classroomData.slides && as.classroomData.slides.length > 0) {
                   currentClassroom = { ...currentClassroom, ...as.classroomData };
                   roomLoadedFromUrl = true;
                 } else if (as.roomHash) {
@@ -4591,12 +4596,30 @@
                     }
                   } catch(e) {}
                 }
+
+                // Robust fallback: If classroomData or roomHash did not supply full curriculum, compile dynamically right now!
+                if (!currentClassroom.slides || currentClassroom.slides.length === 0 || !currentClassroom.hwMcqs || currentClassroom.hwMcqs.length === 0) {
+                  const compiled = compileDynamicCurriculum(currentClassroom.topic, currentClassroom.level);
+                  currentClassroom = {
+                    ...compiled,
+                    ...currentClassroom,
+                    slides: (currentClassroom.slides && currentClassroom.slides.length > 0) ? currentClassroom.slides : compiled.slides,
+                    rules: (currentClassroom.rules && currentClassroom.rules.length > 0) ? currentClassroom.rules : compiled.rules,
+                    flashcards: (currentClassroom.flashcards && currentClassroom.flashcards.length > 0) ? currentClassroom.flashcards : compiled.flashcards,
+                    quiz: (currentClassroom.quiz && currentClassroom.quiz.length > 0) ? currentClassroom.quiz : compiled.quiz,
+                    hwMcqs: (currentClassroom.hwMcqs && currentClassroom.hwMcqs.length > 0) ? currentClassroom.hwMcqs : compiled.quiz,
+                    translations: (currentClassroom.translations && currentClassroom.translations.length > 0) ? currentClassroom.translations : (compiled.transPool || []).slice(0, 6),
+                    errors: (currentClassroom.errors && currentClassroom.errors.length > 0) ? currentClassroom.errors : (compiled.errorsPool || []).slice(0, 5)
+                  };
+                  roomLoadedFromUrl = true;
+                }
               }
             }
           }
         } catch(e) {}
 
         if (isStudentRole) {
+          ensureAllHomeworkSectionsPopulated(currentClassroom);
           document.getElementById("gate-student-key").value = currentClassroom.roomKey || rk;
           document.getElementById("hw-student-fullname").value = activeStudentName;
           document.getElementById("gate-student-name").value = activeStudentName;
@@ -5914,27 +5937,13 @@ Return ONLY valid JSON.`;
         currentClassroom.errors = synthesizeAuthenticHwItems(topic, hwCat, 'errors', pack.errorsPool || pack.errors || [], errCount);
         currentClassroom.hwMcqs = synthesizeAuthenticHwItems(topic, hwCat, 'mcqs', pack.quizPool || pack.quiz || [], mcqCount);
 
-        if (hwCat === "future_simple") {
-          currentClassroom.blanks = [
-            { s: `Look at those dark clouds! It ______ (rain).`, a: "is going to rain" },
-            { s: `Don't worry about the dishes, I ______ (wash) them for you!`, a: "will wash" },
-            { s: `We have bought the flight tickets. We ______ (fly) to Istanbul next Monday.`, a: "are going to fly" },
-            { s: `I think our team ______ (win) the championship this season.`, a: "will win" },
-            { s: `What are your plans for summer? — I ______ (visit) my grandparents in Samarkand.`, a: "am going to visit" }
-          ].slice(0, blanksCount);
-          currentClassroom.essayPrompt = isEssayOn
-            ? `'${topic}' qoidalaridan kamida 4 ta 'will' va kamida 4 ta 'be going to' ishlatgan holda, 'Mening kelgusi 5 yillik maqsadlarim va hayotiy rejalarim' mavzusida 8-10 gapdan iborat insho yozing.`
-            : "";
-          currentClassroom.reorderItems = isReorderOn ? [
-            { words: ["Look", "at", "clouds,", "it", "is", "going", "to", "rain!"], correct: "Look at clouds, it is going to rain!" },
-            { words: ["I", "will", "help", "you", "with", "that", "heavy", "bag."], correct: "I will help you with that heavy bag." },
-            { words: ["We", "are", "going", "to", "buy", "a", "new", "car."], correct: "We are going to buy a new car." }
-          ] : [];
-        } else {
-          currentClassroom.blanks = (pack.blanks || []).slice(0, blanksCount);
-          currentClassroom.essayPrompt = isEssayOn ? (pack.essayPrompt || `'${topic}' qoidasidan foydalangan holda 8-10 gapdan iborat shaxsiy insho yozing.`) : "";
-          currentClassroom.reorderItems = isReorderOn ? (pack.reorderItems || []) : [];
-        }
+        currentClassroom.blanks = generateStandardBlanks(topic, hwCat).slice(0, blanksCount);
+        currentClassroom.essayPrompt = isEssayOn
+          ? (hwCat === "future_simple"
+              ? `'${topic}' qoidalaridan kamida 4 ta 'will' va kamida 4 ta 'be going to' ishlatgan holda, 'Mening kelgusi 5 yillik maqsadlarim va hayotiy rejalarim' mavzusida 8-10 gapdan iborat insho yozing.`
+              : `'${topic}' mavzusida o'rgangan qoidalaringizdan foydalanib, 8-10 ta gapdan iborat shaxsiy insho yozing.`)
+          : "";
+        currentClassroom.reorderItems = isReorderOn ? generateStandardReorders(topic, hwCat) : [];
 
         currentClassroom.questionsPrompt = isQuestionsOn
           ? `Ustozingizga '${topic}' mavzusida tushunmagan yoki qiziqtirgan kamida 2 ta savolingizni yozing.`
@@ -7176,8 +7185,242 @@ Return ONLY valid JSON.`;
       });
     }
 
+    /* --- Standard Homework Drill Data Generators (Guaranteed 100% Populated for All Topics) --- */
+    function generateStandardBlanks(topic, cat) {
+      const blanksDict = {
+        future_simple: [
+          { s: "Look at those dark clouds! It ______ (rain).", a: "is going to rain" },
+          { s: "Don't worry about the dishes, I ______ (wash) them for you!", a: "will wash" },
+          { s: "We have bought the flight tickets. We ______ (fly) to Istanbul next Monday.", a: "are going to fly" },
+          { s: "I think our team ______ (win) the championship this season.", a: "will win" },
+          { s: "What are your plans for summer? — I ______ (visit) my grandparents in Samarkand.", a: "am going to visit" }
+        ],
+        present_perfect: [
+          { s: "Have you ever ______ (visit) Bukhara in your life?", a: "visited" },
+          { s: "She has already ______ (finish) all her homework.", a: "finished" },
+          { s: "I have lived in this city ______ 2018. (for / since)", a: "since" },
+          { s: "We haven't ______ (receive) your message yet.", a: "received" },
+          { s: "He has ______ (lose) his passport and cannot find it.", a: "lost" }
+        ],
+        past_simple: [
+          { s: "Yesterday I ______ (go) to the library to study.", a: "went" },
+          { s: "She didn't ______ (see) the warning sign on the door.", a: "see" },
+          { s: "Where ______ you ______ (travel) last summer?", a: "did / travel" },
+          { s: "They ______ (buy) a new car two years ago.", a: "bought" },
+          { s: "We ______ (arrive) in Tashkent late last night.", a: "arrived" }
+        ],
+        past_continuous: [
+          { s: "I ______ (read) a book when the phone suddenly rang.", a: "was reading" },
+          { s: "What ______ you ______ (do) at 8 PM yesterday evening?", a: "were / doing" },
+          { s: "While he was cooking, the children ______ (play) outside.", a: "were playing" },
+          { s: "It ______ (rain) heavily when we left the office.", a: "was raining" },
+          { s: "They weren't ______ (listen) to the teacher's explanation.", a: "listening" }
+        ],
+        past_perfect: [
+          { s: "By the time the train arrived, we ______ (wait) for an hour.", a: "had waited" },
+          { s: "When I reached the station, the bus ______ (already / leave).", a: "had already left" },
+          { s: "She realized she ______ (forget) her keys at home.", a: "had forgotten" },
+          { s: "He had never ______ (see) snow before moving to Norway.", a: "seen" },
+          { s: "After they ______ (finish) dinner, they went for a walk.", a: "had finished" }
+        ],
+        conditionals: [
+          { s: "If I ______ (have) enough money, I would travel around the world.", a: "had" },
+          { s: "If it rains tomorrow, we ______ (stay) at home.", a: "will stay" },
+          { s: "If I were you, I ______ (take) that job opportunity.", a: "would take" },
+          { s: "If she had studied harder, she ______ (pass) the exam.", a: "would have passed" },
+          { s: "Ice melts if you ______ (heat) it.", a: "heat" }
+        ],
+        passive_voice: [
+          { s: "English ______ (speak) by over a billion people worldwide.", a: "is spoken" },
+          { s: "This historic bridge ______ (build) in 1910.", a: "was built" },
+          { s: "The new stadium will ______ (complete) next year.", a: "be completed" },
+          { s: "The report has already ______ (send) to the director.", a: "been sent" },
+          { s: "The museum was ______ (design) by a famous architect.", a: "designed" }
+        ],
+        used_to: [
+          { s: "I ______ (use) to play football every day after school.", a: "used" },
+          { s: "She didn't ______ (use) to drink coffee before university.", a: "use" },
+          { s: "Did you ______ (use) to live in this neighborhood?", a: "use" },
+          { s: "They ______ (use) to travel abroad every summer.", a: "used" },
+          { s: "He is not ______ (use) to waking up early in the morning.", a: "used" }
+        ],
+        present_continuous: [
+          { s: "Please be quiet, the baby ______ (sleep) in the next room.", a: "is sleeping" },
+          { s: "Why ______ you ______ (look) at me like that?", a: "are / looking" },
+          { s: "They ______ (build) a new modern school on our street.", a: "are building" },
+          { s: "Look outside! It ______ (snow) heavily right now!", a: "is snowing" },
+          { s: "We are not ______ (work) on this project today.", a: "working" }
+        ],
+        present_simple: [
+          { s: "The sun ______ (rise) in the east and sets in the west.", a: "rises" },
+          { s: "My father ______ (not / drink) coffee in the evening.", a: "does not drink" },
+          { s: "How often ______ you ______ (exercise) each week?", a: "do / exercise" },
+          { s: "She ______ (speak) four languages fluently.", a: "speaks" },
+          { s: "Water ______ (boil) at 100 degrees Celsius.", a: "boils" }
+        ],
+        business_english: [
+          { s: "The startup is planning to ______ (raise) $2 million in seed funding.", a: "raise" },
+          { s: "We need to sign a non-disclosure ______ (agree) before discussions.", a: "agreement" },
+          { s: "The investors conducted thorough due ______ (diligent) on the company.", a: "diligence" },
+          { s: "Our quarterly revenue has ______ (increase) by 25 percent.", a: "increased" },
+          { s: "Can you send the term ______ (sheet) by Friday afternoon?", a: "sheet" }
+        ],
+        phrasal_verbs_idioms: [
+          { s: "Don't ever ______ (give up / call off) on your dreams.", a: "give up" },
+          { s: "Our car ______ (broke down / turned down) on the way to the airport.", a: "broke down" },
+          { s: "We have run ______ of milk, can you buy some? (out / off)", a: "out" },
+          { s: "The meeting was called ______ due to bad weather. (off / on)", a: "off" },
+          { s: "I feel a bit under the ______ today. (weather / sky)", a: "weather" }
+        ]
+      };
+
+      const resolvedCat = cat || getTopicCategory(topic);
+      if (blanksDict[resolvedCat]) return blanksDict[resolvedCat];
+
+      return [
+        { s: `The teacher explained the core structure of '${topic}' ______ (clear).`, a: "clearly" },
+        { s: `Students should ______ (practice) '${topic}' in daily conversations.`, a: "practice" },
+        { s: `Correct sentence structure in '${topic}' requires careful ______ (attention).`, a: "attention" },
+        { s: `We will ______ (review) all key examples of '${topic}' next lesson.`, a: "review" },
+        { s: `Active repetition helps you ______ (master) this essential concept.`, a: "master" }
+      ];
+    }
+
+    function generateStandardReorders(topic, cat) {
+      const reordersDict = {
+        future_simple: [
+          { words: ["Look", "at", "the", "clouds,", "it", "is", "going", "to", "rain!"], correct: "Look at the clouds, it is going to rain!" },
+          { words: ["I", "will", "help", "you", "with", "that", "heavy", "bag."], correct: "I will help you with that heavy bag." },
+          { words: ["We", "are", "going", "to", "buy", "a", "new", "car."], correct: "We are going to buy a new car." }
+        ],
+        present_perfect: [
+          { words: ["Have", "you", "ever", "visited", "Samarkand", "before?"], correct: "Have you ever visited Samarkand before?" },
+          { words: ["She", "has", "already", "completed", "the", "project."], correct: "She has already completed the project." },
+          { words: ["I", "have", "lived", "here", "for", "ten", "years."], correct: "I have lived here for ten years." }
+        ],
+        past_simple: [
+          { words: ["They", "went", "to", "London", "last", "summer."], correct: "They went to London last summer." },
+          { words: ["She", "did", "not", "call", "me", "yesterday."], correct: "She did not call me yesterday." },
+          { words: ["Where", "did", "you", "buy", "this", "book?"], correct: "Where did you buy this book?" }
+        ],
+        past_continuous: [
+          { words: ["I", "was", "reading", "when", "he", "knocked", "at", "the", "door."], correct: "I was reading when he knocked at the door." },
+          { words: ["What", "were", "you", "doing", "yesterday", "at", "eight?"], correct: "What were you doing yesterday at eight?" },
+          { words: ["It", "was", "raining", "hard", "all", "morning."], correct: "It was raining hard all morning." }
+        ],
+        past_perfect: [
+          { words: ["The", "train", "had", "already", "left", "the", "station."], correct: "The train had already left the station." },
+          { words: ["She", "had", "never", "seen", "such", "beauty", "before."], correct: "She had never seen such beauty before." },
+          { words: ["After", "he", "had", "finished,", "we", "went", "home."], correct: "After he had finished, we went home." }
+        ],
+        conditionals: [
+          { words: ["If", "I", "were", "you,", "I", "would", "go", "there."], correct: "If I were you, I would go there." },
+          { words: ["If", "it", "rains,", "we", "will", "stay", "inside."], correct: "If it rains, we will stay inside." },
+          { words: ["What", "would", "you", "do", "in", "this", "situation?"], correct: "What would you do in this situation?" }
+        ],
+        passive_voice: [
+          { words: ["English", "is", "spoken", "all", "around", "the", "world."], correct: "English is spoken all around the world." },
+          { words: ["The", "letter", "was", "sent", "two", "days", "ago."], correct: "The letter was sent two days ago." },
+          { words: ["A", "new", "hospital", "will", "be", "built", "here."], correct: "A new hospital will be built here." }
+        ],
+        used_to: [
+          { words: ["I", "used", "to", "play", "football", "every", "single", "day."], correct: "I used to play football every single day." },
+          { words: ["She", "didn't", "use", "to", "like", "spicy", "food."], correct: "She didn't use to like spicy food." },
+          { words: ["Did", "you", "use", "to", "live", "in", "this", "house?"], correct: "Did you use to live in this house?" }
+        ],
+        present_continuous: [
+          { words: ["The", "children", "are", "playing", "happily", "in", "the", "garden."], correct: "The children are playing happily in the garden." },
+          { words: ["She", "is", "currently", "studying", "for", "her", "IELTS", "exam."], correct: "She is currently studying for her IELTS exam." },
+          { words: ["Why", "are", "you", "waiting", "here", "in", "the", "cold?"], correct: "Why are you waiting here in the cold?" }
+        ],
+        present_simple: [
+          { words: ["She", "always", "wakes", "up", "early", "in", "the", "morning."], correct: "She always wakes up early in the morning." },
+          { words: ["Do", "you", "read", "books", "before", "going", "to", "bed?"], correct: "Do you read books before going to bed?" },
+          { words: ["My", "brother", "works", "at", "an", "international", "company."], correct: "My brother works at an international company." }
+        ],
+        business_english: [
+          { words: ["The", "founders", "pitched", "their", "idea", "to", "top", "investors."], correct: "The founders pitched their idea to top investors." },
+          { words: ["We", "scheduled", "a", "negotiation", "meeting", "for", "tomorrow."], correct: "We scheduled a negotiation meeting for tomorrow." },
+          { words: ["Our", "company", "expanded", "into", "three", "new", "markets."], correct: "Our company expanded into three new markets." }
+        ],
+        phrasal_verbs_idioms: [
+          { words: ["Never", "give", "up", "on", "your", "biggest", "dreams."], correct: "Never give up on your biggest dreams." },
+          { words: ["The", "exam", "was", "a", "piece", "of", "cake."], correct: "The exam was a piece of cake." },
+          { words: ["Please", "turn", "off", "the", "lights", "before", "leaving."], correct: "Please turn off the lights before leaving." }
+        ]
+      };
+
+      const resolvedCat = cat || getTopicCategory(topic);
+      if (reordersDict[resolvedCat]) return reordersDict[resolvedCat];
+
+      return [
+        { words: ["Practice", "and", "repetition", "lead", "to", "true", "mastery."], correct: "Practice and repetition lead to true mastery." },
+        { words: ["The", "teacher", "explained", "the", "lesson", "very", "clearly."], correct: "The teacher explained the lesson very clearly." },
+        { words: ["Always", "check", "your", "grammar", "before", "submitting."], correct: "Always check your grammar before submitting." }
+      ];
+    }
+
+    function ensureAllHomeworkSectionsPopulated(room) {
+      if (!room) return;
+      const topic = room.topic || "English Grammar";
+      const level = room.level || "B1";
+      const cat = getTopicCategory(topic);
+
+      if (!room.slides || room.slides.length === 0 || !room.quiz || room.quiz.length === 0 || !room.rules || room.rules.length === 0) {
+        const compiled = compileDynamicCurriculum(topic, level);
+        if (!room.slides || room.slides.length === 0) room.slides = compiled.slides;
+        if (!room.rules || room.rules.length === 0) room.rules = compiled.rules;
+        if (!room.flashcards || room.flashcards.length === 0) room.flashcards = compiled.flashcards;
+        if (!room.quiz || room.quiz.length === 0) room.quiz = compiled.quiz;
+        if (!room.transPool || room.transPool.length === 0) room.transPool = compiled.transPool;
+        if (!room.errorsPool || room.errorsPool.length === 0) room.errorsPool = compiled.errorsPool;
+      }
+
+      // 1. MCQs:
+      if (!room.hwMcqs || room.hwMcqs.length === 0) {
+        room.hwMcqs = (room.quiz && room.quiz.length > 0)
+          ? room.quiz.slice(0, 6)
+          : (compileDynamicCurriculum(topic, level).quiz || []).slice(0, 6);
+      }
+
+      // 2. Translations:
+      if (!room.translations || room.translations.length === 0) {
+        const pool = room.transPool || (masterCurriculums[cat] ? masterCurriculums[cat].transPool : null) || (compileDynamicCurriculum(topic, level).transPool || []);
+        room.translations = pool.slice(0, 6);
+      }
+
+      // 3. Errors:
+      if (!room.errors || room.errors.length === 0) {
+        const pool = room.errorsPool || (masterCurriculums[cat] ? masterCurriculums[cat].errorsPool : null) || (compileDynamicCurriculum(topic, level).errorsPool || []);
+        room.errors = pool.slice(0, 5);
+      }
+
+      // 4. Blanks:
+      if (!room.blanks || room.blanks.length === 0) {
+        room.blanks = generateStandardBlanks(topic, cat);
+      }
+
+      // 5. Essay:
+      if (!room.essayPrompt) {
+        room.essayPrompt = (cat === "future_simple")
+          ? `'${topic}' qoidalaridan kamida 4 ta 'will' va kamida 4 ta 'be going to' ishlatgan holda, 'Mening kelgusi 5 yillik maqsadlarim va hayotiy rejalarim' mavzusida 8-10 gapdan iborat insho yozing.`
+          : `'${topic}' mavzusida o'rgangan qoidalaringizdan foydalanib, 8-10 ta gapdan iborat shaxsiy insho yozing.`;
+      }
+
+      // 6. Teacher Questions:
+      if (!room.questionsPrompt) {
+        room.questionsPrompt = `Ustozingizga '${topic}' mavzusida tushunmagan yoki qiziqtirgan kamida 2 ta savolingizni yozing:`;
+      }
+
+      // 7. Reorders:
+      if (!room.reorderItems || room.reorderItems.length === 0) {
+        room.reorderItems = generateStandardReorders(topic, cat);
+      }
+    }
+
     /* --- Student Portal Rendering --- */
     function renderStudentPortal() {
+      ensureAllHomeworkSectionsPopulated(currentClassroom);
       document.getElementById("st-name-display").textContent = activeStudentName || "O'quvchi";
       document.getElementById("st-avatar").textContent = (activeStudentName || "O")[0].toUpperCase();
       document.getElementById("st-class-display").textContent = `${currentClassroom.teacherName} • ${currentClassroom.level}`;
@@ -7387,7 +7630,9 @@ Return ONLY valid JSON.`;
     }
 
     function renderHomework() {
-      // 0. Update Badges
+      // 0. Update Badges & Ensure all sections populated
+      ensureAllHomeworkSectionsPopulated(currentClassroom);
+
       const tBadge = document.getElementById("st-hw-topic-badge");
       if (tBadge) tBadge.textContent = currentClassroom.topic || "Present Perfect";
       const dBadge = document.getElementById("st-hw-deadline-badge");
@@ -7396,7 +7641,9 @@ Return ONLY valid JSON.`;
       // 1. MCQs Section
       const mcqContainer = document.getElementById("hw-mcqs-container");
       if (mcqContainer) {
-        const mcqs = currentClassroom.hwMcqs || [];
+        const mcqs = (currentClassroom.hwMcqs && currentClassroom.hwMcqs.length > 0)
+          ? currentClassroom.hwMcqs
+          : (currentClassroom.quiz || []);
         if (mcqs.length === 0) {
           mcqContainer.innerHTML = `<div style="font-size: 0.85rem; color: #94a3b8; font-style: italic;">Ushbu bo'lim uchun testlar shakllantirilmagan.</div>`;
         } else {
@@ -7423,11 +7670,14 @@ Return ONLY valid JSON.`;
       const transContainer = document.getElementById("hw-trans-container");
       if (transContainer) {
         let transHtml = "";
-        (currentClassroom.translations || []).forEach((t, i) => {
+        const translations = (currentClassroom.translations && currentClassroom.translations.length > 0)
+          ? currentClassroom.translations
+          : (currentClassroom.transPool || []);
+        translations.forEach((t, i) => {
           transHtml += `
             <div style="margin-bottom: 1rem;">
               <div style="font-size: 0.9rem; font-weight: 600; color: #cbd5e1; margin-bottom: 4px;">
-                <b>${i + 1})</b> ${(t.uz || '').replace(/^\d+[\.\)]\s*/, '')} <span style="font-size: 0.75rem; color: #64748b;">(Maslahat: ${t.hint})</span>
+                <b>${i + 1})</b> ${(t.uz || '').replace(/^\d+[\.\)]\s*/, '')} <span style="font-size: 0.75rem; color: #64748b;">(Maslahat: ${t.hint || ''})</span>
               </div>
               <input type="text" class="form-control hw-trans-field" placeholder="Inglizcha tarjimasini yozing...">
             </div>
@@ -7440,7 +7690,10 @@ Return ONLY valid JSON.`;
       const errContainer = document.getElementById("hw-errors-container");
       if (errContainer) {
         let errHtml = "";
-        (currentClassroom.errors || []).forEach((err, i) => {
+        const errList = (currentClassroom.errors && currentClassroom.errors.length > 0)
+          ? currentClassroom.errors
+          : (currentClassroom.errorsPool || []);
+        errList.forEach((err, i) => {
           const cleanErr = (err || '').replace(/^❌\s*/, '').replace(/^["']|["']$/g, '');
           errHtml += `
             <div style="margin-bottom: 1rem;">
@@ -7457,23 +7710,22 @@ Return ONLY valid JSON.`;
       // 4. Fill in the Blanks Section
       const blanksContainer = document.getElementById("hw-blanks-container");
       if (blanksContainer) {
-        const blanks = currentClassroom.blanks || [];
-        if (blanks.length === 0) {
-          blanksContainer.innerHTML = `<div style="font-size: 0.85rem; color: #94a3b8; font-style: italic;">Ushbu bo'lim uchun topshiriq kiritilmagan.</div>`;
-        } else {
-          let blanksHtml = "";
-          blanks.forEach((b, i) => {
-            blanksHtml += `
-              <div style="margin-bottom: 1rem;">
-                <div style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 4px;">
-                  <b>${i + 1})</b> ${b.s}
-                </div>
-                <input type="text" class="form-control hw-blanks-field" placeholder="Nuqtalar o'rniga mos so'z yoki fe'lni yozing...">
+        const blanks = (currentClassroom.blanks && currentClassroom.blanks.length > 0)
+          ? currentClassroom.blanks
+          : generateStandardBlanks(currentClassroom.topic, getTopicCategory(currentClassroom.topic));
+        currentClassroom.blanks = blanks;
+        let blanksHtml = "";
+        blanks.forEach((b, i) => {
+          blanksHtml += `
+            <div style="margin-bottom: 1rem;">
+              <div style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 4px;">
+                <b>${i + 1})</b> ${b.s}
               </div>
-            `;
-          });
-          blanksContainer.innerHTML = blanksHtml;
-        }
+              <input type="text" class="form-control hw-blanks-field" placeholder="Nuqtalar o'rniga mos so'z yoki fe'lni yozing...">
+            </div>
+          `;
+        });
+        blanksContainer.innerHTML = blanksHtml;
       }
 
       // 5. Mini-Essay Section Prompt
@@ -7491,33 +7743,32 @@ Return ONLY valid JSON.`;
       // 7. Sentence Reordering Section (Interactive Click-to-Assemble Word Chips)
       const reorderContainer = document.getElementById("hw-reorder-container");
       if (reorderContainer) {
-        const reorders = currentClassroom.reorderItems || [];
-        if (reorders.length === 0) {
-          reorderContainer.innerHTML = `<div style="font-size: 0.85rem; color: #94a3b8; font-style: italic;">Ushbu bo'lim uchun topshiriq kiritilmagan.</div>`;
-        } else {
-          let reorderHtml = "";
-          reorders.forEach((item, idx) => {
-            reorderHtml += `
-              <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem;">
-                <div style="font-size: 0.85rem; font-weight: 700; color: #cbd5e1; margin-bottom: 8px;">
-                  ${idx + 1}-topshiriq: So'zlarni bosing va gap hosil qiling:
-                </div>
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;" id="hw-reorder-chips-${idx}">
-                  ${item.words.map(w => `
-                    <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.82rem;" onclick="addWordToReorder(${idx}, '${w.replace(/'/g, "\\'")}', this)">
-                      ${w}
-                    </button>
-                  `).join("")}
-                </div>
-                <div style="display: flex; gap: 6px; align-items: center;">
-                  <input type="text" class="form-control hw-reorder-field" id="hw-reorder-input-${idx}" placeholder="Hosil bo'lgan gap..." style="font-weight: 600; color: #6ee7b7;">
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="clearReorderField(${idx})">🔄 Tozalash</button>
-                </div>
+        const reorders = (currentClassroom.reorderItems && currentClassroom.reorderItems.length > 0)
+          ? currentClassroom.reorderItems
+          : generateStandardReorders(currentClassroom.topic, getTopicCategory(currentClassroom.topic));
+        currentClassroom.reorderItems = reorders;
+        let reorderHtml = "";
+        reorders.forEach((item, idx) => {
+          reorderHtml += `
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem;">
+              <div style="font-size: 0.85rem; font-weight: 700; color: #cbd5e1; margin-bottom: 8px;">
+                ${idx + 1}-topshiriq: So'zlarni bosing va gap hosil qiling:
               </div>
-            `;
-          });
-          reorderContainer.innerHTML = reorderHtml;
-        }
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;" id="hw-reorder-chips-${idx}">
+                ${(item.words || []).map(w => `
+                  <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.82rem;" onclick="addWordToReorder(${idx}, '${w.replace(/'/g, "\\'")}', this)">
+                    ${w}
+                  </button>
+                `).join("")}
+              </div>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="text" class="form-control hw-reorder-field" id="hw-reorder-input-${idx}" placeholder="Hosil bo'lgan gap..." style="font-weight: 600; color: #6ee7b7;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="clearReorderField(${idx})">🔄 Tozalash</button>
+              </div>
+            </div>
+          `;
+        });
+        reorderContainer.innerHTML = reorderHtml;
       }
     }
 
@@ -7564,7 +7815,9 @@ Return ONLY valid JSON.`;
       const teacherQ = document.getElementById("hw-teacher-q-textarea").value.trim();
       const reorderAnswers = Array.from(document.querySelectorAll(".hw-reorder-field")).map(i => i.value.trim());
 
-      const mcqs = currentClassroom.hwMcqs || [];
+      const mcqs = (currentClassroom.hwMcqs && currentClassroom.hwMcqs.length > 0)
+        ? currentClassroom.hwMcqs
+        : (currentClassroom.quiz || []);
       const mcqDoneCount = Object.keys(studentHwMcqAnswers).length;
 
       // Deep Grammar Audit & Scoring
@@ -7586,7 +7839,9 @@ Return ONLY valid JSON.`;
       }
 
       // Check Sentence Reordering
-      const reorderItems = currentClassroom.reorderItems || [];
+      const reorderItems = (currentClassroom.reorderItems && currentClassroom.reorderItems.length > 0)
+        ? currentClassroom.reorderItems
+        : generateStandardReorders(currentClassroom.topic, getTopicCategory(currentClassroom.topic));
       if (reorderItems.length > 0) {
         let reorderCorrect = 0;
         reorderAnswers.forEach((ans, i) => {
