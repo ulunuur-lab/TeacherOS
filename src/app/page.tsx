@@ -51,7 +51,15 @@ import {
   Lightbulb,
   History,
   MoreHorizontal,
-  FileText
+  FileText,
+  Home,
+  User,
+  Users,
+  Settings,
+  LogOut,
+  Ban,
+  Calendar,
+  Flame
 } from "lucide-react";
 import {
   Curriculum,
@@ -67,6 +75,10 @@ import {
 } from "../lib/types";
 import { MASTER_CURRICULUMS, enrichCurriculumWithSections } from "../lib/curriculums";
 import VisualDiagram from "../components/VisualDiagram";
+import AuthModal, { AuthUser } from "../components/AuthModal";
+import ClassroomSelector from "../components/ClassroomSelector";
+import BaamboozleQuiz from "../components/BaamboozleQuiz";
+import HomeworkViewer from "../components/HomeworkViewer";
 import {
   compressCurriculumToHash,
   decompressCurriculumFromHash,
@@ -184,6 +196,57 @@ function BrandLogo({
 }
 
 export default function StitchTeacherOS() {
+  // 1. Persistent User Auth & Auto-Login Session
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  // 2. Classroom Workspace Mode ('classroom' | 'solo' | null)
+  const [workspaceMode, setWorkspaceMode] = useState<'classroom' | 'solo' | null>(null);
+  const [currentClassroom, setCurrentClassroom] = useState<{ id: string; name: string; students: number }>({
+    id: 'intermediate',
+    name: 'Intermediate',
+    students: 10
+  });
+
+  // 3. Studio Mode: 'lesson' | 'others_picker' | 'homework' | 'group_quiz' | 'level_check'
+  const [studioMode, setStudioMode] = useState<'lesson' | 'others_picker' | 'homework' | 'group_quiz' | 'level_check'>('lesson');
+
+  // 4. Interactive Group Quiz & Homework State
+  const [quizTeamsCount, setQuizTeamsCount] = useState<2 | 3>(2);
+  const [activeGroupQuizTopic, setActiveGroupQuizTopic] = useState<string | null>(null);
+  const [activeHomeworkTopic, setActiveHomeworkTopic] = useState<string | null>(null);
+  const [levelCheckTopics, setLevelCheckTopics] = useState<string[]>(['Present Simple', 'Past Simple']);
+
+  // Load persistent user auth & workspace on mount
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('teacheros_auth_user');
+      if (savedUser) {
+        setCurrentUser(JSON.parse(savedUser));
+      }
+      const savedMode = localStorage.getItem('teacheros_workspace_mode') as 'classroom' | 'solo' | null;
+      if (savedMode) {
+        setWorkspaceMode(savedMode);
+      }
+      const savedClass = localStorage.getItem('teacheros_classroom');
+      if (savedClass) {
+        setCurrentClassroom(JSON.parse(savedClass));
+      }
+    } catch (e) {
+      console.warn('Error reading saved session', e);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('teacheros_auth_user');
+    localStorage.removeItem('teacheros_workspace_mode');
+    setCurrentUser(null);
+    setWorkspaceMode(null);
+    showToast("Tizimdan chiqildi");
+  };
+
   // Core Prompt & Settings State
   const [topicInput, setTopicInput] = useState("");
   const [level, setLevel] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("B1");
@@ -200,11 +263,12 @@ export default function StitchTeacherOS() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isRightBarExpanded, setIsRightBarExpanded] = useState(false);
   const [lessonHistory, setLessonHistory] = useState<Array<{ topic: string; time: string }>>([
-    { topic: "Past Simple", time: "7h" },
-    { topic: "Present Simple", time: "23h" },
-    { topic: "Second Conditional", time: "1d" },
-    { topic: "Used to vs Would", time: "2d" },
-    { topic: "History of Sports", time: "3d" }
+    { topic: "Present Perfect", time: "8h" },
+    { topic: "Past continuous", time: "1d" },
+    { topic: "Past simple", time: "2d" },
+    { topic: "Present continuous", time: "3d" },
+    { topic: "Present simple", time: "4d" },
+    { topic: "To be", time: "5d" }
   ]);
 
   // Multimodal file upload state
@@ -1175,6 +1239,50 @@ export default function StitchTeacherOS() {
     }
   };
 
+  // 1. Auth Loading Gate
+  if (isAuthLoading) {
+    return (
+      <div className="w-full h-screen bg-[#0D0F14] flex flex-col items-center justify-center space-y-4 text-slate-100 stitch-grid select-none">
+        <Sparkles className="w-8 h-8 text-[#5B3DF5] animate-spin" />
+        <span className="text-slate-400 font-mono text-xs">TeacherOS yuklanmoqda...</span>
+      </div>
+    );
+  }
+
+  // 2. Persistent Login / Sign-up System Gate (Photo 3)
+  if (!currentUser) {
+    return (
+      <AuthModal
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          showToast(`Xush kelibsiz, ${user.username}!`);
+        }}
+      />
+    );
+  }
+
+  // 3. Workspace Selection Gate (Classroom vs Without Classroom - Photo 3)
+  if (!workspaceMode) {
+    return (
+      <ClassroomSelector
+        onSelectMode={(mode, classroomName, studentCount) => {
+          setWorkspaceMode(mode);
+          localStorage.setItem('teacheros_workspace_mode', mode);
+          if (mode === 'classroom' && classroomName) {
+            const classObj = {
+              id: classroomName.toLowerCase(),
+              name: classroomName,
+              students: studentCount || 10
+            };
+            setCurrentClassroom(classObj);
+            localStorage.setItem('teacheros_classroom', JSON.stringify(classObj));
+          }
+          showToast(mode === 'classroom' ? `Classroom: ${classroomName || 'Intermediate'} tanlandi` : "Yakkaxon rejim tanlandi");
+        }}
+      />
+    );
+  }
+
   return (
     <div className="w-full h-screen bg-[#0D0F14] text-slate-100 flex flex-col overflow-hidden font-sans select-none stitch-grid">
       {/* Toast Notification */}
@@ -1185,20 +1293,56 @@ export default function StitchTeacherOS() {
         </div>
       )}
 
+      {/* Interactive Baamboozle Group Quiz Modal */}
+      {activeGroupQuizTopic && (
+        <div className="fixed inset-0 z-50 bg-[#0D0F14]/95 backdrop-blur-xl flex items-center justify-center p-4">
+          <BaamboozleQuiz
+            topic={activeGroupQuizTopic}
+            teamsCount={quizTeamsCount}
+            onClose={() => setActiveGroupQuizTopic(null)}
+          />
+        </div>
+      )}
+
+      {/* Interactive Homework Generator & Viewer Modal */}
+      {activeHomeworkTopic && (
+        <div className="fixed inset-0 z-50 bg-[#0D0F14]/95 backdrop-blur-xl flex items-center justify-center p-4">
+          <HomeworkViewer
+            topic={activeHomeworkTopic}
+            onClose={() => setActiveHomeworkTopic(null)}
+          />
+        </div>
+      )}
+
       {/* TOP HEADER */}
-      {(curriculum || isGenerating) && !isFullscreen && (
+      {!isFullscreen && (
         <header className="relative h-14 border-b border-white/10 px-4 sm:px-6 flex items-center justify-between shrink-0 bg-[#0D0F14]/90 backdrop-blur-md z-30">
-          {/* Brand & Active Topic Title */}
+          {/* Brand & Under-Logo 3-Line Hamburger Menu Button (Photo 2) */}
           <div className="flex items-center space-x-3">
-            <div
-              onClick={() => {
-                setCurriculum(null);
-                setIsPromptCollapsed(false);
-              }}
-              className="flex items-center space-x-2 cursor-pointer group"
-              title="Yangi mavzu kiritish"
-            >
-              <BrandLogo isLight={false} />
+            <div className="flex flex-col items-start justify-center">
+              <div
+                onClick={() => {
+                  setCurriculum(null);
+                  setStudioMode('lesson');
+                  setIsPromptCollapsed(false);
+                }}
+                className="flex items-center space-x-2 cursor-pointer group"
+                title="Yangi mavzu kiritish"
+              >
+                <BrandLogo isLight={false} />
+              </div>
+
+              {/* Three lines placed on top of each other right under the logo */}
+              <button
+                type="button"
+                onClick={() => setIsHistoryOpen((prev) => !prev)}
+                className="mt-0.5 flex flex-col justify-center items-center w-6 h-4.5 rounded bg-white/10 hover:bg-white/25 border border-white/15 text-slate-200 hover:text-white transition-all cursor-pointer group shadow-sm"
+                title="Menyu & Tarix (☰)"
+              >
+                <div className="w-3.5 h-[2px] bg-slate-200 group-hover:bg-white rounded-full mb-[2px] transition-colors" />
+                <div className="w-3.5 h-[2px] bg-slate-200 group-hover:bg-white rounded-full mb-[2px] transition-colors" />
+                <div className="w-3.5 h-[2px] bg-slate-200 group-hover:bg-white rounded-full transition-colors" />
+              </button>
             </div>
 
             {/* History Toggle Button */}
@@ -1398,81 +1542,241 @@ export default function StitchTeacherOS() {
 
           {/* Right Header Actions */}
           <div className="flex items-center space-x-2 text-xs">
-            <button
-              onClick={toggleFullscreen}
-              className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1.5 font-bold transition-all"
-              title="To'liq doska rejimi (F)"
-            >
-              <Play className="w-3.5 h-3.5 fill-emerald-400" />
-              <span className="hidden sm:inline">Present</span>
-            </button>
+            {workspaceMode === 'classroom' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setWorkspaceMode(null);
+                  localStorage.removeItem('teacheros_workspace_mode');
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-xs font-bold flex items-center space-x-1.5 hover:bg-indigo-500/25 transition-all cursor-pointer"
+                title="Sinfxonani almashtirish"
+              >
+                <Users className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden md:inline">{currentClassroom.name}</span>
+                <span className="text-[10px] opacity-75">({currentClassroom.students})</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setWorkspaceMode(null);
+                  localStorage.removeItem('teacheros_workspace_mode');
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-xs font-bold flex items-center space-x-1.5 hover:bg-white/10 transition-all cursor-pointer"
+                title="Sinfxona rejimiga o'tish"
+              >
+                <Ban className="w-3.5 h-3.5 text-slate-400" />
+                <span className="hidden md:inline">Yakkaxon</span>
+              </button>
+            )}
 
-            <button
-              onClick={handleDownloadHtml}
-              className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-1 font-medium transition-all"
-              title="HTML Yuklab Olish"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Export</span>
-            </button>
+            {curriculum && (
+              <>
+                <button
+                  onClick={toggleFullscreen}
+                  className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1.5 font-bold transition-all"
+                  title="To'liq doska rejimi (F)"
+                >
+                  <Play className="w-3.5 h-3.5 fill-emerald-400" />
+                  <span className="hidden sm:inline">Present</span>
+                </button>
 
-            <button
-              onClick={handleShareLink}
-              className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-1 font-medium transition-all"
-              title="Havolani Nusxalash"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Share</span>
-            </button>
+                <button
+                  onClick={handleDownloadHtml}
+                  className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-1 font-medium transition-all"
+                  title="HTML Yuklab Olish"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Export</span>
+                </button>
 
-            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#5B3DF5] to-[#7C3AED] border border-white/20 flex items-center justify-center text-white font-black text-xs shadow-md">
-              U
+                <button
+                  onClick={handleShareLink}
+                  className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-1 font-medium transition-all"
+                  title="Havolani Nusxalash"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Share</span>
+                </button>
+              </>
+            )}
+
+            {/* User Pill */}
+            <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 font-medium">
+              <User className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="font-bold text-white truncate max-w-[90px]">{currentUser.username}</span>
+              <span className="text-[10px] text-slate-400 font-mono">({currentUser.age})</span>
             </div>
+
+            {/* Logout button */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-white/10 hover:border-red-500/30 transition-all flex items-center space-x-1 text-xs font-bold cursor-pointer"
+              title="Tizimdan chiqish"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Chiqish</span>
+            </button>
           </div>
         </header>
       )}
 
-      {/* HISTORY DRAWER MODAL (Opens only when user clicks Tarix) */}
+      {/* HISTORY & NAVIGATION DRAWER MODAL (Matching Photo 2 Handwritten Sketch) */}
       {isHistoryOpen && (
         <>
           <div
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs"
             onClick={() => setIsHistoryOpen(false)}
           />
-          <aside className="fixed left-0 top-14 bottom-0 z-50 w-72 bg-[#12141D]/98 border-r border-white/10 p-4 shadow-2xl backdrop-blur-2xl flex flex-col justify-between animate-fade-in">
-            <div className="space-y-3">
+          <aside className="fixed left-0 top-0 bottom-0 z-50 w-80 bg-[#12141D]/98 border-r border-white/10 p-5 shadow-2xl backdrop-blur-2xl flex flex-col justify-between animate-fade-in">
+            <div className="space-y-4">
+              {/* Drawer Top Header */}
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center space-x-2">
-                  <History className="w-4 h-4 text-indigo-400" />
-                  <span className="font-bold text-white text-xs tracking-wide">Darslar Tarixi</span>
+                  <BrandLogo isLight={false} className="h-7 max-w-[140px] object-contain" />
                 </div>
                 <button
                   onClick={() => setIsHistoryOpen(false)}
-                  className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer transition-colors"
+                  title="Yopish"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="space-y-1">
-                {lessonHistory.map((item, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setTopicInput(item.topic);
-                      handleGenerate(item.topic);
-                      setIsHistoryOpen(false);
-                    }}
-                    className="w-full px-3 py-2.5 rounded-xl hover:bg-white/5 text-left flex items-center justify-between group transition-all cursor-pointer"
-                  >
-                    <span className="text-xs font-medium text-slate-200 group-hover:text-white truncate max-w-[170px]">
-                      {item.topic}
-                    </span>
-                    <span className="text-[11px] font-mono text-slate-500 group-hover:text-indigo-400 font-semibold">
-                      {item.time}
-                    </span>
-                  </button>
-                ))}
+              {/* Classroom Context Badge */}
+              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-[#A5B4FC] flex items-center space-x-1.5">
+                    <Users className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>{workspaceMode === 'classroom' ? currentClassroom.name : 'Yakkaxon Rejim'}</span>
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
+                    {workspaceMode === 'classroom' ? `${currentClassroom.students} talaba` : 'Sinfsiz'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWorkspaceMode(null);
+                    localStorage.removeItem('teacheros_workspace_mode');
+                    setIsHistoryOpen(false);
+                  }}
+                  className="w-full text-left text-[11px] text-slate-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                >
+                  ⇄ Sinfxonani almashtirish
+                </button>
+              </div>
+
+              {/* Photo 2 Action Buttons: + New Lesson, Homework, Level, Jack Rock Quiz */}
+              <div className="space-y-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurriculum(null);
+                    setStudioMode('lesson');
+                    setTopicInput('');
+                    setIsPromptCollapsed(false);
+                    setIsHistoryOpen(false);
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-[#5B3DF5] to-[#7C3AED] text-white font-bold text-xs flex items-center space-x-2.5 shadow-lg shadow-[#5B3DF5]/30 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" />
+                  <span>+ New Lesson</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurriculum(null);
+                    setStudioMode('homework');
+                    setIsHistoryOpen(false);
+                  }}
+                  className="w-full px-3.5 py-2 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-slate-200 hover:text-emerald-300 border border-white/5 hover:border-emerald-500/30 text-xs font-bold flex items-center space-x-2.5 transition-all cursor-pointer"
+                >
+                  <Home className="w-4 h-4 text-emerald-400" />
+                  <span>🏠 Homework</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurriculum(null);
+                    setStudioMode('level_check');
+                    setIsHistoryOpen(false);
+                  }}
+                  className="w-full px-3.5 py-2 rounded-xl bg-white/5 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 border border-white/5 hover:border-amber-500/30 text-xs font-bold flex items-center space-x-2.5 transition-all cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 text-amber-400" />
+                  <span>📖 Level Check</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurriculum(null);
+                    setStudioMode('group_quiz');
+                    setIsHistoryOpen(false);
+                  }}
+                  className="w-full px-3.5 py-2 rounded-xl bg-white/5 hover:bg-indigo-500/20 text-slate-200 hover:text-indigo-300 border border-white/5 hover:border-indigo-500/30 text-xs font-bold flex items-center space-x-2.5 transition-all cursor-pointer"
+                >
+                  <Users className="w-4 h-4 text-indigo-400" />
+                  <span>👥 Jack Rock Quiz (Group)</span>
+                </button>
+              </div>
+
+              {/* Photo 2 History List Section */}
+              <div className="pt-2">
+                <div className="flex items-center space-x-2 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <History className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>↺ Tarix (Darslar ro'yxati)</span>
+                </div>
+
+                <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                  {lessonHistory.map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setTopicInput(item.topic);
+                        handleGenerate(item.topic);
+                        setIsHistoryOpen(false);
+                      }}
+                      className="w-full px-3 py-2 rounded-xl hover:bg-white/5 text-left flex items-center justify-between group transition-all cursor-pointer border border-transparent hover:border-white/5"
+                    >
+                      <span className="text-xs font-medium text-slate-200 group-hover:text-white truncate max-w-[180px]">
+                        {item.topic}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-500 group-hover:text-indigo-400 font-semibold">
+                        {item.time}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Profile & Settings Section */}
+            <div className="pt-3 border-t border-white/10 space-y-2">
+              <div className="flex items-center justify-between text-xs text-slate-300">
+                <div className="flex items-center space-x-2">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#5B3DF5] to-[#7C3AED] flex items-center justify-center font-bold text-white text-[11px]">
+                    {currentUser.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-bold text-white leading-none">{currentUser.username}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{currentUser.age} yosh • {currentUser.provider}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+                  title="Chiqish"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </aside>
@@ -1640,26 +1944,28 @@ export default function StitchTeacherOS() {
               isAnimatingUp ? "pointer-events-none" : "animate-fade-in"
             }`}
           >
-            {/* Minimalist Hero Branding */}
-            <div
-              className={`space-y-3 transition-all duration-400 ease-out ${
-                isAnimatingUp ? "opacity-0 -translate-y-8 scale-95 pointer-events-none" : "opacity-100 translate-y-0"
-              }`}
-            >
-              <div className="flex items-center justify-center space-x-3 mb-1">
-                <BrandLogo isLight={false} className="h-14 sm:h-16 max-w-[220px] object-contain" />
-                <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs sm:text-sm font-semibold text-slate-300 shadow-md">
-                  <Sparkles className="w-4 h-4 text-[#5B3DF5]" />
-                  <span>TeacherOS • Interaktiv Doska Studiyasi</span>
+            {/* Minimalist Hero Branding (ONLY shown in standard lesson mode) */}
+            {studioMode === 'lesson' && (
+              <div
+                className={`space-y-3 transition-all duration-400 ease-out ${
+                  isAnimatingUp ? "opacity-0 -translate-y-8 scale-95 pointer-events-none" : "opacity-100 translate-y-0"
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-3 mb-1">
+                  <BrandLogo isLight={false} className="h-14 sm:h-16 max-w-[220px] object-contain" />
+                  <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs sm:text-sm font-semibold text-slate-300 shadow-md">
+                    <Sparkles className="w-4 h-4 text-[#5B3DF5]" />
+                    <span>TeacherOS • Interaktiv Doska Studiyasi</span>
+                  </div>
                 </div>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+                  Darslikni sun'iy intellekt bilan yarating
+                </h1>
+                <p className="text-sm text-slate-400 max-w-md mx-auto">
+                  Mavzuni kiriting — Google Gemini AI 16:9 interaktiv doska, tezkor savollar, xato ovchisi va muloqot mashqlarini sintez qiladi.
+                </p>
               </div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-                Darslikni sun'iy intellekt bilan yarating
-              </h1>
-              <p className="text-sm text-slate-400 max-w-md mx-auto">
-                Mavzuni kiriting — Google Gemini AI 16:9 interaktiv doska, tezkor savollar, xato ovchisi va muloqot mashqlarini sintez qiladi.
-              </p>
-            </div>
+            )}
 
             {/* Hidden File Input */}
             <input
@@ -1671,31 +1977,232 @@ export default function StitchTeacherOS() {
               className="hidden"
             />
 
-            {/* The Two Topic Blocks: + Image and Others (Lighter, bolder, evident) */}
-            <div
-              className={`w-full max-w-md mx-auto grid grid-cols-2 gap-3 transition-all duration-300 ease-out ${
-                isAnimatingUp ? "opacity-0 -translate-y-4 scale-95 pointer-events-none" : "opacity-100 translate-y-0"
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="py-3 px-4 rounded-2xl bg-white/15 hover:bg-white/20 border-2 border-white/30 hover:border-indigo-400 text-white font-black text-sm sm:text-base flex items-center justify-center space-x-2.5 shadow-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+            {/* The Two Topic Blocks: + Image (Navy Blue) and Others (Navy Orange) - in lesson mode */}
+            {studioMode === 'lesson' && (
+              <div
+                className={`w-full max-w-md mx-auto grid grid-cols-2 gap-3 transition-all duration-300 ease-out ${
+                  isAnimatingUp ? "opacity-0 -translate-y-4 scale-95 pointer-events-none" : "opacity-100 translate-y-0"
+                }`}
               >
-                <span className="text-indigo-400 text-lg font-black leading-none">+</span>
-                <ImageIcon className="w-5 h-5 text-indigo-400 shrink-0" />
-                <span className="tracking-wide">+ Image</span>
-              </button>
+                {/* + Image: Navy Blue with electric cyan glow */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="py-3 px-4 rounded-2xl bg-gradient-to-r from-[#0c1f3d] via-[#1e3a8a] to-[#172554] border-2 border-[#38bdf8] text-white font-black text-sm sm:text-base flex items-center justify-center space-x-2.5 shadow-[0_0_25px_rgba(56,189,248,0.35)] hover:shadow-[0_0_35px_rgba(56,189,248,0.55)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+                >
+                  <span className="text-[#38bdf8] text-lg font-black leading-none">+</span>
+                  <ImageIcon className="w-5 h-5 text-[#38bdf8] shrink-0" />
+                  <span className="tracking-wide">+ Image</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => showToast("⚡ 'Others' bo'limi tez orada qo'shiladi")}
-                className="py-3 px-4 rounded-2xl bg-white/15 hover:bg-white/20 border-2 border-white/30 hover:border-indigo-400 text-white font-black text-sm sm:text-base flex items-center justify-center space-x-2.5 shadow-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer backdrop-blur-md"
-              >
-                <MoreHorizontal className="w-5 h-5 text-indigo-300 shrink-0" />
-                <span className="tracking-wide">Others</span>
-              </button>
-            </div>
+                {/* Others: Navy Orange with vibrant amber glow */}
+                <button
+                  type="button"
+                  onClick={() => setStudioMode('others_picker')}
+                  className="py-3 px-4 rounded-2xl bg-gradient-to-r from-[#361605] via-[#7c2d12] to-[#431407] border-2 border-[#fb923c] text-white font-black text-sm sm:text-base flex items-center justify-center space-x-2.5 shadow-[0_0_25px_rgba(251,146,60,0.35)] hover:shadow-[0_0_35px_rgba(251,146,60,0.55)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+                >
+                  <MoreHorizontal className="w-5 h-5 text-[#fb923c] shrink-0" />
+                  <span className="tracking-wide">Others</span>
+                </button>
+              </div>
+            )}
+
+            {/* OTHERS PICKER: 3 BLOCKS SCREEN (Photo 4 & 5) */}
+            {studioMode === 'others_picker' && (
+              <div className="w-full max-w-xl mx-auto space-y-4 animate-fade-in text-left">
+                <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-[#fb923c]" />
+                    <span>Others • Maxsus Rejimlar</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setStudioMode('lesson')}
+                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Oddiy darsga qaytish</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  {/* Block 1: HOMEWORK */}
+                  <button
+                    type="button"
+                    onClick={() => setStudioMode('homework')}
+                    className="p-4 rounded-2xl bg-gradient-to-br from-[#064e3b]/90 to-[#022c22]/90 border-2 border-[#10b981] hover:border-[#34d399] shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] hover:scale-105 active:scale-95 transition-all text-left flex flex-col justify-between space-y-3 cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 group-hover:scale-110 transition-transform">
+                      <Home className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-white group-hover:text-emerald-200">
+                        HOMEWORK
+                      </h3>
+                      <p className="text-[11px] text-emerald-200/70 mt-1 leading-snug">
+                        Kengaytirilgan uy vazifasi va lug'atlar
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Block 2: GROUP QUIZ (Baamboozle) */}
+                  <button
+                    type="button"
+                    onClick={() => setStudioMode('group_quiz')}
+                    className="p-4 rounded-2xl bg-gradient-to-br from-[#312e81]/90 to-[#1e1b4b]/90 border-2 border-[#818cf8] hover:border-[#a5b4fc] shadow-[0_0_20px_rgba(129,140,248,0.3)] hover:shadow-[0_0_30px_rgba(129,140,248,0.5)] hover:scale-105 active:scale-95 transition-all text-left flex flex-col justify-between space-y-3 cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300 group-hover:scale-110 transition-transform">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-white group-hover:text-indigo-200">
+                        GROUP QUIZ
+                      </h3>
+                      <p className="text-[11px] text-indigo-200/70 mt-1 leading-snug">
+                        Baamboozle 2 yoki 3 guruhli bellashuv
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Block 3: LEVEL CHECK */}
+                  <button
+                    type="button"
+                    onClick={() => setStudioMode('level_check')}
+                    className="p-4 rounded-2xl bg-gradient-to-br from-[#78350f]/90 to-[#451a03]/90 border-2 border-[#f59e0b] hover:border-[#fbbf24] shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] hover:scale-105 active:scale-95 transition-all text-left flex flex-col justify-between space-y-3 cursor-pointer group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 group-hover:scale-110 transition-transform">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-white group-hover:text-amber-200">
+                        LEVEL CHECK
+                      </h3>
+                      <p className="text-[11px] text-amber-200/70 mt-1 leading-snug">
+                        Ko'p mavzuli diagnostik sinov
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ACTIVE MODE FLOATING BADGES (Photo 5) */}
+            {studioMode === 'homework' && (
+              <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-950 to-teal-900 border-2 border-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.35)] animate-fade-in">
+                <Home className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-black tracking-wide text-emerald-200">HOMEWORK REJIMI</span>
+                <button
+                  type="button"
+                  onClick={() => setStudioMode('others_picker')}
+                  className="p-1 rounded-md hover:bg-white/20 text-emerald-300 hover:text-white transition-all ml-1 cursor-pointer"
+                  title="Boshqa rejim tanlash"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {studioMode === 'group_quiz' && (
+              <div className="flex flex-col sm:flex-row items-center gap-3 animate-fade-in">
+                <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-indigo-950 to-purple-900 border-2 border-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.35)]">
+                  <Users className="w-4 h-4 text-indigo-400" />
+                  <span className="text-xs font-black tracking-wide text-indigo-200">GROUP QUIZ (Baamboozle)</span>
+                  <button
+                    type="button"
+                    onClick={() => setStudioMode('others_picker')}
+                    className="p-1 rounded-md hover:bg-white/20 text-indigo-300 hover:text-white transition-all ml-1 cursor-pointer"
+                    title="Boshqa rejim tanlash"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Team Count Selector (2 or 3 Groups) */}
+                <div className="flex items-center space-x-1.5 p-1 rounded-xl bg-white/10 border border-white/15">
+                  <span className="text-[11px] font-bold text-slate-300 px-2">Guruhlar:</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuizTeamsCount(2)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                      quizTeamsCount === 2
+                        ? "bg-indigo-600 text-white shadow-md"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    2 Guruh
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuizTeamsCount(3)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                      quizTeamsCount === 3
+                        ? "bg-indigo-600 text-white shadow-md"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    3 Guruh
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {studioMode === 'level_check' && (
+              <div className="w-full max-w-xl mx-auto space-y-2 animate-fade-in text-left">
+                <div className="flex items-center justify-between">
+                  <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-2xl bg-gradient-to-r from-amber-950 to-orange-900 border-2 border-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.35)]">
+                    <FileText className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-black tracking-wide text-amber-200">LEVEL CHECK (Ko'p mavzuli)</span>
+                    <button
+                      type="button"
+                      onClick={() => setStudioMode('others_picker')}
+                      className="p-1 rounded-md hover:bg-white/20 text-amber-300 hover:text-white transition-all ml-1 cursor-pointer"
+                      title="Boshqa rejim tanlash"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <span className="text-xs font-mono font-bold text-amber-400">
+                    {levelCheckTopics.length} ta mavzu tanlandi
+                  </span>
+                </div>
+
+                {/* Topic Selection Chips */}
+                <div className="flex flex-wrap gap-1.5 p-2 rounded-xl bg-white/5 border border-white/10">
+                  {[
+                    "Present Simple",
+                    "Past Simple",
+                    "Present Perfect",
+                    "Future Tenses",
+                    "Conditionals",
+                    "Passive Voice",
+                    "Modal Verbs",
+                    "Prepositions"
+                  ].map((t) => {
+                    const isSelected = levelCheckTopics.includes(t);
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => {
+                          setLevelCheckTopics((prev) =>
+                            isSelected ? prev.filter((item) => item !== t) : [...prev, t]
+                          );
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-amber-500 text-slate-900 font-black shadow-sm"
+                            : "bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5"
+                        }`}
+                      >
+                        {isSelected ? "✓ " : "+ "}
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Prompt Capsule Box - CapCut Slide-Up */}
             <div
@@ -1720,9 +2227,27 @@ export default function StitchTeacherOS() {
                   type="text"
                   value={topicInput}
                   onChange={(e) => setTopicInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (studioMode === 'homework') {
+                        setActiveHomeworkTopic(topicInput || "Present Perfect");
+                      } else if (studioMode === 'group_quiz') {
+                        setActiveGroupQuizTopic(topicInput || "English Grammar & Vocabulary");
+                      } else if (studioMode === 'level_check') {
+                        handleGenerate(levelCheckTopics.join(', ') || topicInput || "Level Check");
+                      } else {
+                        handleGenerate();
+                      }
+                    }
+                  }}
                   placeholder={
-                    attachedFiles.length > 0
+                    studioMode === 'homework'
+                      ? "Uyga vazifa mavzusi (masalan: Present Perfect, 10 ta savol)..."
+                      : studioMode === 'group_quiz'
+                      ? "Guruhlar musobaqasi mavzusi (masalan: Irregular Verbs, Animals, Tenses)..."
+                      : studioMode === 'level_check'
+                      ? "Qo'shimcha talablar yoki mavzular (masalan: 15 ta test, 10 ta ochiq savol)..."
+                      : attachedFiles.length > 0
                       ? "Rasm bo'yicha ko'rsatma yozing (ixtiyoriy)..."
                       : "Bugun qaysi mavzuni o'tamiz? (masalan: Present Perfect, History of Sports)..."
                   }
@@ -1826,12 +2351,30 @@ export default function StitchTeacherOS() {
                   </div>
 
                   <button
-                    onClick={() => handleGenerate()}
+                    onClick={() => {
+                      if (studioMode === 'homework') {
+                        setActiveHomeworkTopic(topicInput || "Present Perfect");
+                      } else if (studioMode === 'group_quiz') {
+                        setActiveGroupQuizTopic(topicInput || "English Grammar & Vocabulary");
+                      } else if (studioMode === 'level_check') {
+                        handleGenerate(levelCheckTopics.join(', ') || topicInput || "Level Check");
+                      } else {
+                        handleGenerate();
+                      }
+                    }}
                     disabled={isGenerating}
-                    className="h-8 px-4 rounded-xl bg-[#5B3DF5] hover:bg-[#4C2FE0] text-white font-bold flex items-center space-x-1.5 transition-all shadow-md disabled:opacity-50"
+                    className="h-8 px-4 rounded-xl bg-[#5B3DF5] hover:bg-[#4C2FE0] text-white font-bold flex items-center space-x-1.5 transition-all shadow-md disabled:opacity-50 cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span className="text-[11px]">Yaratish</span>
+                    <span className="text-[11px]">
+                      {studioMode === 'homework'
+                        ? "Vazifa Yaratish"
+                        : studioMode === 'group_quiz'
+                        ? "Musobaqani Boshlash"
+                        : studioMode === 'level_check'
+                        ? "Sinovni Boshlash"
+                        : "Yaratish"}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1844,8 +2387,8 @@ export default function StitchTeacherOS() {
         {/* ============================================================ */}
         {curriculum && (
           <>
-            {/* MAIN PRESENTATION WRAPPER: Board and Right Toolbar as Flex Siblings (Physically separated so never overlapping on Victus & all screens) */}
-            <div className="w-full h-full min-h-0 flex items-center justify-center p-2 sm:p-3 md:p-4 gap-3.5 overflow-hidden">
+            {/* MAIN PRESENTATION WRAPPER: Board and Right Toolbar as Flex Siblings (Photo 1: shifted right with ample gap-8 mr-4 sm:mr-6) */}
+            <div className="w-full h-full min-h-0 flex items-center justify-center p-2 sm:p-3 md:p-4 gap-8 mr-4 sm:mr-6 overflow-hidden">
               <div
                 ref={boardRef}
                 className={`transition-all duration-200 relative flex flex-col justify-between shadow-2xl ${
