@@ -49,16 +49,9 @@ import {
   Eye,
   EyeOff,
   Lightbulb,
-  GraduationCap,
-  Shield,
-  PanelLeft,
-  Clock,
-  Sliders,
-  Folder,
-  Settings,
-  FileText,
+  History,
   MoreHorizontal,
-  Paperclip
+  FileText
 } from "lucide-react";
 import {
   Curriculum,
@@ -203,6 +196,64 @@ export default function StitchTeacherOS() {
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
 
+  // Left history drawer & right bar expansion state
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isRightBarExpanded, setIsRightBarExpanded] = useState(false);
+  const [lessonHistory, setLessonHistory] = useState<Array<{ topic: string; time: string }>>([
+    { topic: "Past Simple", time: "7h" },
+    { topic: "Present Simple", time: "23h" },
+    { topic: "Second Conditional", time: "1d" },
+    { topic: "Used to vs Would", time: "2d" },
+    { topic: "History of Sports", time: "3d" }
+  ]);
+
+  // Multimodal file upload state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachedFiles, setAttachedFiles] = useState<
+    Array<{ name: string; type: string; preview: string; base64: string }>
+  >([]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        setAttachedFiles((prev) => [
+          ...prev,
+          {
+            name: file.name,
+            type: file.type,
+            preview: file.type.startsWith("image/") ? result : "",
+            base64: result.split(",")[1] || ""
+          }
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    showToast(`📎 ${files.length} ta fayl yuklandi`);
+  };
+
+  const removeFile = (idx: number) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const cleanTopicTitle = (raw: string): string => {
+    if (!raw) return "";
+    let clean = raw.trim();
+    clean = clean.replace(/^(create|make|generate|build|write)\s+(a\s+|an\s+)?(interactive\s+)?(lesson|curriculum|class|presentation|topic)\s+(about|on|for|regarding)\s+/i, "");
+    clean = clean.replace(/^(lesson|topic|class)\s+(about|on|for)\s+/i, "");
+    clean = clean.replace(/^(please\s+)?(can\s+you\s+)?(create|make|give\s+me)\s+(a\s+)?/i, "");
+    clean = clean.replace(/^(haqida\s+)?(darslik|dars|mavzu)\s+(yarat|tuz|tayyorla|qil)\s*/i, "");
+    clean = clean.replace(/\s+(haqida|boyicha|to'g'risida)\s+(dars|darslik|mavzu)\s*(yarat|tuz|tayyorla)?$/i, "");
+    clean = clean.trim();
+    if (clean.length > 0) {
+      clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+    }
+    return clean || raw;
+  };
+
   // Dynamic Add Item & Feedback State
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [wrongWordToken, setWrongWordToken] = useState<string | null>(null);
@@ -225,9 +276,8 @@ export default function StitchTeacherOS() {
   const [errorHuntFound, setErrorHuntFound] = useState<Record<string, boolean>>({});
   const [fillGapSelected, setFillGapSelected] = useState<Record<string, string>>({});
 
-  // Studio UI Panels & Tools (Collapsible Sidebar & Responsive Toolbar)
-  const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
-  const [isRightBarExpanded, setIsRightBarExpanded] = useState(false);
+  // Studio UI Panels & Tools
+  const [showLeftInspector, setShowLeftInspector] = useState(true);
   const [showAgentLog, setShowAgentLog] = useState(false);
   const [activeCanvasTool, setActiveCanvasTool] = useState<"select" | "frame" | "pen" | "pan">("select");
   const [zoomPercent, setZoomPercent] = useState(100);
@@ -239,43 +289,11 @@ export default function StitchTeacherOS() {
   const [vocabHintOpen, setVocabHintOpen] = useState<Record<number, boolean>>({});
   const [slideRevealActive, setSlideRevealActive] = useState<Record<number, boolean>>({});
 
-  // Attached files (Screenshots, textbook pages, PDFs)
-  interface AttachedFile {
-    id: string;
-    name: string;
-    type: string;
-    dataUrl: string;
-    size: number;
-  }
-  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   // Submission & Toast
   const [studentName, setStudentName] = useState("");
-  const [userRole, setUserRole] = useState<"teacher" | "student">("teacher");
-  const [telegramUser, setTelegramUser] = useState<{
-    id?: number | string;
-    first_name?: string;
-    last_name?: string;
-    username?: string;
-    photo_url?: string;
-  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // QuizPilot Adaptive Layout & Classroom History State
-  const [activeMainTab, setActiveMainTab] = useState<"create" | "library" | "board" | "student">("create");
-  const [savedClassrooms, setSavedClassrooms] = useState<Array<{
-    id: string;
-    topic: string;
-    level: string;
-    length: string;
-    date: string;
-    timestamp?: number;
-    curriculum: Curriculum;
-  }>>([]);
-  const [historySearchQuery, setHistorySearchQuery] = useState("");
 
   // Whiteboard Pen & Drawing Annotation State
   const [isAnnotating, setIsAnnotating] = useState(false);
@@ -511,224 +529,6 @@ export default function StitchTeacherOS() {
     }
   }, []);
 
-  // Telegram WebApp Auto-Login & Role Sync
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const roleParam = urlParams.get("role");
-
-      const tg = (window as any).Telegram?.WebApp;
-      if (tg) {
-        try {
-          tg.ready();
-          tg.expand();
-          if (tg.requestFullscreen) {
-            tg.requestFullscreen();
-          }
-        } catch (tgErr) {}
-
-        const user = tg.initDataUnsafe?.user;
-        if (user && user.id) {
-          const displayName = user.username
-            ? `@${user.username}`
-            : [user.first_name, user.last_name].filter(Boolean).join(" ") || `User_${user.id}`;
-
-          setStudentName(displayName);
-          setTelegramUser(user);
-
-          const isTeacherOwner =
-            user.username?.toLowerCase() === "ulugb7k" ||
-            user.username?.toLowerCase() === "ulugbekflex" ||
-            String(user.id) === "6315515792";
-
-          const effectiveRole: "teacher" | "student" =
-            roleParam === "teacher"
-              ? "teacher"
-              : roleParam === "student"
-              ? "student"
-              : isTeacherOwner
-              ? "teacher"
-              : ((localStorage.getItem("teacheros_role") as any) || "student");
-
-          setUserRole(effectiveRole);
-
-          localStorage.setItem("teacheros_role", effectiveRole);
-          localStorage.setItem("teacheros_user_name", displayName);
-          localStorage.setItem("teacheros_telegram_id", String(user.id));
-          localStorage.setItem("a1_student_name", displayName);
-          localStorage.setItem("b1_student_name", displayName);
-
-          // Background sync to Supabase
-          fetch("/api/auth/telegram", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: user.id,
-              first_name: user.first_name,
-              last_name: user.last_name,
-              username: user.username,
-              photo_url: user.photo_url,
-              role: effectiveRole,
-            }),
-          }).catch(() => {});
-
-          return;
-        }
-      }
-
-      // Fallback for regular web browser
-      const storedRole = (roleParam as any) || localStorage.getItem("teacheros_role") || "teacher";
-      setUserRole(storedRole as "teacher" | "student");
-
-      const storedName = localStorage.getItem("teacheros_user_name");
-      if (storedName) {
-        setStudentName(storedName);
-        setTelegramUser({
-          id: localStorage.getItem("teacheros_telegram_id") || "guest",
-          first_name: storedName,
-          username: storedName.startsWith("@") ? storedName.substring(1) : undefined,
-        });
-      } else {
-        // Default teacher identity for Ulugbek / ulunur
-        setStudentName("ulunur");
-        setTelegramUser({
-          id: "6315515792",
-          first_name: "ulunur",
-          username: "Ulugb7k",
-        });
-      }
-    } catch (e) {
-      console.warn("Auth init error:", e);
-    }
-  }, []);
-
-  // Compute user identity details
-  const userDisplayName = useMemo(() => {
-    if (telegramUser?.first_name) return telegramUser.first_name;
-    if (telegramUser?.username) return `@${telegramUser.username}`;
-    if (studentName) return studentName;
-    return "ulunur";
-  }, [telegramUser, studentName]);
-
-  const userInitial = useMemo(() => {
-    const raw = userDisplayName.replace("@", "").trim();
-    return raw ? raw[0].toUpperCase() : "U";
-  }, [userDisplayName]);
-
-  // Format relative time (e.g. 7h, 23h, 2d, 10d) matching Pic 2
-  const formatTimeAgo = (ts?: number, fallback: string = "7h") => {
-    if (!ts) return fallback;
-    const diffSec = Math.floor((Date.now() - ts) / 1000);
-    if (diffSec < 60) return "1m";
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin}m`;
-    const diffHours = Math.floor(diffMin / 60);
-    if (diffHours < 24) return `${diffHours}h`;
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d`;
-  };
-
-  // Load saved classrooms / history
-  useEffect(() => {
-    try {
-      const storageKey = `teacheros_history_${telegramUser?.id || "default"}`;
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSavedClassrooms(parsed);
-          return;
-        }
-      }
-    } catch (e) {}
-
-    // Initial default classrooms from master curriculums with realistic relative timestamps
-    const initialList: any[] = [];
-    if (MASTER_CURRICULUMS["Past Simple & Irregular Verbs"]) {
-      initialList.push({
-        id: "hist_ps",
-        topic: "Past Simple",
-        level: "A1",
-        length: "medium",
-        date: "7h",
-        timestamp: Date.now() - 7 * 3600 * 1000, // 7h
-        curriculum: enrichCurriculumWithSections(MASTER_CURRICULUMS["Past Simple & Irregular Verbs"], "medium"),
-      });
-    }
-    if (MASTER_CURRICULUMS["Present Perfect Simple"]) {
-      initialList.push({
-        id: "hist_pp",
-        topic: "Present Simple",
-        level: "A1",
-        length: "medium",
-        date: "23h",
-        timestamp: Date.now() - 23 * 3600 * 1000, // 23h
-        curriculum: enrichCurriculumWithSections(MASTER_CURRICULUMS["Present Perfect Simple"], "medium"),
-      });
-    }
-    if (MASTER_CURRICULUMS["Used to vs Would"]) {
-      initialList.push({
-        id: "hist_ut",
-        topic: "Used to vs Would",
-        level: "B1",
-        length: "medium",
-        date: "2d",
-        timestamp: Date.now() - 2 * 86400 * 1000, // 2d
-        curriculum: enrichCurriculumWithSections(MASTER_CURRICULUMS["Used to vs Would"], "medium"),
-      });
-    }
-
-    setSavedClassrooms(initialList);
-    try {
-      const storageKey = `teacheros_history_${telegramUser?.id || "default"}`;
-      localStorage.setItem(storageKey, JSON.stringify(initialList));
-    } catch (e) {}
-  }, [telegramUser?.id]);
-
-  const saveToHistory = (newCurr: Curriculum) => {
-    const item = {
-      id: `hist_${Date.now()}`,
-      topic: newCurr.topic,
-      level: newCurr.level,
-      length: String(newCurr.length || "medium"),
-      date: "1m",
-      timestamp: Date.now(),
-      curriculum: newCurr,
-    };
-    setSavedClassrooms((prev) => {
-      const filtered = prev.filter((p) => p.topic.toLowerCase() !== newCurr.topic.toLowerCase());
-      const updated = [item, ...filtered];
-      try {
-        const storageKey = `teacheros_history_${telegramUser?.id || "default"}`;
-        localStorage.setItem(storageKey, JSON.stringify(updated.slice(0, 30)));
-      } catch (e) {}
-      return updated;
-    });
-  };
-
-  const deleteFromHistory = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSavedClassrooms((prev) => {
-      const updated = prev.filter((p) => p.id !== id);
-      try {
-        const storageKey = `teacheros_history_${telegramUser?.id || "default"}`;
-        localStorage.setItem(storageKey, JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
-    showToast("🗑️ Darslik tarixdan o'chirildi");
-  };
-
-  const openClassroom = (curr: Curriculum) => {
-    setCurriculum(curr);
-    setCurrentScreenIndex(0);
-    setBoardStepReveal(0);
-    setActiveMainTab("board");
-    showToast(`📂 "${curr.topic}" doskaga yuklandi!`);
-  };
-
   // Audio Speech Synthesis
   const speak = (text: string) => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -766,68 +566,6 @@ export default function StitchTeacherOS() {
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
-  };
-
-  // Clean prompt boilerplate to extract only canonical topic title
-  const cleanTopicTitle = (raw: string): string => {
-    if (!raw || typeof raw !== "string") return "English Lesson";
-    let cleaned = raw.trim();
-    const prefixes = [
-      /^(?:please\s+)?(?:can\s+you\s+)?(?:could\s+you\s+)?(?:i\s+want\s+(?:you\s+)?to\s+)?(?:create|generate|make|build|design|write|produce|prepare|teach|explain|give\s+me|show\s+me)(?:\s+me)?(?:\s+(?:a|an))?(?:\s+(?:complete|interactive|detailed|quick|short|good))?\s+(?:lesson|curriculum|class|presentation|slides?|guide|module|test|topic|explanation|dars)?(?:\s+(?:about|on|for|regarding|of|around))?\s+/i,
-      /^(?:let'?s\s+(?:learn|teach|study|cover|do))(?:\s+(?:about|on))?\s+/i,
-      /^(?:today(?:'s)?\s+(?:lesson|topic|class)\s+is)\s+/i,
-      /^(?:we\s+are\s+(?:learning|studying|talking\s+about))\s+/i,
-      /^(?:how\s+to\s+(?:use|learn|teach))\s+/i,
-      /^(?:iltimos\s+)?(?:menga\s+)?(?:bugun\s+)?dars\s+(?:tayyorla(?:b\s+ber)?|yarat|o't|tuz|qil|ber)(?:\s*[:\-])?\s*/i,
-      /^(?:iltimos\s+)?(?:menga\s+)?(?:[a-z0-9\s\-]+?)\s+(?:haqida|to'g'risida|mavzusida)\s+(?:dars|slayd|taqdimot)\s+(?:tayyorla|yarat|o't|tuz|qil)(?:b\s+ber)?/i,
-      /^(?:bugun\s+)?(?:[a-z0-9\s\-]+?)\s+(?:mavzusini|mavzusi)\s+(?:o'tamiz|o'rganamiz|o'tmoqchiman)/i,
-      /^(?:mavzu|tema)\s*[:\-]\s*/i,
-    ];
-    for (const rx of prefixes) {
-      if (rx.test(cleaned)) cleaned = cleaned.replace(rx, "").trim();
-    }
-    cleaned = cleaned.replace(/[\.\?!,;]+$/, "").trim();
-    if (cleaned.length > 0) {
-      cleaned = cleaned
-        .split(" ")
-        .map((w, idx) => {
-          const lower = w.toLowerCase();
-          if (idx > 0 && ["of", "the", "and", "in", "on", "at", "to", "for", "a", "an", "vs"].includes(lower)) return lower;
-          return w.charAt(0).toUpperCase() + w.slice(1);
-        })
-        .join(" ");
-    }
-    return cleaned || raw;
-  };
-
-  // File Upload Handlers (Images & PDFs from textbooks)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          setAttachedFiles((prev) => [
-            ...prev,
-            {
-              id: `${Date.now()}_${Math.random()}`,
-              name: file.name,
-              type: file.type || "image/jpeg",
-              dataUrl: reader.result as string,
-              size: file.size,
-            }
-          ]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-    showToast(`📎 ${files.length} ta darslik fayli yuklandi. AI buni darsga aylantiradi!`);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const removeAttachedFile = (id: string) => {
-    setAttachedFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
   // Fullscreen toggle
@@ -1048,12 +786,11 @@ export default function StitchTeacherOS() {
     const lengthToUse = customLength || lessonLength;
 
     if (!rawQuery && attachedFiles.length === 0) {
-      showToast("Iltimos, dars mavzusini yozing yoki darslik rasmini yuklang...");
+      showToast("Iltimos, dars mavzusini yozing yoki rasm yuklang...");
       return;
     }
 
-    const cleanTitle = rawQuery ? cleanTopicTitle(rawQuery) : "Textbook Lesson Scan";
-    const query = cleanTitle;
+    const query = cleanTopicTitle(rawQuery) || rawQuery || (attachedFiles.length > 0 ? "Textbook Lesson" : "");
 
     setIsAnimatingUp(true);
     // Smooth CapCut slide-up transition: capsule shrinks and glides toward the top bar
@@ -1079,9 +816,7 @@ export default function StitchTeacherOS() {
     try {
       const steps = [
         "⚡ [1/4] Google Gemini dvigateliga ulanmoqda...",
-        attachedFiles.length > 0
-          ? `🔍 [2/4] ${attachedFiles.length} ta darslik sahifasi skaner qilinmoqda...`
-          : `🔍 [2/4] "${query}" (${level}) pedagogik tuzilmasi tahlil qilinmoqda...`,
+        `🔍 [2/4] "${query}" (${level}) pedagogik tuzilmasi tahlil qilinmoqda...`,
         "🎨 [3/4] Interaktiv gap anatomiyasi va vizual modellar loyihalanmoqda...",
         "💡 [4/4] 3D Fleshkartalar, testlar va xato ovchisi jamlanmoqda..."
       ];
@@ -1104,14 +839,11 @@ export default function StitchTeacherOS() {
         headers: { "Content-Type": "application/json" },
         signal: clientCtrl.signal,
         body: JSON.stringify({
-          topic: rawQuery || query,
+          topic: query,
+          rawPrompt: rawQuery,
           level,
           length: lengthToUse,
-          files: attachedFiles.map((f) => ({
-            name: f.name,
-            type: f.type,
-            data: f.dataUrl
-          }))
+          files: attachedFiles
         })
       });
 
@@ -1120,11 +852,12 @@ export default function StitchTeacherOS() {
       if (res.ok) {
         const data = await res.json();
         if (data.ok && data.curriculum) {
+          data.curriculum.topic = cleanTopicTitle(data.curriculum.topic || query);
           const enriched = enrichCurriculumWithSections(data.curriculum, lengthToUse);
           setCurriculum(enriched);
-          setTopicInput(enriched.topic);
           setCurrentScreenIndex(0);
           prevScreenIndexRef.current = 0;
+          setLessonHistory((prev) => [{ topic: data.curriculum.topic, time: "Just now" }, ...prev]);
           const modelTag = data.modelUsed ? ` (${data.modelUsed})` : "";
           showToast(`✨ Google Gemini AI darslikni to'liq yaratdi!${modelTag}`);
           confetti({ particleCount: 75, spread: 65, origin: { y: 0.6 } });
@@ -1152,15 +885,15 @@ export default function StitchTeacherOS() {
 
         matched = {
           id: `gen_${Date.now()}`,
-          topic: cleanTitle,
+          topic: query,
           level,
           category: "Grammar & Communication",
-          description: `${cleanTitle} bo'yicha interaktiv vizual darslik paketi (${lengthToUse} format).`,
+          description: `${query} bo'yicha interaktiv vizual darslik paketi (${lengthToUse} format).`,
           slides: [
             {
               id: "s1",
               tag: "MOHIYAT",
-              title: `${cleanTitle} — Asosiy Tushuncha`,
+              title: `${query} — Asosiy Tushuncha`,
               body: isArticleTopic
                 ? `<p class="font-bold text-slate-300"><b>${query}</b> — ingliz tilida otlarning qaysi biri haqida gap ketayotganini aniq ko'rsatuvchi muhim vosita.</p><br>• <b>'A'</b> — undosh tovushdan boshlangan so'zlar oldidan (a book, a car)<br>• <b>'An'</b> — unli tovushdan boshlangan so'zlar oldidan (an apple, an hour)<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>Oltin qoida:</b> Harfga emas, balki TOVUSHGA e'tibor bering! 'an hour' (h aytilmaydi), 'a university' (yu tovushi).</div>`
                 : `<p class="font-bold text-slate-300">Ushbu darsda <b>${query}</b> mavzusining amaliy qo'llanishi va qoidalarini ko'rib chiqamiz.</p>`,
@@ -1242,8 +975,6 @@ export default function StitchTeacherOS() {
 
       const enriched = enrichCurriculumWithSections(matched, lengthToUse);
       setCurriculum(enriched);
-      saveToHistory(enriched);
-      setActiveMainTab("board");
       setCurrentScreenIndex(0);
       prevScreenIndexRef.current = 0;
       showToast("💡 Darslik tayyorlandi.");
@@ -1346,8 +1077,6 @@ export default function StitchTeacherOS() {
       }, lengthToUse);
 
       setCurriculum(fallbackCurriculum);
-      saveToHistory(fallbackCurriculum);
-      setActiveMainTab("board");
       setCurrentScreenIndex(0);
       prevScreenIndexRef.current = 0;
       showToast("💡 Darslik tayyorlandi.");
@@ -1447,7 +1176,7 @@ export default function StitchTeacherOS() {
   };
 
   return (
-    <div className="w-full h-screen bg-[#0D0F14] text-slate-100 flex overflow-hidden font-sans select-none stitch-grid">
+    <div className="w-full h-screen bg-[#0D0F14] text-slate-100 flex flex-col overflow-hidden font-sans select-none stitch-grid">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-[#1F222E]/95 border border-[#5B3DF5]/50 text-white px-5 py-2.5 rounded-full shadow-2xl backdrop-blur-xl text-xs sm:text-sm font-bold flex items-center space-x-2 animate-bounce">
@@ -1456,231 +1185,57 @@ export default function StitchTeacherOS() {
         </div>
       )}
 
-      {/* COLLAPSIBLE LEFT HISTORY SIDEBAR (Pic 2 Style: Antigravity / ChatGPT) */}
-      {isHistorySidebarOpen && !isFullscreen && (
-        <>
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setIsHistorySidebarOpen(false)}
-            className="md:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-40 transition-opacity"
-          />
-          <aside className="fixed md:relative left-0 top-0 h-full w-72 md:w-80 bg-[#0e1015] border-r border-white/10 flex flex-col justify-between z-50 md:z-30 shadow-2xl select-none shrink-0 transition-all duration-300">
-            {/* Top Brand & Actions */}
-            <div className="flex flex-col p-3 space-y-3 overflow-y-auto min-h-0 flex-1">
-              {/* Header with App Logo, Toggle & Search */}
-              <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                <div
-                  onClick={() => {
-                    setActiveMainTab("create");
-                    if (window.innerWidth < 768) setIsHistorySidebarOpen(false);
-                  }}
-                  className="cursor-pointer"
-                  title="TeacherOS Bosh Sahifasi"
-                >
-                  <BrandLogo isLight={false} className="h-6 object-contain" />
-                </div>
-                <div className="flex items-center space-x-1">
-                  <button
-                    onClick={() => setIsHistorySidebarOpen(false)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Panelni yopish"
-                  >
-                    <PanelLeft className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* + New Conversation Button (Pic 2 Style) */}
-              <button
-                onClick={() => {
-                  setActiveMainTab("create");
-                  setCurriculum(null);
-                  if (window.innerWidth < 768) setIsHistorySidebarOpen(false);
-                }}
-                className="w-full py-2.5 px-3 rounded-xl border border-white/15 hover:border-white/30 bg-white/5 hover:bg-white/10 text-white font-bold text-xs flex items-center space-x-2 transition-all shadow-sm"
-              >
-                <Plus className="w-4 h-4 text-[#A5B4FC]" />
-                <span>+ New Conversation</span>
-              </button>
-
-              {/* Quick Nav Links (Pic 2 style) */}
-              <div className="space-y-0.5 text-xs">
-                <button
-                  onClick={() => {
-                    setActiveMainTab("library");
-                    if (window.innerWidth < 768) setIsHistorySidebarOpen(false);
-                  }}
-                  className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                >
-                  <Clock className="w-4 h-4 text-slate-400" />
-                  <span>Conversation History</span>
-                </button>
-                <button
-                  onClick={() => showToast("⚡ Automations: Tezkor darsliklar faol")}
-                  className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                >
-                  <Zap className="w-4 h-4 text-slate-400" />
-                  <span>Automations</span>
-                </button>
-                <button
-                  onClick={() => showToast("💼 Customizations: Moslashuvchan sozlamalar")}
-                  className="w-full flex items-center space-x-2.5 px-2.5 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-left"
-                >
-                  <Sliders className="w-4 h-4 text-slate-400" />
-                  <span>Customizations</span>
-                </button>
-              </div>
-
-              {/* Projects Section (Pic 2 style) */}
-              <div className="pt-2 border-t border-white/5">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-1.5">
-                  <span>Projects</span>
-                  <Folder className="w-3.5 h-3.5 text-slate-500" />
-                </div>
-                <div className="space-y-0.5 text-xs text-slate-400">
-                  <div className="flex items-center space-x-2 px-2.5 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer">
-                    <Folder className="w-3.5 h-3.5 text-indigo-400" />
-                    <span className="truncate">science/biomolecular...</span>
-                  </div>
-                  <div className="flex items-center space-x-2 px-2.5 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer">
-                    <Folder className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="truncate">meva-app</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Conversations History List (Pic 2 style: Past simple 7h, Present simple 23h) */}
-              <div className="pt-2 border-t border-white/5 flex-1 min-h-0 flex flex-col">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-1.5">
-                  <span>Conversations</span>
-                  <button
-                    onClick={() => {
-                      setActiveMainTab("create");
-                      setCurriculum(null);
-                      if (window.innerWidth < 768) setIsHistorySidebarOpen(false);
-                    }}
-                    title="Yangi dars boshlash"
-                    className="text-slate-500 hover:text-white"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-24rem)] pr-1 flex-1">
-                  {savedClassrooms.length === 0 ? (
-                    <div className="text-slate-500 text-[11px] px-2 py-3 italic">
-                      Hozircha darslar tarixi yo'q
-                    </div>
-                  ) : (
-                    savedClassrooms.map((item) => {
-                      const isActive = curriculum?.topic.toLowerCase() === item.topic.toLowerCase();
-                      const timeStr = formatTimeAgo(item.timestamp, item.date || "7h");
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            openClassroom(item.curriculum);
-                            if (window.innerWidth < 768) setIsHistorySidebarOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left transition-all group ${
-                            isActive
-                              ? "bg-white/10 text-white font-bold shadow-sm"
-                              : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                          }`}
-                        >
-                          <span className="truncate text-xs font-medium mr-2">
-                            {item.topic}
-                          </span>
-                          <span className="text-[11px] font-mono text-slate-500 group-hover:text-slate-400 shrink-0">
-                            {timeStr}
-                          </span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
+      {/* TOP HEADER */}
+      {(curriculum || isGenerating) && !isFullscreen && (
+        <header className="relative h-14 border-b border-white/10 px-4 sm:px-6 flex items-center justify-between shrink-0 bg-[#0D0F14]/90 backdrop-blur-md z-30">
+          {/* Brand & Active Topic Title */}
+          <div className="flex items-center space-x-3">
+            <div
+              onClick={() => {
+                setCurriculum(null);
+                setIsPromptCollapsed(false);
+              }}
+              className="flex items-center space-x-2 cursor-pointer group"
+              title="Yangi mavzu kiritish"
+            >
+              <BrandLogo isLight={false} />
             </div>
 
-            {/* Bottom Settings & User Profile (Pic 2 style) */}
-            <div className="p-3 border-t border-white/10 space-y-2 shrink-0 bg-[#0B0D13]">
-              <button
-                onClick={() => showToast("⚙️ Sozlamalar paneli")}
-                className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-xs font-semibold"
-              >
-                <Settings className="w-4 h-4" />
-                <span>Settings</span>
-              </button>
+            {/* History Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsHistoryOpen((prev) => !prev)}
+              className={`px-2.5 py-1.5 rounded-xl border flex items-center space-x-1.5 text-xs font-bold transition-all cursor-pointer ${
+                isHistoryOpen
+                  ? "bg-[#5B3DF5] border-[#5B3DF5] text-white shadow-lg"
+                  : "bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white"
+              }`}
+              title="Darslar tarixi"
+            >
+              <History className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline text-[11px]">Tarix</span>
+            </button>
 
-              <div className="flex items-center space-x-2.5 px-3 py-2 rounded-xl bg-white/5 border border-white/5">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#2563EB] to-[#60A5FA] flex items-center justify-center text-white font-black text-xs shrink-0">
-                  {userInitial}
+            {curriculum && (
+              <>
+                <div className="h-4 w-px bg-white/10" />
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs sm:text-sm font-extrabold text-white truncate max-w-[160px] sm:max-w-xs">
+                    {curriculum.topic}
+                  </span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
+                    {curriculum.level}
+                  </span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#5B3DF5]/20 text-[#A5B4FC] border border-[#5B3DF5]/30">
+                    {curriculum.length === "short" ? "Qisqa (4)" : curriculum.length === "long" ? "To'liq (8)" : "O'rtacha (6)"}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-xs text-white truncate">{userDisplayName}</div>
-                  <div className="text-[10px] text-slate-400 truncate">Ustoz Akkaunti</div>
-                </div>
-              </div>
-            </div>
-          </aside>
-        </>
-      )}
-
-      {/* FLOATING LEFT TOGGLE BUTTON (Visible when history bar is closed) */}
-      {!isHistorySidebarOpen && !isFullscreen && (
-        <button
-          onClick={() => setIsHistorySidebarOpen(true)}
-          className="fixed left-0 top-20 z-30 px-1 py-3 rounded-r-xl bg-[#18191E]/95 hover:bg-[#20222a] border-y border-r border-white/15 text-slate-400 hover:text-white shadow-2xl backdrop-blur-md transition-all hover:pr-2 flex items-center group"
-          title="Darslar Tarixi (Ochish)"
-        >
-          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </button>
-      )}
-
-      {/* RIGHT / MAIN CONTENT WRAPPER */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 relative">
-        {/* TOP HEADER */}
-        {!isFullscreen && (
-          <header className="relative h-14 border-b border-white/10 px-4 sm:px-6 flex items-center justify-between shrink-0 bg-[#0D0F14]/90 backdrop-blur-md z-30">
-            {/* Left: Sidebar toggle button + User greeting on BOTH mobile and desktop */}
-            <div className="flex items-center space-x-2.5 sm:space-x-3">
-              <button
-                onClick={() => setIsHistorySidebarOpen((prev) => !prev)}
-                className={`p-2 rounded-xl transition-all flex items-center justify-center shrink-0 ${
-                  isHistorySidebarOpen
-                    ? "bg-[#5B3DF5] text-white shadow-md shadow-[#5B3DF5]/30"
-                    : "bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white"
-                }`}
-                title={isHistorySidebarOpen ? "Tarix panelini yopish" : "Darslar Tarixi (Ochish)"}
-              >
-                <PanelLeft className="w-4 h-4" />
-              </button>
-              <div className="w-9 h-9 rounded-xl bg-[#0284C7] flex items-center justify-center text-white font-black text-sm shadow-md shrink-0">
-                {userInitial}
-              </div>
-              <div className="min-w-0">
-                <div className="text-[10px] text-slate-400 font-medium leading-none">Xush kelibsiz</div>
-                <div className="text-sm font-black text-white tracking-tight mt-0.5 truncate max-w-[130px] sm:max-w-xs">{userDisplayName}</div>
-              </div>
-
-              {curriculum && activeMainTab === "board" && (
-                <>
-                  <div className="h-4 w-px bg-white/10 hidden sm:block" />
-                  <div className="hidden sm:flex items-center space-x-2">
-                    <span className="text-xs sm:text-sm font-extrabold text-white truncate max-w-[140px] sm:max-w-xs">
-                      {curriculum.topic}
-                    </span>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
-                      {curriculum.level}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
+              </>
+            )}
+          </div>
 
           {/* MIDDLE: AI STUDIO COCKPIT IN TOP BAR (Centered precisely in entire header) */}
-          {(curriculum || isGenerating) && (
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-40 pointer-events-auto">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-40 pointer-events-auto">
             {isGenerating ? (
               /* During generation: Clean AI Studio button with pulse */
               <div className="px-4 py-1.5 rounded-full bg-[#18191E]/95 border border-[#5B3DF5]/50 shadow-xl text-white text-xs font-bold flex items-center space-x-2 animate-pulse">
@@ -1840,105 +1395,88 @@ export default function StitchTeacherOS() {
               </div>
             )}
           </div>
-          )}
 
           {/* Right Header Actions */}
           <div className="flex items-center space-x-2 text-xs">
-            {curriculum && (
-              <>
-                <button
-                  onClick={toggleFullscreen}
-                  className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1.5 font-bold transition-all"
-                  title="To'liq doska rejimi (F)"
-                >
-                  <Play className="w-3.5 h-3.5 fill-emerald-400" />
-                  <span className="hidden sm:inline">Present</span>
-                </button>
-
-                <button
-                  onClick={handleDownloadHtml}
-                  className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-1 font-medium transition-all"
-                  title="HTML Yuklab Olish"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Export</span>
-                </button>
-
-                <button
-                  onClick={handleShareLink}
-                  className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-1 font-medium transition-all"
-                  title="Havolani Nusxalash"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Share</span>
-                </button>
-              </>
-            )}
-
-            {/* Role Switcher Pill */}
-            <div className="flex items-center bg-white/5 border border-white/10 rounded-full p-0.5 text-[11px] font-bold">
-              <button
-                type="button"
-                onClick={() => {
-                  setUserRole("teacher");
-                  localStorage.setItem("teacheros_role", "teacher");
-                  showToast("👨‍🏫 Ustoz Studiyasi tanlandi");
-                }}
-                className={`px-2.5 py-1 rounded-full transition-all flex items-center space-x-1 ${
-                  userRole === "teacher"
-                    ? "bg-[#5B3DF5] text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
-                }`}
-                title="Ustoz Studiyasiga o'tish"
-              >
-                <Shield className="w-3 h-3" />
-                <span className="hidden md:inline">Ustoz</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setUserRole("student");
-                  localStorage.setItem("teacheros_role", "student");
-                  showToast("🎓 Talaba Portali tanlandi");
-                }}
-                className={`px-2.5 py-1 rounded-full transition-all flex items-center space-x-1 ${
-                  userRole === "student"
-                    ? "bg-sky-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
-                }`}
-                title="Talaba Portaliga o'tish"
-              >
-                <GraduationCap className="w-3 h-3" />
-                <span className="hidden md:inline">Talaba</span>
-              </button>
-            </div>
-
-            {/* Gold Status Badge (QuizPilot Screenshot 1 & 5 style) */}
-            <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/15 to-yellow-500/15 border border-amber-500/40 text-amber-300 font-black text-xs shadow-sm">
-              <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-              <span>Ustoz Rejimi</span>
-            </div>
-
-            {/* Exit board button when on board */}
-            {curriculum && activeMainTab === "board" && (
-              <button
-                onClick={() => setActiveMainTab("create")}
-                className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center space-x-1 border border-white/10"
-                title="Bosh menyuga qaytish"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Chiqish</span>
-              </button>
-            )}
-
-            <div
-              className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#5B3DF5] to-sky-500 border border-white/20 flex items-center justify-center text-white font-black text-xs shadow-md shrink-0 lg:hidden"
-              title={studentName ? `${studentName} (${userRole === "teacher" ? "Ustoz" : "Talaba"})` : "Foydalanuvchi"}
+            <button
+              onClick={toggleFullscreen}
+              className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1.5 font-bold transition-all"
+              title="To'liq doska rejimi (F)"
             >
-              {userInitial}
+              <Play className="w-3.5 h-3.5 fill-emerald-400" />
+              <span className="hidden sm:inline">Present</span>
+            </button>
+
+            <button
+              onClick={handleDownloadHtml}
+              className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-1 font-medium transition-all"
+              title="HTML Yuklab Olish"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Export</span>
+            </button>
+
+            <button
+              onClick={handleShareLink}
+              className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-1 font-medium transition-all"
+              title="Havolani Nusxalash"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Share</span>
+            </button>
+
+            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#5B3DF5] to-[#7C3AED] border border-white/20 flex items-center justify-center text-white font-black text-xs shadow-md">
+              U
             </div>
           </div>
         </header>
+      )}
+
+      {/* HISTORY DRAWER MODAL (Opens only when user clicks Tarix) */}
+      {isHistoryOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs"
+            onClick={() => setIsHistoryOpen(false)}
+          />
+          <aside className="fixed left-0 top-14 bottom-0 z-50 w-72 bg-[#12141D]/98 border-r border-white/10 p-4 shadow-2xl backdrop-blur-2xl flex flex-col justify-between animate-fade-in">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                <div className="flex items-center space-x-2">
+                  <History className="w-4 h-4 text-indigo-400" />
+                  <span className="font-bold text-white text-xs tracking-wide">Darslar Tarixi</span>
+                </div>
+                <button
+                  onClick={() => setIsHistoryOpen(false)}
+                  className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-1">
+                {lessonHistory.map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setTopicInput(item.topic);
+                      handleGenerate(item.topic);
+                      setIsHistoryOpen(false);
+                    }}
+                    className="w-full px-3 py-2.5 rounded-xl hover:bg-white/5 text-left flex items-center justify-between group transition-all cursor-pointer"
+                  >
+                    <span className="text-xs font-medium text-slate-200 group-hover:text-white truncate max-w-[170px]">
+                      {item.topic}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-500 group-hover:text-indigo-400 font-semibold">
+                      {item.time}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </>
       )}
 
       {/* MAIN CANVAS */}
@@ -2094,534 +1632,209 @@ export default function StitchTeacherOS() {
         )}
 
         {/* ============================================================ */}
-        {/* TAB 1: CREATE VIEW (QuizPilot Style Hero & Quick Actions)     */}
+        {/* INITIAL STATE: PROMPT BAR & LENGTH SELECTOR HERO             */}
         {/* ============================================================ */}
-        {!isGenerating && activeMainTab === "create" && (
-          <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6 overflow-y-auto max-h-full pb-24 lg:pb-8 animate-fade-in z-20">
-            {/* QuizPilot Purple Hero Container */}
-            <div className="w-full rounded-3xl bg-gradient-to-br from-[#5841D8] via-[#4F35C7] to-[#3B269E] p-6 sm:p-8 text-white relative overflow-hidden shadow-2xl border border-white/10">
-              <div className="relative z-10 max-w-xl space-y-3">
-                <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-white border border-white/20">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>AI Darslik Sintezatori</span>
+        {!curriculum && !isGenerating && (
+          <div
+            className={`w-full max-w-2xl px-6 flex flex-col items-center text-center space-y-6 z-20 ${
+              isAnimatingUp ? "pointer-events-none" : "animate-fade-in"
+            }`}
+          >
+            {/* Minimalist Hero Branding */}
+            <div
+              className={`space-y-3 transition-all duration-400 ease-out ${
+                isAnimatingUp ? "opacity-0 -translate-y-8 scale-95 pointer-events-none" : "opacity-100 translate-y-0"
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-3 mb-1">
+                <BrandLogo isLight={false} className="h-14 sm:h-16 max-w-[220px] object-contain" />
+                <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs sm:text-sm font-semibold text-slate-300 shadow-md">
+                  <Sparkles className="w-4 h-4 text-[#5B3DF5]" />
+                  <span>TeacherOS • Interaktiv Doska Studiyasi</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight leading-tight">
-                  Mavzuni interaktiv darsga aylantiring
-                </h2>
-                <p className="text-xs sm:text-sm text-indigo-100/80 font-medium">
-                  Grammatik mavzu yoki kontekst — 1 daqiqada 16:9 slaydlar, tezkor testlar, 3D kartochkalar va doskaga aylanadi.
-                </p>
+              </div>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+                Darslikni sun'iy intellekt bilan yarating
+              </h1>
+              <p className="text-sm text-slate-400 max-w-md mx-auto">
+                Mavzuni kiriting — Google Gemini AI 16:9 interaktiv doska, tezkor savollar, xato ovchisi va muloqot mashqlarini sintez qiladi.
+              </p>
+            </div>
 
-                {/* Topic Input with Plus (+) on the left, Voice Recorder on the right, and Attached Files */}
-                <div className="pt-2 space-y-2">
-                  {/* Hidden file input for images & PDFs */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/png,image/jpeg,image/webp,application/pdf"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                  />
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept="image/*,application/pdf"
+              multiple
+              className="hidden"
+            />
 
-                  <div className="relative flex items-center bg-white/15 rounded-2xl border-2 border-white/30 p-2 backdrop-blur-md focus-within:border-white focus-within:bg-white/20 transition-all shadow-inner">
-                    {/* + Button on the left side of prompt bar (ChatGPT / Claude style) */}
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-2 mr-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all flex items-center justify-center shrink-0 shadow-md hover:scale-105 active:scale-95"
-                      title="Rasm yoki PDF yuklash (Darslik skrinshotlari, kitob sahifalari)"
+            {/* The Two Topic Blocks: + Image and Others (Lighter, bolder, evident) */}
+            <div
+              className={`w-full max-w-md mx-auto grid grid-cols-2 gap-3 transition-all duration-300 ease-out ${
+                isAnimatingUp ? "opacity-0 -translate-y-4 scale-95 pointer-events-none" : "opacity-100 translate-y-0"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="py-3 px-4 rounded-2xl bg-white/15 hover:bg-white/20 border-2 border-white/30 hover:border-indigo-400 text-white font-black text-sm sm:text-base flex items-center justify-center space-x-2.5 shadow-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+              >
+                <span className="text-indigo-400 text-lg font-black leading-none">+</span>
+                <ImageIcon className="w-5 h-5 text-indigo-400 shrink-0" />
+                <span className="tracking-wide">+ Image</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => showToast("⚡ 'Others' bo'limi tez orada qo'shiladi")}
+                className="py-3 px-4 rounded-2xl bg-white/15 hover:bg-white/20 border-2 border-white/30 hover:border-indigo-400 text-white font-black text-sm sm:text-base flex items-center justify-center space-x-2.5 shadow-xl hover:scale-[1.02] active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+              >
+                <MoreHorizontal className="w-5 h-5 text-indigo-300 shrink-0" />
+                <span className="tracking-wide">Others</span>
+              </button>
+            </div>
+
+            {/* Prompt Capsule Box - CapCut Slide-Up */}
+            <div
+              className={`w-full rounded-2xl bg-[#1A1C23]/95 border border-white/15 p-4 shadow-2xl backdrop-blur-2xl space-y-3.5 focus-within:border-[#5B3DF5] text-left capcut-slide-up ${
+                isAnimatingUp
+                  ? "-translate-y-7 scale-[0.97] opacity-0 blur-xs"
+                  : "translate-y-0 scale-100 opacity-100 blur-none"
+              }`}
+            >
+              <div className="relative flex items-center space-x-2">
+                {/* + button on the left of prompt input */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white transition-all shrink-0 cursor-pointer border border-white/10"
+                  title="Rasm yoki PDF yuklash (+)"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+
+                <input
+                  type="text"
+                  value={topicInput}
+                  onChange={(e) => setTopicInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
+                  placeholder={
+                    attachedFiles.length > 0
+                      ? "Rasm bo'yicha ko'rsatma yozing (ixtiyoriy)..."
+                      : "Bugun qaysi mavzuni o'tamiz? (masalan: Present Perfect, History of Sports)..."
+                  }
+                  className="w-full bg-transparent text-sm sm:text-base text-white placeholder-slate-400 focus:outline-none font-medium px-1 pr-10"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleVoiceRecord}
+                  className={`absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
+                    isRecording
+                      ? 'bg-red-500/20 text-red-400 animate-pulse'
+                      : 'text-slate-400 hover:text-white hover:bg-white/10'
+                  }`}
+                  title={isRecording ? "Yozishni to'xtatish" : "Ovoz bilan yozish"}
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Attached file chips */}
+              {attachedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1 border-t border-white/10">
+                  {attachedFiles.map((f, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-xs text-indigo-200 font-medium"
                     >
-                      <Plus className="w-4 h-4 stroke-[3]" />
-                    </button>
+                      <span>📎 {f.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(i)}
+                        className="text-slate-400 hover:text-red-400 ml-1 font-bold cursor-pointer"
+                        title="Olib tashlash"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
 
-                    <input
-                      type="text"
-                      value={topicInput}
-                      onChange={(e) => setTopicInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
-                      placeholder={
-                        attachedFiles.length > 0
-                          ? "Darslik haqida qo'shimcha so'rov (yoki bo'sh qoldirib Dars Yaratishni bosing)..."
-                          : "Bugun qaysi mavzuni o'tamiz? (masalan: Present Perfect, History of sports)..."
-                      }
-                      className="w-full bg-transparent text-sm sm:text-base text-white placeholder-indigo-100/70 focus:outline-none px-2 pr-10 font-medium"
-                      autoFocus
-                    />
+              {/* DARS UZUNLIGI (Lesson Length Selector: Short / Medium / Long) */}
+              <div className="pt-2 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-[11px] font-bold text-slate-400 mr-1">Dars Uzunligi:</span>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setLessonLength("short")}
+                    className={`px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center space-x-1 transition-all ${
+                      lessonLength === "short"
+                        ? "bg-[#5B3DF5] text-white shadow-md"
+                        : "bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5"
+                    }`}
+                  >
+                    <span>⚡ Qisqa</span>
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={handleVoiceRecord}
-                      className={`p-2 rounded-xl transition-all ${
-                        isRecording
-                          ? "bg-red-500 text-white animate-pulse"
-                          : "text-white/80 hover:text-white hover:bg-white/10"
-                      }`}
-                      title="Ovoz bilan yozish"
-                    >
-                      <Mic className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLessonLength("medium")}
+                    className={`px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center space-x-1 transition-all ${
+                      lessonLength === "medium"
+                        ? "bg-[#5B3DF5] text-white shadow-md"
+                        : "bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5"
+                    }`}
+                  >
+                    <span>🎯 O'rtacha</span>
+                  </button>
 
-                  {/* Attached Files Badges (Thumbnails & Remove button) */}
-                  {attachedFiles.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 pt-1 animate-fade-in">
-                      {attachedFiles.map((f) => (
-                        <div
-                          key={f.id}
-                          className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-white/25 border-2 border-white/40 text-white text-xs font-bold shadow-md backdrop-blur-md"
-                        >
-                          {f.type.includes("pdf") ? (
-                            <FileText className="w-4 h-4 text-rose-300 shrink-0" />
-                          ) : (
-                            <img
-                              src={f.dataUrl}
-                              alt={f.name}
-                              className="w-5 h-5 rounded object-cover border border-white/40 shrink-0"
-                            />
-                          )}
-                          <span className="max-w-[150px] truncate">{f.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeAttachedFile(f.id)}
-                            className="w-4 h-4 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center text-[10px] ml-1 transition-colors"
-                            title="O'chirish"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                      <span className="text-[11px] text-indigo-100 font-bold ml-1">
-                        ✓ {attachedFiles.length} ta darslik fayli biriktirildi
-                      </span>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setLessonLength("long")}
+                    className={`px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center space-x-1 transition-all ${
+                      lessonLength === "long"
+                        ? "bg-[#5B3DF5] text-white shadow-md"
+                        : "bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5"
+                    }`}
+                  >
+                    <span>🚀 Uzun</span>
+                  </button>
                 </div>
 
-                {/* Length & Level Controls */}
-                <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center space-x-1.5 bg-black/20 p-1 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setLessonLength("short")}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                        lessonLength === "short"
-                          ? "bg-white text-indigo-950 shadow"
-                          : "text-white/80 hover:text-white"
-                      }`}
-                    >
-                      ⚡ Qisqa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLessonLength("medium")}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                        lessonLength === "medium"
-                          ? "bg-white text-indigo-950 shadow"
-                          : "text-white/80 hover:text-white"
-                      }`}
-                    >
-                      🎯 O'rtacha
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLessonLength("long")}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                        lessonLength === "long"
-                          ? "bg-white text-indigo-950 shadow"
-                          : "text-white/80 hover:text-white"
-                      }`}
-                    >
-                      🚀 Uzun
-                    </button>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
+                  {/* Level Pill */}
+                  <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
                     <select
                       value={level}
                       onChange={(e) => setLevel(e.target.value as any)}
-                      className="bg-black/20 text-white text-xs font-bold rounded-xl px-3 py-1.5 border border-white/20 focus:outline-none cursor-pointer"
+                      className="bg-transparent text-[11px] font-bold focus:outline-none cursor-pointer"
                     >
                       {["A1", "A2", "B1", "B2", "C1"].map((lvl) => (
-                        <option key={lvl} value={lvl} className="bg-[#1A1C23]">
+                        <option key={lvl} value={lvl} className="bg-[#1A1C23] text-white">
                           Level: {lvl}
                         </option>
                       ))}
                     </select>
-
-                    <button
-                      onClick={() => handleGenerate()}
-                      disabled={isGenerating}
-                      className="px-5 py-2 rounded-xl bg-white text-indigo-950 font-black text-xs sm:text-sm hover:bg-indigo-50 shadow-xl transition-all flex items-center space-x-1.5 disabled:opacity-50"
-                    >
-                      <Sparkles className="w-4 h-4 text-indigo-600" />
-                      <span>Dars Yaratish</span>
-                    </button>
+                    <ChevronDown className="w-3 h-3 text-slate-400" />
                   </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Action Blocks: 1. + Image | 2. Others (Lighter, bolder, and more evident) */}
-            <div className="flex items-center flex-wrap gap-3 pt-1">
-              {/* 1. + Image */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-5 py-2.5 rounded-2xl bg-white/30 hover:bg-white/40 border-2 border-white/70 hover:border-white text-white font-black text-xs sm:text-sm tracking-wide transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center space-x-2.5 backdrop-blur-md"
-              >
-                <span className="w-5 h-5 rounded-lg bg-white text-[#4F35C7] flex items-center justify-center font-black text-xs shadow-md">+</span>
-                <ImageIcon className="w-4 h-4 text-amber-300" />
-                <span>+ Image</span>
-              </button>
-
-              {/* 2. Others */}
-              <button
-                type="button"
-                onClick={() => showToast("ℹ️ 'Others' bo'limi tez kunda ishga tushadi")}
-                className="px-5 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 border-2 border-white/50 hover:border-white/80 text-white font-black text-xs sm:text-sm tracking-wide transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center space-x-2 backdrop-blur-md"
-              >
-                <MoreHorizontal className="w-4 h-4 text-indigo-200" />
-                <span>Others</span>
-              </button>
-            </div>
-
-            {/* 4-Card Quick Actions Grid (Screenshot 1 & 5 style) */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-extrabold text-white">Boshqa usullar</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div
-                  onClick={() => {
-                    setTopicInput("Present Perfect Simple");
-                    handleGenerate("Present Perfect Simple");
-                  }}
-                  className="p-4 rounded-2xl bg-[#131622] hover:bg-[#1A1E2E] border border-white/5 hover:border-indigo-500/30 cursor-pointer transition-all space-y-2 group shadow-md"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <MessageSquare className="w-4 h-4" />
-                  </div>
-                  <div className="font-bold text-xs text-white">Mavzudan dars</div>
-                  <div className="text-[10px] text-slate-400">Istalgan mavzuda</div>
-                </div>
-
-                <div
-                  onClick={() => {
-                    setActiveMainTab("board");
-                    if (curriculum) {
-                      const vocabCat = categories.find((c) => c.key === "vocab");
-                      if (vocabCat) setCurrentScreenIndex(vocabCat.startIndex);
-                    } else if (savedClassrooms[0]?.curriculum) {
-                      openClassroom(savedClassrooms[0].curriculum);
-                    }
-                  }}
-                  className="p-4 rounded-2xl bg-[#131622] hover:bg-[#1A1E2E] border border-white/5 hover:border-amber-500/30 cursor-pointer transition-all space-y-2 group shadow-md"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Target className="w-4 h-4" />
-                  </div>
-                  <div className="font-bold text-xs text-white">Kartochkalar</div>
-                  <div className="text-[10px] text-slate-400">Yodlash uchun</div>
-                </div>
-
-                <div
-                  onClick={() => {
-                    setActiveMainTab("board");
-                    if (curriculum) {
-                      const testCat = categories.find((c) => c.key === "tests");
-                      if (testCat) setCurrentScreenIndex(testCat.startIndex);
-                    } else if (savedClassrooms[0]?.curriculum) {
-                      openClassroom(savedClassrooms[0].curriculum);
-                    }
-                  }}
-                  className="p-4 rounded-2xl bg-[#131622] hover:bg-[#1A1E2E] border border-white/5 hover:border-emerald-500/30 cursor-pointer transition-all space-y-2 group shadow-md"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Edit3 className="w-4 h-4" />
-                  </div>
-                  <div className="font-bold text-xs text-white">Test & Mashq</div>
-                  <div className="text-[10px] text-slate-400">O'z savollaringiz</div>
-                </div>
-
-                <div
-                  onClick={() => {
-                    setActiveMainTab("board");
-                    if (!curriculum && savedClassrooms[0]?.curriculum) {
-                      openClassroom(savedClassrooms[0].curriculum);
-                    }
-                  }}
-                  className="p-4 rounded-2xl bg-[#131622] hover:bg-[#1A1E2E] border border-white/5 hover:border-purple-500/30 cursor-pointer transition-all space-y-2 group shadow-md"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Maximize2 className="w-4 h-4" />
-                  </div>
-                  <div className="font-bold text-xs text-white">Slaydlar</div>
-                  <div className="text-[10px] text-slate-400">AI taqdimot</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Classrooms & History Bar (Chat / Classroom History) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-extrabold text-white flex items-center space-x-2">
-                  <BookOpen className="w-4 h-4 text-[#2563EB]" />
-                  <span>So'nggi Darslar & Tarix ({savedClassrooms.length})</span>
-                </h3>
-                <button
-                  onClick={() => setActiveMainTab("library")}
-                  className="text-xs font-bold text-blue-400 hover:text-blue-300"
-                >
-                  Barchasini ko'rish →
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {savedClassrooms.slice(0, 3).map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => openClassroom(item.curriculum)}
-                    className="p-4 rounded-2xl bg-[#131622] hover:bg-[#1A1E2E] border border-white/10 hover:border-blue-500/50 cursor-pointer transition-all space-y-2 group shadow-md"
+                  <button
+                    onClick={() => handleGenerate()}
+                    disabled={isGenerating}
+                    className="h-8 px-4 rounded-xl bg-[#5B3DF5] hover:bg-[#4C2FE0] text-white font-bold flex items-center space-x-1.5 transition-all shadow-md disabled:opacity-50"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded-md bg-[#2563EB]/20 text-blue-300 border border-[#2563EB]/30 text-[10px] font-bold">
-                        {item.level}
-                      </span>
-                      <span className="text-[10px] text-slate-400">{item.date}</span>
-                    </div>
-                    <div className="font-bold text-sm text-white group-hover:text-blue-300 transition-colors truncate">
-                      {item.topic}
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5 text-xs text-blue-400 font-bold">
-                      <span>Doskada ochish</span>
-                      <span className="group-hover:translate-x-1 transition-transform">→</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================ */}
-        {/* TAB 2: LIBRARY & HISTORY VIEW                                */}
-        {/* ============================================================ */}
-        {!isGenerating && activeMainTab === "library" && (
-          <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6 overflow-y-auto max-h-full pb-24 lg:pb-8 animate-fade-in z-20">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black text-white flex items-center space-x-2.5">
-                  <BookOpen className="w-6 h-6 text-[#2563EB]" />
-                  <span>Darslar Kutubxonasi & Tarix</span>
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Telegram orqali yaratilgan va saqlangan interaktiv darsliklaringiz ro'yxati ({savedClassrooms.length} ta)
-                </p>
-              </div>
-              <button
-                onClick={() => setActiveMainTab("create")}
-                className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-blue-600 text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-blue-500/25 transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Yangi dars yaratish</span>
-              </button>
-            </div>
-
-            {/* Search Input */}
-            <div className="relative">
-              <input
-                type="text"
-                value={historySearchQuery}
-                onChange={(e) => setHistorySearchQuery(e.target.value)}
-                placeholder="Mavzular ichidan qidirish (masalan: Present Perfect)..."
-                className="w-full bg-[#131622] border border-white/10 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-[#2563EB] pl-10 transition-colors"
-              />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            </div>
-
-            {/* List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {savedClassrooms
-                .filter((c) =>
-                  historySearchQuery
-                    ? c.topic.toLowerCase().includes(historySearchQuery.toLowerCase()) ||
-                      c.level.toLowerCase().includes(historySearchQuery.toLowerCase())
-                    : true
-                )
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => openClassroom(item.curriculum)}
-                    className="p-5 rounded-2xl bg-[#131622] hover:bg-[#1A1E2E] border border-white/10 hover:border-blue-500/50 cursor-pointer transition-all space-y-3 group shadow-lg"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#2563EB]/20 text-blue-300 border border-[#2563EB]/30 text-[10px] font-black">
-                          {item.level}
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                          {item.length === "short" ? "Qisqa" : item.length === "long" ? "Uzun" : "O'rtacha"}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-[10px] text-slate-400">{item.date}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => deleteFromHistory(item.id, e)}
-                          className="p-1 rounded-md text-slate-500 hover:text-red-400 hover:bg-white/10 transition-colors"
-                          title="O'chirish"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-base font-black text-white group-hover:text-blue-300 transition-colors truncate">
-                        {item.topic}
-                      </h3>
-                      <p className="text-xs text-slate-400 line-clamp-2 mt-1">
-                        {item.curriculum?.description || `${item.topic} mavzusi bo'yicha to'liq interaktiv darslik.`}
-                      </p>
-                    </div>
-
-                    <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs font-bold text-blue-400">
-                      <span className="flex items-center space-x-1.5">
-                        <Maximize2 className="w-3.5 h-3.5" />
-                        <span>Doskada ochish</span>
-                      </span>
-                      <span className="group-hover:translate-x-1 transition-transform">→</span>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================ */}
-        {/* TAB 3: STUDENT HUB                                           */}
-        {/* ============================================================ */}
-        {!isGenerating && activeMainTab === "student" && (
-          <div className="w-full max-w-4xl px-4 py-8 flex flex-col items-center space-y-6 z-20 animate-fade-in overflow-y-auto max-h-[calc(100vh-64px)] pb-24 lg:pb-8">
-            <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl shadow-2xl">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg border border-white/20">
-                  {userInitial}
-                </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl sm:text-2xl font-black text-white">
-                      {userDisplayName}
-                    </h2>
-                    <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs font-bold flex items-center space-x-1">
-                      <GraduationCap className="w-3.5 h-3.5" />
-                      <span>Talaba Portali</span>
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    1,290 ta sara grammatik savollar, audio talaffuz va interaktiv doska darslari
-                  </p>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span className="text-[11px]">Yaratish</span>
+                  </button>
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveMainTab("create");
-                  showToast("👨‍🏫 Ustoz Studiyasiga o'tildi");
-                }}
-                className="px-3.5 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 hover:text-white text-xs font-bold transition-all flex items-center space-x-1.5 shadow-sm"
-              >
-                <Shield className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Ustoz Studiyasiga O'tish</span>
-              </button>
-            </div>
-
-            {/* 4 Interactive Modules Grid */}
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-              <a
-                href="/homework/A1/a1-grammar-mastery.html"
-                className="group relative rounded-3xl bg-slate-900/80 hover:bg-slate-900 border border-sky-500/30 hover:border-sky-500/70 p-6 flex flex-col justify-between transition-all duration-300 hover:scale-[1.01] shadow-xl overflow-hidden"
-              >
-                <div className="space-y-3 relative z-10">
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[11px] font-black">
-                      📘 A1-A2 DARAJA
-                    </span>
-                    <span className="text-xs font-bold text-sky-400 font-mono">365 ta Savol</span>
-                  </div>
-                  <h3 className="text-xl font-black text-white group-hover:text-sky-300 transition-colors">
-                    A1 Master Grammar Trainer
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Boshlang'ich grammatika: to be, Present Simple, Past Simple, olmoshlar va artikllar. Audio talaffuz va xatolar ustida ishlash tizimi.
-                  </p>
-                </div>
-                <div className="pt-5 mt-4 border-t border-white/10 flex items-center justify-between relative z-10">
-                  <span className="text-xs font-bold text-slate-400 group-hover:text-white transition-colors">
-                    Mashqlarni Boshlash
-                  </span>
-                  <div className="w-9 h-9 rounded-full bg-sky-500/20 group-hover:bg-sky-500 text-sky-300 group-hover:text-white flex items-center justify-center transition-all shadow-md">
-                    <Play className="w-4 h-4 fill-current ml-0.5" />
-                  </div>
-                </div>
-              </a>
-
-              <a
-                href="/homework/B1/b1-grammar-mastery.html"
-                className="group relative rounded-3xl bg-slate-900/80 hover:bg-slate-900 border border-indigo-500/30 hover:border-indigo-500/70 p-6 flex flex-col justify-between transition-all duration-300 hover:scale-[1.01] shadow-xl overflow-hidden"
-              >
-                <div className="space-y-3 relative z-10">
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-black">
-                      🚀 B1-B2 DARAJA
-                    </span>
-                    <span className="text-xs font-bold text-indigo-400 font-mono">925 ta Savol</span>
-                  </div>
-                  <h3 className="text-xl font-black text-white group-hover:text-indigo-300 transition-colors">
-                    B1 Master Grammar Trainer
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Mukammal grammatika: Present Perfect, Conditionals, Passive Voice, Modal fe'llar va Reported Speech. Imtihon darajasidagi savollar.
-                  </p>
-                </div>
-                <div className="pt-5 mt-4 border-t border-white/10 flex items-center justify-between relative z-10">
-                  <span className="text-xs font-bold text-slate-400 group-hover:text-white transition-colors">
-                    Mashqlarni Boshlash
-                  </span>
-                  <div className="w-9 h-9 rounded-full bg-indigo-500/20 group-hover:bg-indigo-500 text-indigo-300 group-hover:text-white flex items-center justify-center transition-all shadow-md">
-                    <Play className="w-4 h-4 fill-current ml-0.5" />
-                  </div>
-                </div>
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================ */}
-        {/* TAB 4: EMPTY BOARD STATE (WHEN BOARD TAB IS ACTIVE BUT NO CURR)*/}
-        {/* ============================================================ */}
-        {!isGenerating && activeMainTab === "board" && !curriculum && (
-          <div className="w-full max-w-md mx-auto p-8 text-center space-y-4 bg-[#131622] rounded-3xl border border-white/10 shadow-2xl z-20 animate-fade-in">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto">
-              <Maximize2 className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-black text-white">Hozircha dars ochilmagan</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Yangi darslik yarating yoki Kutubxonadan saqlangan darslikni tanlang.
-            </p>
-            <div className="flex items-center justify-center space-x-3 pt-2">
-              <button
-                onClick={() => setActiveMainTab("create")}
-                className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-blue-600 text-white text-xs font-bold shadow-lg transition-all"
-              >
-                + Yangi Dars Yaratish
-              </button>
-              <button
-                onClick={() => setActiveMainTab("library")}
-                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white text-xs font-bold transition-all"
-              >
-                📚 Kutubxonaga O'tish
-              </button>
             </div>
           </div>
         )}
@@ -2629,225 +1842,10 @@ export default function StitchTeacherOS() {
         {/* ============================================================ */}
         {/* ACTIVE STUDIO STATE: ZERO-SCROLL INTERACTIVE WHITEBOARD      */}
         {/* ============================================================ */}
-        {/* ACTIVE STUDIO STATE: ZERO-SCROLL INTERACTIVE WHITEBOARD      */}
-        {/* ============================================================ */}
-        {curriculum && activeMainTab === "board" && (
+        {curriculum && (
           <>
-            {/* MOBILE SLIDE VIEWER (Touch & Reading Optimized for Mobile Screens) */}
-            <div className="md:hidden w-full h-full overflow-y-auto p-4 pb-24 space-y-4 animate-fade-in z-20">
-              {/* Mobile Top Navigation */}
-              <div className="flex items-center justify-between bg-[#131622] border border-white/10 rounded-2xl px-4 py-2.5 shadow-lg">
-                <button
-                  onClick={() => setActiveMainTab("create")}
-                  className="flex items-center space-x-1 text-xs font-bold text-slate-400 hover:text-white"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Chiqish</span>
-                </button>
-                <div className="text-center">
-                  <div className="text-xs font-black text-white truncate max-w-[160px]">
-                    {curriculum.topic}
-                  </div>
-                  <div className="text-[10px] text-indigo-400 font-mono">
-                    {currentScreenIndex + 1} / {totalScreens} ({activeCategory?.title})
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    const titleToSpeak = activeScreen
-                      ? activeScreen.type === "slide"
-                        ? activeScreen.data.title
-                        : activeScreen.type === "vocab"
-                        ? activeScreen.data.word
-                        : activeScreen.type === "summary"
-                        ? activeScreen.data.title
-                        : curriculum.topic
-                      : curriculum.topic;
-                    speak(titleToSpeak);
-                  }}
-                  className="p-1.5 rounded-lg bg-white/5 text-slate-300 hover:text-white"
-                  title="Ovoz berish"
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Mobile Slide Card */}
-              <div className="bg-[#131622] border border-white/10 rounded-3xl p-5 space-y-4 shadow-xl">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#5B3DF5]/20 text-[#A5B4FC] border border-[#5B3DF5]/30 text-[10px] font-bold">
-                    {activeScreen?.type === "slide" ? activeScreen.data.tag : activeCategory?.title || "Darslik"}
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-400">
-                    {activeCategory?.title}
-                  </span>
-                </div>
-
-                <h2 className="text-lg font-black text-white leading-snug">
-                  {activeScreen?.type === "slide"
-                    ? activeScreen.data.title
-                    : activeScreen?.type === "vocab"
-                    ? activeScreen.data.word
-                    : activeScreen?.type === "summary"
-                    ? activeScreen.data.title
-                    : activeCategory?.title || curriculum.topic}
-                </h2>
-
-                {/* Slide type specifics */}
-                {activeScreen?.type === "slide" && (
-                  <div className="space-y-4">
-                    <div
-                      dangerouslySetInnerHTML={{ __html: sanitizeSlideBody(activeScreen.data.body) }}
-                      className="text-xs sm:text-sm text-slate-200 leading-relaxed space-y-3"
-                    />
-                    {activeScreen.data?.visual && (
-                      <div className="pt-2">
-                        <VisualDiagram diagram={activeScreen.data.visual} isLight={isBoardLight} onSpeak={speak} />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeScreen?.type === "quickQuestion" && (
-                  <div className="space-y-3">
-                    <p className="text-sm font-bold text-white leading-relaxed">
-                      {activeScreen.data.q}
-                    </p>
-                    <div className="space-y-2 pt-1">
-                      {activeScreen.data.opts?.map((opt: string, optIdx: number) => {
-                        const qKey = activeScreen.data.id || String(currentScreenIndex);
-                        const isSelected = selectedQuickOptions[qKey] === opt;
-                        const isRevealed = revealedQuickAnswers[qKey];
-                        const isCorrect = opt === activeScreen.data.ans;
-
-                        return (
-                          <button
-                            key={optIdx}
-                            onClick={() => {
-                              setSelectedQuickOptions((prev) => ({ ...prev, [qKey]: opt }));
-                              setRevealedQuickAnswers((prev) => ({ ...prev, [qKey]: true }));
-                              if (isCorrect) confetti({ particleCount: 40, spread: 45 });
-                            }}
-                            className={`w-full text-left p-3 rounded-xl text-xs font-semibold border transition-all ${
-                              isRevealed
-                                ? isCorrect
-                                  ? "bg-emerald-500/20 border-emerald-500 text-emerald-200 font-bold"
-                                  : isSelected
-                                  ? "bg-red-500/20 border-red-500 text-red-200"
-                                  : "bg-white/5 border-white/5 text-slate-400 opacity-60"
-                                : "bg-white/5 hover:bg-white/10 border-white/10 text-slate-200"
-                            }`}
-                          >
-                            {opt}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {revealedQuickAnswers[activeScreen.data.id || String(currentScreenIndex)] && (
-                      <div className="p-3 rounded-xl bg-[#5B3DF5]/15 border border-[#5B3DF5]/30 text-xs text-indigo-200">
-                        💡 <b>Izoh:</b> {activeScreen.data.expl}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeScreen?.type === "vocab" && (
-                  <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-950/60 to-purple-950/60 border border-indigo-500/30 text-center space-y-4">
-                    <div className="text-xs font-bold text-indigo-300 uppercase tracking-widest">
-                      {activeScreen.data.pos || "So'z"}
-                    </div>
-                    <div className="text-2xl font-black text-white">
-                      {activeScreen.data.word}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => speak(activeScreen.data.word)}
-                      className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-white/10 text-xs text-indigo-200 hover:text-white"
-                    >
-                      <Volume2 className="w-3.5 h-3.5" />
-                      <span>Talaffuz</span>
-                    </button>
-                    <div className="pt-3 border-t border-white/10 text-sm font-bold text-emerald-400">
-                      {activeScreen.data.uz}
-                    </div>
-                    {activeScreen.data.ex && (
-                      <p className="text-xs text-slate-300 italic">
-                        "{activeScreen.data.ex}"
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {activeScreen?.type === "test" && (
-                  <div className="space-y-3">
-                    <p className="text-sm font-bold text-white">
-                      {activeScreen.data.q}
-                    </p>
-                    <div className="space-y-2 pt-1">
-                      {activeScreen.data.opts?.map((opt: string, optIdx: number) => {
-                        const ans = studentQuizAnswers[currentScreenIndex];
-                        const isSelected = ans === opt;
-                        const isCorrect = opt === activeScreen.data.ans;
-
-                        return (
-                          <button
-                            key={optIdx}
-                            onClick={() => {
-                              setStudentQuizAnswers((prev) => ({ ...prev, [currentScreenIndex]: opt }));
-                              if (isCorrect) confetti({ particleCount: 50, spread: 50 });
-                            }}
-                            className={`w-full text-left p-3 rounded-xl text-xs font-semibold border transition-all ${
-                              ans
-                                ? isCorrect
-                                  ? "bg-emerald-500/20 border-emerald-500 text-emerald-200 font-bold"
-                                  : isSelected
-                                  ? "bg-red-500/20 border-red-500 text-red-200"
-                                  : "bg-white/5 border-white/5 text-slate-400 opacity-60"
-                                : "bg-white/5 hover:bg-white/10 border-white/10 text-slate-200"
-                            }`}
-                          >
-                            {opt}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Mobile Slide Controls */}
-              <div className="flex items-center justify-between gap-3 pt-1">
-                <button
-                  onClick={() => {
-                    setCurrentScreenIndex((prev) => Math.max(0, prev - 1));
-                    setBoardStepReveal(0);
-                  }}
-                  disabled={currentScreenIndex === 0}
-                  className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs disabled:opacity-30 transition-all flex items-center justify-center space-x-1"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Oldingi</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setCurrentScreenIndex((prev) => Math.min(totalScreens - 1, prev + 1));
-                    setBoardStepReveal(0);
-                  }}
-                  disabled={currentScreenIndex === totalScreens - 1}
-                  className="flex-1 py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-600 text-white font-bold text-xs disabled:opacity-30 transition-all flex items-center justify-center space-x-1 shadow-lg shadow-blue-500/25"
-                >
-                  <span>Keyingi</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* ============================================================ */}
-            {/* THE PRESENTATION WHITEBOARD & RIGHT TOOLBAR CONTAINER        */}
-            {/* ============================================================ */}
-            <div className={`w-full h-full min-h-0 ${isFullscreen ? "flex" : "hidden md:flex"} items-center justify-center p-2 sm:p-3 md:p-4 gap-3.5 transition-all overflow-hidden ${
-              isFullscreen ? "p-0 gap-0" : isPromptCollapsed ? "" : "2xl:pr-96"
-            }`}>
+            {/* MAIN PRESENTATION WRAPPER: Board and Right Toolbar as Flex Siblings (Physically separated so never overlapping on Victus & all screens) */}
+            <div className="w-full h-full min-h-0 flex items-center justify-center p-2 sm:p-3 md:p-4 gap-3.5 overflow-hidden">
               <div
                 ref={boardRef}
                 className={`transition-all duration-200 relative flex flex-col justify-between shadow-2xl ${
@@ -3157,7 +2155,7 @@ export default function StitchTeacherOS() {
                         let visualToRender = activeScreen.data.visual;
                         if (!visualToRender && activeScreen.data.body) {
                           // Try to extract an example sentence from <i>'...'</i> or <i>"..."</i> or <i>...</i>
-                          const match = activeScreen.data.body.match(new RegExp("<i>['\"]?([^<'\\\"]+)['\"]?<\\/i>"));
+                          const match = activeScreen.data.body.match(/<i>['"]?([^<'"]+)['"]?<\/i>/);
                           if (match && match[1] && match[1].length > 5) {
                             const words = match[1].trim().split(" ");
                             visualToRender = {
@@ -4019,7 +3017,7 @@ export default function StitchTeacherOS() {
                 </div>
               </div>
 
-              {/* RIGHT CATEGORY NAVIGATION TOOLBAR (flex sibling, physically separated on all devices) */}
+              {/* RIGHT CATEGORY NAVIGATION TOOLBAR (Separated, flex sibling, never overlaps board) */}
               {!isFullscreen && (
                 <aside
                   className={`hidden md:flex shrink-0 z-20 flex-col justify-between rounded-2xl bg-[#18191E]/95 border border-white/10 shadow-2xl backdrop-blur-xl text-slate-400 transition-all duration-300 relative ${
@@ -4100,7 +3098,6 @@ export default function StitchTeacherOS() {
 
                   {/* Bottom utility buttons */}
                   <div className={`w-full pt-2 border-t border-white/10 mt-2 flex flex-col space-y-1.5 ${isRightBarExpanded ? "" : "items-center"}`}>
-                    {/* Whiteboard Theme Toggle (Sun/Moon) */}
                     <button
                       onClick={() => {
                         setIsBoardLight((prev) => !prev);
@@ -4125,7 +3122,6 @@ export default function StitchTeacherOS() {
                       )}
                     </button>
 
-                    {/* Fullscreen Button */}
                     <button
                       onClick={toggleFullscreen}
                       className={`rounded-xl transition-all flex items-center ${
@@ -4146,63 +3142,6 @@ export default function StitchTeacherOS() {
             </div>
           </>
         )}
-      </div>
-
-      {/* MOBILE BOTTOM NAVIGATION BAR (md:hidden QuizPilot Style) */}
-      {!isFullscreen && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0D0F14]/95 backdrop-blur-xl border-t border-white/10 px-4 flex items-center justify-around z-50 select-none">
-          <button
-            onClick={() => setActiveMainTab("create")}
-            className={`flex flex-col items-center justify-center space-y-1 py-1 px-3 rounded-xl transition-all ${
-              activeMainTab === "create" ? "text-[#2563EB]" : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <Plus className="w-5 h-5" />
-            <span className="text-[10px] font-bold">Yaratish</span>
-          </button>
-
-          <button
-            onClick={() => setActiveMainTab("library")}
-            className={`flex flex-col items-center justify-center space-y-1 py-1 px-3 rounded-xl transition-all relative ${
-              activeMainTab === "library" ? "text-[#2563EB]" : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <BookOpen className="w-5 h-5" />
-            <span className="text-[10px] font-bold">Kutubxona</span>
-            {savedClassrooms.length > 0 && (
-              <span className="absolute top-1 right-2 w-2 h-2 rounded-full bg-[#2563EB]" />
-            )}
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveMainTab("board");
-              if (!curriculum && savedClassrooms[0]?.curriculum) {
-                openClassroom(savedClassrooms[0].curriculum);
-              }
-            }}
-            className={`flex flex-col items-center justify-center space-y-1 py-1 px-3 rounded-xl transition-all relative ${
-              activeMainTab === "board" ? "text-[#2563EB]" : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <Maximize2 className="w-5 h-5" />
-            <span className="text-[10px] font-bold">AI Doska</span>
-            {curriculum && (
-              <span className="absolute top-1 right-2 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveMainTab("student")}
-            className={`flex flex-col items-center justify-center space-y-1 py-1 px-3 rounded-xl transition-all ${
-              activeMainTab === "student" ? "text-[#2563EB]" : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <GraduationCap className="w-5 h-5" />
-            <span className="text-[10px] font-bold">Talaba</span>
-          </button>
-        </nav>
-      )}
       </div>
     </div>
   );
