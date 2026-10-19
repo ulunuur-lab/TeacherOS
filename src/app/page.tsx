@@ -1958,8 +1958,12 @@ export default function StitchTeacherOS() {
         setBoardStepReveal(0);
       } else if (e.key === "f" || e.key === "F") {
         toggleFullscreen();
-      } else if (e.key === "Escape" && isFullscreen) {
-        setIsFullscreen(false);
+      } else if (e.key === "Escape") {
+        if (expandedVisual) {
+          setExpandedVisual(null);
+        } else if (isFullscreen) {
+          setIsFullscreen(false);
+        }
       }
     };
 
@@ -3665,57 +3669,7 @@ export default function StitchTeacherOS() {
               <span className="hidden sm:inline">{appLanguage === 'en' ? "Assignments" : appLanguage === 'ru' ? "Задания" : "Topshiriqlar"}</span>
             </button>
 
-            {curriculum && (
-              <>
-                <button
-                  onClick={toggleFullscreen}
-                  className="px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center space-x-1.5 font-bold transition-all cursor-pointer"
-                  title="To'liq doska rejimi (F)"
-                >
-                  <Play className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
-                  <span className="hidden sm:inline">Present</span>
-                </button>
 
-                <button
-                  onClick={handleDownloadHtml}
-                  className={`p-1.5 sm:px-3 sm:py-1.5 rounded-full border flex items-center space-x-1 font-medium transition-all cursor-pointer ${
-                    isBoardLight
-                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
-                      : "bg-white/5 hover:bg-white/10 text-white border-white/10"
-                  }`}
-                  title="HTML Yuklab Olish"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Export</span>
-                </button>
-
-                <button
-                  onClick={handleShareLink}
-                  className={`p-1.5 sm:px-3 sm:py-1.5 rounded-full border flex items-center space-x-1 font-medium transition-all cursor-pointer ${
-                    isBoardLight
-                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
-                      : "bg-white/5 hover:bg-white/10 text-white border-white/10"
-                  }`}
-                  title="Havolani Nusxalash"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Share</span>
-                </button>
-
-                {/* Direct Telegram Sync Button */}
-                <button
-                  onClick={handleSendToTelegram}
-                  disabled={isSyncingTelegram}
-                  className="px-2.5 sm:px-3 py-1.5 rounded-full bg-[#229ED9]/15 hover:bg-[#229ED9]/25 text-[#229ED9] border border-[#229ED9]/40 flex items-center space-x-1.5 font-bold transition-all cursor-pointer hover-lift disabled:opacity-50"
-                  title="Darsni shaxsiy Telegramga yuborish"
-                >
-                  <Send className="w-3.5 h-3.5 fill-[#229ED9]" />
-                  <span className="hidden sm:inline">
-                    {isSyncingTelegram ? "Yuborilmoqda..." : "Telegramga"}
-                  </span>
-                </button>
-              </>
-            )}
 
             {/* Auth section: Sign in button for guests, Account pill + Logout for logged in */}
             {currentUser ? (
@@ -5290,24 +5244,41 @@ export default function StitchTeacherOS() {
                         </button>
                       </div>
 
-                      {/* Right toolbar controls: Sun/Moon toggle & Close Button "X" */}
+                      {/* Right toolbar controls: Dark/Light toggle & Close Button "X" */}
                       <div className="flex items-center space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsBoardLight((prev) => !prev);
-                            showToast(isBoardLight ? "🌙 To'q doska yoqildi" : "☀️ Katakli daftar (Light Mode) yoqildi");
-                          }}
-                          className={`px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition-all shadow-md cursor-pointer border ${
-                            isBoardLight
-                              ? "bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300"
-                              : "bg-white/10 hover:bg-white/20 text-slate-200 border-white/15"
-                          }`}
-                          title={isBoardLight ? "To'q doskaga o'tish (Dark)" : "Katakli daftar yorug' rejimiga o'tish (Light)"}
-                        >
-                          {isBoardLight ? <Sun className="w-3.5 h-3.5 text-amber-600 fill-amber-500" /> : <Moon className="w-3.5 h-3.5 text-indigo-300" />}
-                          <span className="hidden sm:inline">{isBoardLight ? "Katakli Daftar" : "Doska"}</span>
-                        </button>
+                        {/* Board Theme Options: Dark and Light */}
+                        <div className={`p-0.5 rounded-xl border flex items-center space-x-0.5 ${
+                          isBoardLight ? "bg-slate-200/80 border-slate-300" : "bg-white/10 border-white/15"
+                        }`}>
+                          <button
+                            type="button"
+                            onClick={() => setIsBoardLight(false)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center space-x-1 transition-all cursor-pointer ${
+                              !isBoardLight
+                                ? "bg-indigo-600 text-white shadow-sm"
+                                : isBoardLight
+                                ? "text-slate-600 hover:text-slate-900"
+                                : "text-slate-400 hover:text-white"
+                            }`}
+                            title="To'q doska (Dark)"
+                          >
+                            <Moon className="w-3 h-3" />
+                            <span>Dark</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsBoardLight(true)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center space-x-1 transition-all cursor-pointer ${
+                              isBoardLight
+                                ? "bg-white text-slate-900 shadow-sm"
+                                : "text-slate-400 hover:text-white"
+                            }`}
+                            title="Yorug' doska (Light)"
+                          >
+                            <Sun className="w-3 h-3 text-amber-500 fill-amber-400" />
+                            <span>Light</span>
+                          </button>
+                        </div>
 
                         <button
                           onClick={() => {
@@ -6696,6 +6667,57 @@ export default function StitchTeacherOS() {
                     </button>
                   )}
                 </div>
+
+                {/* Fullscreen Interactive Visual Diagram Modal (Placed INSIDE boardRef for full native fullscreen compatibility) */}
+                {expandedVisual && (
+                  <div className={`fixed inset-0 z-[100] backdrop-blur-2xl flex flex-col justify-between p-4 sm:p-8 animate-in fade-in ${
+                    isBoardLight
+                      ? "bg-[#F8FAFC]/98 text-slate-900 border-slate-200 board-light"
+                      : "bg-[#0B0D13]/98 text-white border-white/15"
+                  }`}>
+                    <div className={`flex items-center justify-between pb-4 border-b max-w-6xl w-full mx-auto shrink-0 ${
+                      isBoardLight ? "border-slate-200" : "border-white/15"
+                    }`}>
+                      <div className="flex items-center space-x-3">
+                        <span className="px-3.5 py-1.5 rounded-full bg-[#5B3DF5] text-white text-xs font-black uppercase tracking-wider flex items-center space-x-2 shadow-md">
+                          <Sparkles className="w-4 h-4" />
+                          <span>Interaktiv Vizual Model (Katta Doska)</span>
+                        </span>
+                        <span className={`text-xs font-medium hidden sm:inline ${
+                          isBoardLight ? "text-slate-600" : "text-slate-400"
+                        }`}>
+                          Sinfdagi barcha o'quvchilar uchun aniq va katta ko'rinish
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setExpandedVisual(null)}
+                        className={`px-4 py-2 rounded-xl font-bold text-xs flex items-center space-x-2 transition-all shadow-md cursor-pointer border hover-lift ${
+                          isBoardLight
+                            ? "bg-slate-200 hover:bg-slate-300 text-slate-900 border-slate-300"
+                            : "bg-white/10 hover:bg-white/20 text-white border-white/15 hover:border-white/30"
+                        }`}
+                        title="Slaydga qaytish"
+                      >
+                        <span>Slaydga Qaytish</span>
+                        <X className="w-4 h-4 font-black" />
+                      </button>
+                    </div>
+
+                    <div className="flex-1 w-full max-w-6xl mx-auto flex items-center justify-center py-6 overflow-y-auto">
+                      <div className="w-full">
+                        <VisualDiagram diagram={expandedVisual} onSpeak={speak} isLight={isBoardLight} />
+                      </div>
+                    </div>
+
+                    <div className={`text-center text-xs py-2 border-t shrink-0 ${
+                      isBoardLight ? "text-slate-500 border-slate-200" : "text-slate-500 border-white/10"
+                    }`}>
+                      Esc yoki "Slaydga Qaytish" tugmasini bosing
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* SEPARATED TOGGLE BUTTON: Between the slides block and right sidebar, closer to the right sidebar without touching either */}
@@ -6754,7 +6776,6 @@ export default function StitchTeacherOS() {
                           onClick={() => {
                             setCurrentScreenIndex(cat.startIndex);
                             setBoardStepReveal(0);
-                            showToast(`📌 ${cat.title} bo'limiga o'tildi`);
                           }}
                           className={`rounded-xl transition-all relative group flex items-center hover-lift ${
                             isRightBarExpanded
@@ -6815,9 +6836,8 @@ export default function StitchTeacherOS() {
                     <button
                       onClick={() => {
                         setIsBoardLight((prev) => !prev);
-                        showToast(isBoardLight ? "🌙 To'q doska yoqildi" : "☀️ Yorug' doska yoqildi");
                       }}
-                      className={`rounded-xl transition-all flex items-center hover-lift ${
+                      className={`rounded-xl transition-all flex items-center hover-lift cursor-pointer ${
                         isRightBarExpanded
                           ? `w-full px-3 py-2 space-x-2.5 text-left ${
                               isBoardLight
@@ -6830,12 +6850,12 @@ export default function StitchTeacherOS() {
                                 : "text-slate-300 hover:bg-white/10"
                             }`
                       }`}
-                      title={isBoardLight ? "To'q doskaga o'tkazish" : "Oq doskaga o'tkazish"}
+                      title={isBoardLight ? "To'q doska (Dark)" : "Yorug' doska (Light)"}
                     >
-                      {isBoardLight ? <Moon className="w-4 h-4 shrink-0" /> : <Sun className="w-4 h-4 shrink-0" />}
+                      {isBoardLight ? <Moon className="w-4 h-4 shrink-0" /> : <Sun className="w-4 h-4 shrink-0 text-amber-500 fill-amber-400" />}
                       {isRightBarExpanded && (
-                        <span className="text-xs font-medium">
-                          {isBoardLight ? "To'q doska" : "Yorug' doska"}
+                        <span className="text-xs font-bold">
+                          {isBoardLight ? "Dark" : "Light"}
                         </span>
                       )}
                     </button>
@@ -6872,56 +6892,7 @@ export default function StitchTeacherOS() {
       {/* End PUSH CONTAINER */}
     </div>
 
-      {/* Fullscreen Interactive Visual Diagram Modal (For Classroom Visibility with Light & Dark Mode) */}
-      {expandedVisual && (
-        <div className={`fixed inset-0 z-50 backdrop-blur-2xl flex flex-col justify-between p-4 sm:p-8 animate-in fade-in ${
-          isBoardLight
-            ? "bg-[#F8FAFC]/98 text-slate-900 border-slate-200 board-light"
-            : "bg-[#0B0D13]/98 text-white border-white/15"
-        }`}>
-          <div className={`flex items-center justify-between pb-4 border-b max-w-6xl w-full mx-auto shrink-0 ${
-            isBoardLight ? "border-slate-200" : "border-white/15"
-          }`}>
-            <div className="flex items-center space-x-3">
-              <span className="px-3.5 py-1.5 rounded-full bg-[#5B3DF5] text-white text-xs font-black uppercase tracking-wider flex items-center space-x-2 shadow-md">
-                <Sparkles className="w-4 h-4" />
-                <span>Interaktiv Vizual Model (Katta Doska)</span>
-              </span>
-              <span className={`text-xs font-medium hidden sm:inline ${
-                isBoardLight ? "text-slate-600" : "text-slate-400"
-              }`}>
-                Sinfdagi barcha o'quvchilar uchun aniq va katta ko'rinish
-              </span>
-            </div>
 
-            <button
-              type="button"
-              onClick={() => setExpandedVisual(null)}
-              className={`px-4 py-2 rounded-xl font-bold text-xs flex items-center space-x-2 transition-all shadow-md cursor-pointer border hover-lift ${
-                isBoardLight
-                  ? "bg-slate-200 hover:bg-slate-300 text-slate-900 border-slate-300"
-                  : "bg-white/10 hover:bg-white/20 text-white border-white/15 hover:border-white/30"
-              }`}
-              title="Slaydga qaytish"
-            >
-              <span>Slaydga Qaytish</span>
-              <X className="w-4 h-4 font-black" />
-            </button>
-          </div>
-
-          <div className="flex-1 w-full max-w-6xl mx-auto flex items-center justify-center py-6 overflow-y-auto">
-            <div className="w-full">
-              <VisualDiagram diagram={expandedVisual} onSpeak={speak} isLight={isBoardLight} />
-            </div>
-          </div>
-
-          <div className={`text-center text-xs py-2 border-t shrink-0 ${
-            isBoardLight ? "text-slate-500 border-slate-200" : "text-slate-500 border-white/10"
-          }`}>
-            Esc yoki "Slaydga Qaytish" tugmasini bosing
-          </div>
-        </div>
-      )}
     </div>
   );
 }
