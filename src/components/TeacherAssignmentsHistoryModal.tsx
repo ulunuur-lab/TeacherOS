@@ -166,64 +166,127 @@ export default function TeacherAssignmentsHistoryModal({
           </div>
         </div>
 
-        {/* Tab Switcher */}
-        <div className={`flex items-center px-6 pt-3 border-b gap-3 shrink-0 ${
-          isLight ? "border-slate-200 bg-white" : "border-white/10 bg-[#0f1020]"
+        {/* 3 Prominent Separated Block Cards (HW, Student Results, Class Sessions) */}
+        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 sm:p-5 border-b shrink-0 ${
+          isLight ? "border-slate-200 bg-slate-100/60" : "border-white/10 bg-[#0c0d1c]"
         }`}>
+          {/* Block 1: Assigned Homework (HW) */}
           <button
             type="button"
             onClick={() => setActiveTab("homework")}
-            className={`pb-3 text-xs sm:text-sm font-bold flex items-center space-x-2 border-b-2 transition-all cursor-pointer ${
+            className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-center justify-between group hover:scale-[1.01] ${
               activeTab === "homework"
-                ? "border-[#635BFF] text-[#635BFF]"
+                ? isLight
+                  ? "bg-indigo-50 border-indigo-600 shadow-md text-indigo-950"
+                  : "bg-gradient-to-br from-[#635BFF]/30 to-[#4F46E5]/15 border-[#635BFF] shadow-[0_0_25px_rgba(99,91,255,0.3)] text-white"
                 : isLight
-                ? "border-transparent text-slate-500 hover:text-slate-900"
-                : "border-transparent text-slate-400 hover:text-white"
+                  ? "bg-white border-slate-200 hover:border-slate-300 text-slate-700"
+                  : "bg-white/[0.04] border-white/10 hover:border-white/20 text-slate-300 hover:text-white"
             }`}
           >
-            <BookOpen className="w-4 h-4" />
-            <span>
-              {isEn ? "Assigned Homework" : isRu ? "Назначенные Д/З" : "Biriktirilgan Uyga Vazifalar"}
-            </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/10">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                activeTab === "homework"
+                  ? "bg-gradient-to-tr from-[#635BFF] to-[#818cf8] text-white shadow-lg"
+                  : isLight ? "bg-indigo-100 text-indigo-600" : "bg-white/10 text-indigo-400"
+              }`}>
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <div className="truncate">
+                <div className="font-black text-xs sm:text-sm tracking-tight truncate">
+                  {isEn ? "Assigned Homework" : isRu ? "Назначенные Д/З" : "Uyga Vazifalar"}
+                </div>
+                <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                  {isEn ? "Class tasks" : isRu ? "Задания класса" : "Biriktirilgan topshiriqlar"}
+                </div>
+              </div>
+            </div>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-black shrink-0 ${
+              activeTab === "homework"
+                ? "bg-indigo-500 text-white shadow"
+                : isLight ? "bg-slate-200 text-slate-700" : "bg-white/10 text-slate-300"
+            }`}>
               {assignments.length}
             </span>
           </button>
 
+          {/* Block 2: Student Submissions / Level Checks */}
           <button
             type="button"
             onClick={() => setActiveTab("level_check")}
-            className={`pb-3 text-xs sm:text-sm font-bold flex items-center space-x-2 border-b-2 transition-all cursor-pointer ${
+            className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-center justify-between group hover:scale-[1.01] ${
               activeTab === "level_check"
-                ? "border-amber-400 text-amber-400"
+                ? isLight
+                  ? "bg-amber-50 border-amber-600 shadow-md text-amber-950"
+                  : "bg-gradient-to-br from-amber-500/30 to-yellow-600/15 border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.3)] text-white"
                 : isLight
-                ? "border-transparent text-slate-500 hover:text-slate-900"
-                : "border-transparent text-slate-400 hover:text-white"
+                  ? "bg-white border-slate-200 hover:border-slate-300 text-slate-700"
+                  : "bg-white/[0.04] border-white/10 hover:border-white/20 text-slate-300 hover:text-white"
             }`}
           >
-            <Trophy className="w-4 h-4" />
-            <span>
-              {isEn ? "Student Submissions" : isRu ? "Результаты учеников" : "O'quvchilar Natijalari"}
-            </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/10">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                activeTab === "level_check"
+                  ? "bg-gradient-to-tr from-amber-500 to-yellow-500 text-white shadow-lg"
+                  : isLight ? "bg-amber-100 text-amber-700" : "bg-white/10 text-amber-400"
+              }`}>
+                <Trophy className="w-5 h-5" />
+              </div>
+              <div className="truncate">
+                <div className="font-black text-xs sm:text-sm tracking-tight truncate">
+                  {isEn ? "Student Results" : isRu ? "Результаты учеников" : "O'quvchilar Natijalari"}
+                </div>
+                <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                  {isEn ? "Scores & checks" : isRu ? "Баллы и ответы" : "Topshirilgan natijalar"}
+                </div>
+              </div>
+            </div>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-black shrink-0 ${
+              activeTab === "level_check"
+                ? "bg-amber-500 text-slate-950 shadow"
+                : isLight ? "bg-slate-200 text-slate-700" : "bg-white/10 text-slate-300"
+            }`}>
               {submissions.length}
             </span>
           </button>
 
+          {/* Block 3: Group Classroom Lessons */}
           <button
             type="button"
             onClick={() => setActiveTab("group_quiz")}
-            className={`pb-3 text-xs sm:text-sm font-bold flex items-center space-x-2 border-b-2 transition-all cursor-pointer ${
+            className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-center justify-between group hover:scale-[1.01] ${
               activeTab === "group_quiz"
-                ? "border-emerald-400 text-emerald-400"
+                ? isLight
+                  ? "bg-emerald-50 border-emerald-600 shadow-md text-emerald-950"
+                  : "bg-gradient-to-br from-emerald-500/30 to-teal-600/15 border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.3)] text-white"
                 : isLight
-                ? "border-transparent text-slate-500 hover:text-slate-900"
-                : "border-transparent text-slate-400 hover:text-white"
+                  ? "bg-white border-slate-200 hover:border-slate-300 text-slate-700"
+                  : "bg-white/[0.04] border-white/10 hover:border-white/20 text-slate-300 hover:text-white"
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span>
-              {isEn ? "Classroom Sessions" : isRu ? "Сессии классов" : "Guruh Darslari"}
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                activeTab === "group_quiz"
+                  ? "bg-gradient-to-tr from-emerald-500 to-teal-500 text-white shadow-lg"
+                  : isLight ? "bg-emerald-100 text-emerald-700" : "bg-white/10 text-emerald-400"
+              }`}>
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="truncate">
+                <div className="font-black text-xs sm:text-sm tracking-tight truncate">
+                  {isEn ? "Class Sessions" : isRu ? "Сессии классов" : "Guruh Darslari"}
+                </div>
+                <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                  {isEn ? "Live Baamboozle" : isRu ? "Викторины" : "Sinf bellashuvlari"}
+                </div>
+              </div>
+            </div>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase shrink-0 ${
+              activeTab === "group_quiz"
+                ? "bg-emerald-500 text-slate-950 shadow"
+                : isLight ? "bg-slate-200 text-slate-700" : "bg-white/10 text-slate-300"
+            }`}>
+              Faol
             </span>
           </button>
         </div>
@@ -264,100 +327,123 @@ export default function TeacherAssignmentsHistoryModal({
                   return (
                     <div
                       key={hw.id}
-                      className={`rounded-2xl border transition-all ${
+                      className={`rounded-2xl border-2 transition-all overflow-hidden ${
                         isLight
-                          ? "bg-slate-50 border-slate-200 hover:border-indigo-300"
-                          : "bg-white/[0.03] border-white/10 hover:border-[#635BFF]/40"
+                          ? "bg-white border-slate-200 hover:border-indigo-400 shadow-md hover:shadow-indigo-500/10"
+                          : "bg-gradient-to-br from-[#171936] to-[#0f1024] border-white/15 hover:border-[#635BFF]/60 shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
                       }`}
                     >
-                      <div
-                        onClick={() => setExpandedHwId(isExpanded ? null : hw.id)}
-                        className="p-4 sm:p-5 flex items-center justify-between cursor-pointer select-none"
-                      >
-                        <div className="space-y-1.5 pr-4">
+                      <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-2 flex-1 min-w-0">
+                          {/* Badges Row */}
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#635BFF]/20 text-[#635BFF] border border-[#635BFF]/30">
-                              🏫 {hw.classroomName || "Sinf"}
+                            <span className="px-3 py-1 rounded-full text-xs font-black bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 flex items-center space-x-1">
+                              <span>🏫</span>
+                              <span>{hw.classroomName || "Sinf"}</span>
                             </span>
-                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase">
-                              {hw.intensity || "medium"}
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/35">
+                              {hw.intensity || "MEDIUM"}
                             </span>
-                            <span className={`text-xs font-mono flex items-center space-x-1 ${
-                              isLight ? "text-slate-500" : "text-slate-400"
+                            <span className={`text-xs font-mono flex items-center space-x-1.5 px-2.5 py-1 rounded-full border ${
+                              isLight ? "bg-slate-100 border-slate-200 text-slate-600" : "bg-white/5 border-white/10 text-slate-300"
                             }`}>
-                              <Clock className="w-3 h-3" />
+                              <Clock className="w-3.5 h-3.5 text-indigo-400" />
                               <span>{dateStr}</span>
                             </span>
                           </div>
 
-                          <h3 className={`text-base sm:text-lg font-black tracking-tight ${
+                          {/* Topic Title */}
+                          <h3 className={`text-lg sm:text-xl font-black tracking-tight ${
                             isLight ? "text-slate-900" : "text-white"
                           }`}>
                             {hw.topic}
                           </h3>
 
-                          <p className={`text-xs ${isLight ? "text-slate-600" : "text-slate-400"}`}>
-                            {hw.sections?.length || 0} ta bo'lim • {hw.totalCount || 10} ta mashq savollari • Ustoz: {hw.assignedBy || "Siz"}
+                          {/* Summary Row */}
+                          <p className={`text-xs flex items-center space-x-2 ${isLight ? "text-slate-600" : "text-slate-400"}`}>
+                            <span>📚 {hw.sections?.length || 1} ta bo'lim</span>
+                            <span>•</span>
+                            <span>🎯 {hw.totalCount || 5} ta mashq savoli</span>
+                            <span>•</span>
+                            <span>👤 Ustoz: <b className={isLight ? "text-indigo-700" : "text-indigo-300"}>{hw.assignedBy || "Siz"}</b></span>
                           </p>
                         </div>
 
-                        <div className="flex items-center space-x-3 shrink-0">
+                        {/* Action Buttons */}
+                        <div className="flex items-center space-x-2 self-end sm:self-center shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedHwId(isExpanded ? null : hw.id)}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer border ${
+                              isExpanded
+                                ? "bg-indigo-600 text-white border-indigo-500 shadow-md"
+                                : isLight
+                                  ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                                  : "bg-white/5 hover:bg-white/10 text-slate-200 border-white/10"
+                            }`}
+                          >
+                            <span>{isExpanded ? "Yashirish" : "Mashqlar"}</span>
+                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                          </button>
+
                           <button
                             type="button"
                             onClick={(e) => handleDeleteAssignment(hw.id, e)}
-                            className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-                            title="O'chirish"
+                            className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer"
+                            title="Vazifani o'chirish"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-
-                          <div className="p-2 rounded-xl bg-white/5 text-slate-300">
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </div>
                         </div>
                       </div>
 
                       {/* Expanded Section Preview */}
                       {isExpanded && (
-                        <div className={`p-4 sm:p-5 border-t space-y-4 ${
-                          isLight ? "border-slate-200 bg-white" : "border-white/5 bg-black/20"
+                        <div className={`p-5 sm:p-6 border-t space-y-4 ${
+                          isLight ? "border-slate-200 bg-slate-50/80" : "border-white/10 bg-black/40 backdrop-blur-md"
                         }`}>
                           <div className="space-y-3">
-                            <h4 className="text-xs font-mono uppercase tracking-wider text-[#818cf8] font-bold">
-                              Mashqlar va Savollar Ro'yxati:
+                            <h4 className="text-xs font-mono uppercase tracking-wider text-indigo-400 font-black flex items-center space-x-2">
+                              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                              <span>O'quvchilarga Yuborilgan Mashqlar To'plami:</span>
                             </h4>
 
                             {hw.sections?.map((sec, sIdx) => (
                               <div
                                 key={sIdx}
-                                className={`p-3.5 rounded-xl border space-y-2 ${
-                                  isLight ? "bg-slate-50 border-slate-200" : "bg-white/5 border-white/5"
+                                className={`p-4 rounded-2xl border space-y-3 ${
+                                  isLight ? "bg-white border-slate-200 shadow-sm" : "bg-[#14152a] border-white/10"
                                 }`}
                               >
                                 <div className="flex items-center justify-between text-xs font-bold text-indigo-400">
                                   <span>{sec.title}</span>
-                                  <span className="font-mono text-[10px] text-slate-400">
-                                    {sec.items?.length || 0} ta savol
+                                  <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                    {sec.items?.length || 0} ta mashq
                                   </span>
                                 </div>
-                                <p className="text-[11px] text-slate-400">{sec.instruction}</p>
+                                <p className="text-xs text-slate-400">{sec.instruction}</p>
 
-                                <div className="space-y-1.5 pt-1">
-                                  {sec.items?.slice(0, 3).map((item, qIdx) => (
+                                <div className="space-y-2 pt-1">
+                                  {sec.items?.slice(0, 5).map((item, qIdx) => (
                                     <div
                                       key={qIdx}
-                                      className="text-xs p-2 rounded-lg bg-black/20 text-slate-200 font-mono flex items-start space-x-2"
+                                      className={`text-xs p-3 rounded-xl border flex items-start space-x-2.5 ${
+                                        isLight ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-black/30 border-white/5 text-slate-200"
+                                      }`}
                                     >
-                                      <span className="text-[#635BFF] font-bold">{qIdx + 1}.</span>
-                                      <div className="space-y-0.5">
-                                        <p>{item.question}</p>
-                                        <p className="text-[10px] text-emerald-400">Javob: {item.answer}</p>
+                                      <span className="text-[#635BFF] font-black font-mono shrink-0">{qIdx + 1}.</span>
+                                      <div className="space-y-1 flex-1">
+                                        <p className="font-semibold">{item.question}</p>
+                                        <p className="text-[11px] text-emerald-400 font-mono font-bold">✔ Javob: {item.answer}</p>
+                                        {item.explanation && (
+                                          <p className="text-[10px] text-slate-400 italic">💡 {item.explanation}</p>
+                                        )}
                                       </div>
                                     </div>
                                   ))}
-                                  {(sec.items?.length || 0) > 3 && (
-                                    <p className="text-[10px] text-slate-500 font-mono italic">
-                                      ...yana {(sec.items?.length || 0) - 3} ta savol
+                                  {(sec.items?.length || 0) > 5 && (
+                                    <p className="text-xs text-slate-400 font-mono italic text-center pt-1">
+                                      ...yana {(sec.items?.length || 0) - 5} ta mashq
                                     </p>
                                   )}
                                 </div>
@@ -375,10 +461,10 @@ export default function TeacherAssignmentsHistoryModal({
 
           {/* TAB 2: STUDENT SUBMISSIONS */}
           {activeTab === "level_check" && (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {submissions.length === 0 ? (
                 <div className="py-16 text-center flex flex-col items-center justify-center space-y-3">
-                  <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-2xl text-slate-400">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl text-amber-400 shadow-lg">
                     🏆
                   </div>
                   <h3 className={`text-base font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
@@ -386,58 +472,119 @@ export default function TeacherAssignmentsHistoryModal({
                   </h3>
                   <p className={`text-xs max-w-sm leading-relaxed ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                     {isEn
-                      ? "When students complete homework or diagnostic level checks, their live scores will sync here automatically."
+                      ? "When students complete homework in the student app or diagnostic level checks, their live scores sync here automatically."
                       : isRu
                       ? "Когда ученики выполнят задания, их баллы отобразятся здесь в реальном времени."
-                      : "O'quvchilar topshiriqlarni yoki testlarni yechganda ularning ballari avtomatik shu yerda ko'rinadi."}
+                      : "O'quvchilar ilovada vazifalarni yechganda ularning ballari va xatolari avtomatik shu yerda ko'rinadi."}
                   </p>
                 </div>
               ) : (
-                submissions.map((sub, idx) => (
-                  <div
-                    key={sub.id || idx}
-                    className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
-                      isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.03] border-white/10"
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className={`font-bold text-sm ${isLight ? "text-slate-900" : "text-white"}`}>
-                          {sub.student_name}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-                          {sub.syllabus_level || "B1"}
-                        </span>
-                      </div>
-                      <p className={`text-xs ${isLight ? "text-slate-600" : "text-slate-400"}`}>
-                        {sub.topic_title} • {new Date(sub.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
+                submissions.map((sub, idx) => {
+                  const percent = sub.percent !== undefined ? sub.percent : Math.round((sub.score / (sub.total_questions || 1)) * 100);
+                  const isPerfect = percent === 100;
+                  const isGood = percent >= 80;
 
-                    <div className="text-right space-y-0.5">
-                      <div className="text-base font-black text-emerald-400 font-mono">
-                        {sub.score} / {sub.total_questions} ({sub.percent}%)
+                  return (
+                    <div
+                      key={sub.id || idx}
+                      className={`p-5 rounded-2xl border-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${
+                        isLight
+                          ? "bg-white border-slate-200 hover:border-amber-400 shadow-sm"
+                          : "bg-gradient-to-br from-[#181a34] to-[#121326] border-white/10 hover:border-amber-500/40 shadow-lg"
+                      }`}
+                    >
+                      <div className="flex items-center space-x-4 min-w-0">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 shadow-md ${
+                          isPerfect
+                            ? "bg-gradient-to-tr from-emerald-500 to-teal-400 text-white"
+                            : isGood
+                              ? "bg-gradient-to-tr from-amber-500 to-yellow-400 text-white"
+                              : "bg-gradient-to-tr from-indigo-500 to-purple-500 text-white"
+                        }`}>
+                          {sub.student_name ? sub.student_name.slice(0, 2).toUpperCase() : "OQ"}
+                        </div>
+
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <span className={`font-black text-base truncate ${isLight ? "text-slate-900" : "text-white"}`}>
+                              {sub.student_name}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shrink-0">
+                              {sub.syllabus_level || "B1"}
+                            </span>
+                          </div>
+
+                          <p className={`text-xs truncate ${isLight ? "text-slate-600" : "text-slate-400"}`}>
+                            📚 {sub.topic_title}
+                            {sub.created_at && (
+                              <span className="opacity-75"> • {new Date(sub.created_at).toLocaleDateString()}</span>
+                            )}
+                          </p>
+                        </div>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-mono">Topshirildi ✔</span>
+
+                      <div className="flex items-center space-x-4 self-end sm:self-center shrink-0">
+                        <div className="text-right space-y-0.5">
+                          <div className={`text-lg font-black font-mono ${
+                            isPerfect ? "text-emerald-400" : isGood ? "text-amber-400" : "text-indigo-400"
+                          }`}>
+                            {sub.score} / {sub.total_questions} ({percent}%)
+                          </div>
+                          <span className="text-[11px] text-emerald-400 font-semibold flex items-center justify-end space-x-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Topshirildi</span>
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
 
           {/* TAB 3: GROUP QUIZZES / SESSIONS */}
           {activeTab === "group_quiz" && (
-            <div className="py-12 text-center flex flex-col items-center justify-center space-y-3">
-              <div className="w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-2xl text-indigo-400">
-                ⚡
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className={`p-5 rounded-2xl border ${
+                  isLight ? "bg-white border-slate-200" : "bg-[#181a34] border-white/10"
+                }`}>
+                  <div className="text-xs uppercase font-bold text-slate-400">Faol Sinf</div>
+                  <div className="text-base font-black text-indigo-400 mt-1">Intermediate group</div>
+                  <div className="text-xs text-slate-400 mt-0.5">12 ta o'quvchi</div>
+                </div>
+
+                <div className={`p-5 rounded-2xl border ${
+                  isLight ? "bg-white border-slate-200" : "bg-[#181a34] border-white/10"
+                }`}>
+                  <div className="text-xs uppercase font-bold text-slate-400">Kollektiv Guruh</div>
+                  <div className="text-base font-black text-amber-400 mt-1">Class 9A</div>
+                  <div className="text-xs text-slate-400 mt-0.5">24 ta o'quvchi</div>
+                </div>
+
+                <div className={`p-5 rounded-2xl border ${
+                  isLight ? "bg-white border-slate-200" : "bg-[#181a34] border-white/10"
+                }`}>
+                  <div className="text-xs uppercase font-bold text-slate-400">Intensiv Guruh</div>
+                  <div className="text-base font-black text-emerald-400 mt-1">IELTS 7.0</div>
+                  <div className="text-xs text-slate-400 mt-0.5">8 ta o'quvchi</div>
+                </div>
               </div>
-              <h3 className={`text-base font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
-                Guruh Viktorinalari & Dars Seanslari
-              </h3>
-              <p className={`text-xs max-w-sm leading-relaxed ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                Dars vaqtida o'tkazilgan Baamboozle uslubidagi guruh bellashuvlari va g'olib jamoalar statistikasi shu yerda qayd etiladi.
-              </p>
+
+              <div className={`p-6 rounded-2xl border text-center space-y-2 ${
+                isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
+              }`}>
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 mx-auto flex items-center justify-center text-xl shadow-lg">
+                  ⚡
+                </div>
+                <h4 className={`text-sm font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
+                  Baamboozle Guruh Musobaqalari Seansi
+                </h4>
+                <p className={`text-xs max-w-md mx-auto leading-relaxed ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                  Dars vaqtida o'quvchilarni 2 yoki 4 jamoaga bo'lib interaktiv viktorina o'tkazishingiz mumkin. Barcha ballar shu yerda avtomatik jamlanadi.
+                </p>
+              </div>
             </div>
           )}
         </div>
