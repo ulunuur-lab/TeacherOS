@@ -3277,16 +3277,17 @@ export default function StitchTeacherOS() {
               </span>
             </div>
             <button
+              type="button"
               onClick={() => {
                 setIsHistoryOpen(false);
                 setShowSettingsModal(false);
               }}
-              className={`p-1.5 rounded-lg cursor-pointer transition-colors ${
-                isBoardLight ? "hover:bg-slate-100 text-slate-500 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
+              className={`p-2 rounded-xl cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+                isBoardLight ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
               }`}
               title={t.close}
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
@@ -3601,17 +3602,33 @@ export default function StitchTeacherOS() {
               ? "bg-white/95 border-slate-200 text-slate-900 shadow-sm"
               : "bg-[#0D0F14]/90 border-white/10 text-white"
           }`}>
-          {/* Brand Logo in Header */}
-          <div className="flex items-center space-x-3">
+          {/* Brand Logo & 3-Line Menu in Header */}
+          <div className="flex items-center space-x-2.5">
             <div
               onClick={() => setShowSocialModal(true)}
-              className="flex items-center space-x-2 cursor-pointer group"
+              className="flex items-center space-x-2 cursor-pointer group shrink-0"
               title="TeacherOS Hamjamiyati & Aloqa"
             >
               <BrandLogo isLight={isBoardLight} onClick={() => setShowSocialModal(true)} />
             </div>
 
-            <div className={`h-4 w-px ${isBoardLight ? "bg-slate-300" : "bg-white/10"}`} />
+            {/* 3-Lines Menu Button directly to the right side of the logo */}
+            <button
+              type="button"
+              onClick={() => setIsHistoryOpen((prev) => !prev)}
+              className={`p-1.5 sm:p-2 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all hover:scale-105 active:scale-95 cursor-pointer group hover-lift shrink-0 ${
+                isBoardLight
+                  ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800"
+                  : "bg-white/5 hover:bg-white/10 border-white/15 text-slate-300 hover:text-white"
+              }`}
+              title="Menyu va Darslar (☰)"
+            >
+              <div className={`w-4 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-slate-900" : "bg-slate-200 group-hover:bg-white"}`} />
+              <div className={`w-4 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-slate-900" : "bg-slate-200 group-hover:bg-white"}`} />
+              <div className={`w-4 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-slate-900" : "bg-slate-200 group-hover:bg-white"}`} />
+            </button>
+
+            <div className={`h-4 w-px ${isBoardLight ? "bg-slate-300" : "bg-white/10"} shrink-0`} />
             <div className="flex items-center space-x-2">
               <span className={`text-xs sm:text-sm font-extrabold truncate max-w-[160px] sm:max-w-xs ${
                 isBoardLight ? "text-slate-900" : "text-white"
@@ -3765,24 +3782,34 @@ export default function StitchTeacherOS() {
         </div>
       )}
 
-      {/* Floating 3-Lines Menu Button UNDER the Logo (First Screen) */}
+      {/* Top-Left Brand Logo & 3-Lines Menu Button (First Screen) */}
       {!isFullscreen && !curriculum && studioMode !== 'homework' && !activeHomeworkTopic && (
-        <button
-          type="button"
-          onClick={() => setIsHistoryOpen((prev) => !prev)}
-          className={`absolute top-5 left-5 sm:left-6 z-30 w-10 h-10 rounded-xl border shadow-xl backdrop-blur-xl flex flex-col items-center justify-center space-y-1 transition-all hover:scale-105 active:scale-95 cursor-pointer group hover-lift ${
-            isBoardLight
-              ? "bg-white/95 hover:bg-slate-100 border-slate-300 hover:border-[#5B3DF5] shadow-slate-200"
-              : "bg-[#141724]/95 hover:bg-[#1E2235] border-white/20 hover:border-[#5B3DF5]"
-          } ${
-            isHistoryOpen ? "opacity-0 pointer-events-none" : "opacity-100"
-          }`}
-          title={appLanguage === 'en' ? "Menu & Lessons (☰)" : appLanguage === 'ru' ? "Меню и уроки (☰)" : "Menyu va Darslar (☰)"}
-        >
-          <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-[#5B3DF5]" : "bg-slate-100 group-hover:bg-white"}`} />
-          <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-[#5B3DF5]" : "bg-slate-100 group-hover:bg-white"}`} />
-          <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-[#5B3DF5]" : "bg-slate-100 group-hover:bg-white"}`} />
-        </button>
+        <div className={`absolute top-4 left-5 sm:left-6 z-30 flex items-center space-x-2.5 transition-all ${
+          isHistoryOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}>
+          <div
+            onClick={() => setShowSocialModal(true)}
+            className="flex items-center space-x-2 cursor-pointer group shrink-0"
+            title="TeacherOS Hamjamiyati & Aloqa"
+          >
+            <BrandLogo isLight={isBoardLight} className="h-8 w-auto max-w-[120px] object-contain" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsHistoryOpen(true)}
+            className={`p-1.5 sm:p-2 rounded-xl border shadow-xl backdrop-blur-xl flex flex-col items-center justify-center space-y-1 transition-all hover:scale-105 active:scale-95 cursor-pointer group hover-lift shrink-0 ${
+              isBoardLight
+                ? "bg-white/95 hover:bg-slate-100 border-slate-300 text-slate-800 shadow-slate-200"
+                : "bg-[#141724]/95 hover:bg-[#1E2235] border-white/20 hover:border-[#5B3DF5]"
+            }`}
+            title={appLanguage === 'en' ? "Menu & Lessons (☰)" : appLanguage === 'ru' ? "Меню и уроки (☰)" : "Menyu va Darslar (☰)"}
+          >
+            <div className={`w-4 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-[#5B3DF5]" : "bg-slate-200 group-hover:bg-white"}`} />
+            <div className={`w-4 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-[#5B3DF5]" : "bg-slate-200 group-hover:bg-white"}`} />
+            <div className={`w-4 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-[#5B3DF5]" : "bg-slate-200 group-hover:bg-white"}`} />
+          </button>
+        </div>
       )}
 
       {/* MAIN CANVAS - Flexible & Scrollable for Windowed PC View */}
@@ -5048,25 +5075,7 @@ export default function StitchTeacherOS() {
           <>
             {/* MAIN PRESENTATION WRAPPER: Left ☰ Column, Slides Board, and Right Toolbar as Flex Siblings */}
             <div className="w-full h-full min-h-0 flex items-center justify-center p-2 sm:p-3 md:p-4 gap-2.5 sm:gap-3 md:gap-4 overflow-hidden">
-              {/* 1. LEFT GUTTER: ☰ History & Classrooms Menu Button (Completely separate from the slides block, never overlaps) */}
-              {!isFullscreen && (
-                <div className="flex flex-col items-center justify-start h-full pt-1.5 sm:pt-2 shrink-0 z-30">
-                  <button
-                    type="button"
-                    onClick={() => setIsHistoryOpen((prev) => !prev)}
-                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border shadow-xl backdrop-blur-xl flex flex-col items-center justify-center space-y-1 transition-all hover:scale-105 active:scale-95 cursor-pointer group hover-lift shrink-0 ${
-                      isBoardLight
-                        ? "bg-white/95 hover:bg-slate-100 border-slate-300 text-slate-800 shadow-slate-200"
-                        : "bg-[#141724]/95 hover:bg-[#1E2235] border-white/20 hover:border-[#5B3DF5]"
-                    }`}
-                    title="Menyu va Darslar (☰)"
-                  >
-                    <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-slate-900" : "bg-slate-100 group-hover:bg-white"}`} />
-                    <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-slate-900" : "bg-slate-100 group-hover:bg-white"}`} />
-                    <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-slate-900" : "bg-slate-100 group-hover:bg-white"}`} />
-                  </button>
-                </div>
-              )}
+
 
               {/* 2. CENTER: Slides Board */}
               <div
