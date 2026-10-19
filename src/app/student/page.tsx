@@ -819,7 +819,7 @@ export default function StudentAppPage() {
       {/* 1. LEFT SIDEBAR PANEL (Picture 1)                        */}
       {/* ======================================================== */}
       <aside
-        className={`w-64 sm:w-72 shrink-0 border-r flex flex-col justify-between py-6 px-4 transition-all z-30 ${
+        className={`w-64 sm:w-72 shrink-0 border-r flex flex-col justify-between py-6 px-4 transition-all z-30 overflow-y-auto custom-scrollbar ${
           isLight
             ? "bg-white border-slate-200 shadow-sm"
             : "bg-[#131428] border-white/[0.08]"

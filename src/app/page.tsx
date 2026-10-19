@@ -3256,40 +3256,42 @@ export default function StitchTeacherOS() {
           isBoardLight
             ? "bg-white/98 border-r border-slate-200 text-slate-900 shadow-2xl"
             : "bg-[#12141D]/98 border-r border-white/10 text-white shadow-2xl"
-        } p-5 backdrop-blur-2xl flex flex-col justify-between transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        } p-4 sm:p-5 backdrop-blur-2xl flex flex-col justify-between overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isHistoryOpen ? "translate-x-0 shadow-[20px_0_50px_rgba(0,0,0,0.8)]" : "-translate-x-full pointer-events-none"
         }`}
       >
-        <div className="space-y-4">
-          {/* Drawer Top Header */}
-          <div className={`flex items-center justify-between pb-3 border-b ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
-            <div className="flex items-center space-x-2.5">
-              <BrandLogo
-                isLight={isBoardLight}
-                className="h-8 max-w-[130px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
-              />
-              <span
-                className={`text-lg font-black tracking-tight font-sans flex items-center gap-1 select-none ${
-                  isBoardLight ? "text-slate-900" : "text-white"
-                }`}
-              >
-                Teacher <span className="bg-gradient-to-r from-[#818cf8] via-[#a855f7] to-[#ec4899] bg-clip-text text-transparent font-black">OS</span>
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setIsHistoryOpen(false);
-                setShowSettingsModal(false);
-              }}
-              className={`p-2 rounded-xl cursor-pointer transition-all hover:scale-105 active:scale-95 ${
-                isBoardLight ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
+        {/* Drawer Top Header (Sticky / Non-scrolling) */}
+        <div className={`flex items-center justify-between pb-3 border-b shrink-0 ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
+          <div className="flex items-center space-x-2.5">
+            <BrandLogo
+              isLight={isBoardLight}
+              className="h-8 max-w-[130px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+            />
+            <span
+              className={`text-lg font-black tracking-tight font-sans flex items-center gap-1 select-none ${
+                isBoardLight ? "text-slate-900" : "text-white"
               }`}
-              title={t.close}
             >
-              <X className="w-5 h-5" />
-            </button>
+              Teacher <span className="bg-gradient-to-r from-[#818cf8] via-[#a855f7] to-[#ec4899] bg-clip-text text-transparent font-black">OS</span>
+            </span>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setIsHistoryOpen(false);
+              setShowSettingsModal(false);
+            }}
+            className={`p-2 rounded-xl cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+              isBoardLight ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
+            }`}
+            title={t.close}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Scrollable Middle Content (Fits screen height, taskbar, browser tabs) */}
+        <div className="flex-1 overflow-y-auto min-h-0 py-3 pr-1 space-y-4 custom-scrollbar">
 
           {/* Classroom Context or Guest Notice (User Sketch Image 1 & 2) */}
           {currentUser ? (
@@ -3547,8 +3549,8 @@ export default function StitchTeacherOS() {
           </div>
         </div>
 
-        {/* Bottom Settings Section (Account is integrated inside Settings) */}
-        <div className={`pt-3 border-t ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
+        {/* Bottom Settings Section (Sticky / Non-shrinking) */}
+        <div className={`pt-3 border-t shrink-0 ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
           <button
             type="button"
             onClick={() => {
