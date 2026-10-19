@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -327,6 +327,116 @@ export default function StudentAppPage() {
     } catch (e) {}
   };
 
+  // Helper to extract all questions across all sections of any homework structure
+  const extractQuestionsFromHomework = (item: any) => {
+    if (Array.isArray(item.questions) && item.questions.length > 0) {
+      return item.questions;
+    }
+    const rawSections = item.sections || item.data?.sections || [];
+    const extracted: any[] = [];
+    let qCounter = 1;
+
+    rawSections.forEach((sec: any) => {
+      (sec.items || []).forEach((q: any) => {
+        extracted.push({
+          id: q.id || qCounter++,
+          question: q.question || q.prompt || "",
+          options: q.options && q.options.length > 0 ? q.options : undefined,
+          answer: q.answer || (q.options ? q.options[0] : ""),
+          explanation: q.explanation || sec.instruction || ""
+        });
+      });
+    });
+
+    return extracted;
+  };
+
+  // Synchronize classroom homework from both server and local storage
+  const syncClassroomHomework = useCallback(async (targetClassName?: string) => {
+    if (typeof window === "undefined") return;
+
+    const activeName = targetClassName || className || "Class 9A";
+    const collected: StudentHomeworkItem[] = [];
+    const seenTopics = new Set<string>();
+
+    const addHomeworkItem = (raw: any) => {
+      if (!raw || !raw.topic) return;
+      const topicKey = raw.topic.trim().toLowerCase();
+      if (seenTopics.has(topicKey)) return;
+      seenTopics.add(topicKey);
+
+      const hwId = raw.id || `hw_${raw.topic}_${Date.now()}`;
+      const doneKey = `teacheros_student_done_${hwId}`;
+      const doneKeyTopic = `teacheros_student_done_${raw.topic}`;
+      const isDone =
+        localStorage.getItem(doneKey) === "true" ||
+        localStorage.getItem(doneKeyTopic) === "true" ||
+        raw.isDone === true;
+
+      const questions = extractQuestionsFromHomework(raw);
+      const assignedDate = raw.assignedAt || raw.createdAt
+        ? new Date(raw.assignedAt || raw.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        : "Bugun";
+
+      collected.push({
+        id: hwId,
+        topic: raw.topic,
+        assignedDate,
+        isDone,
+        questions
+      });
+    };
+
+    // 1. Check local storage first (instant responsiveness)
+    try {
+      const allKeys = Object.keys(localStorage);
+      const hwKeys = allKeys.filter((k) => k.startsWith("teacheros_homeworks_") || k === "teacheros_latest_assigned_hw");
+      hwKeys.forEach((key) => {
+        try {
+          const val = localStorage.getItem(key);
+          if (val) {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed)) {
+              parsed.forEach((p) => addHomeworkItem(p));
+            } else if (parsed && typeof parsed === "object") {
+              addHomeworkItem(parsed);
+            }
+          }
+        } catch (e) {}
+      });
+    } catch (e) {}
+
+    if (collected.length > 0) {
+      setHomeworkList([...collected]);
+    }
+
+    // 2. Fetch from persistent API for this classroom & all classrooms
+    try {
+      const urls = [
+        `/api/classroom-homework?classroomName=${encodeURIComponent(activeName)}`,
+        `/api/classroom-homework?classroomName=all`
+      ];
+
+      for (const url of urls) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.homeworks)) {
+              data.homeworks.forEach((h: any) => addHomeworkItem(h));
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (collected.length > 0) {
+        setHomeworkList([...collected]);
+      }
+    } catch (e) {
+      console.warn("Classroom homework sync failed:", e);
+    }
+  }, [className]);
+
   // Check Telegram session & classroom homework on mount
   useEffect(() => {
     try {
@@ -398,50 +508,30 @@ export default function StudentAppPage() {
 
       // 2. Sync Classroom name
       const savedClass = localStorage.getItem("teacheros_classroom");
+      let activeClsName = "Class 9A";
       if (savedClass) {
         const parsedCls = JSON.parse(savedClass);
-        if (parsedCls.name) setClassName(parsedCls.name);
-      }
-
-      // 3. Load Homework assigned by teacher for this classroom
-      const allKeys = Object.keys(localStorage);
-      const hwKey = allKeys.find((k) => k.startsWith("teacheros_homeworks_"));
-      if (hwKey) {
-        const raw = localStorage.getItem(hwKey);
-        if (raw) {
-          const parsedHws = JSON.parse(raw);
-          if (Array.isArray(parsedHws) && parsedHws.length > 0) {
-            const mapped: StudentHomeworkItem[] = parsedHws.map((item: any, idx: number) => {
-              const doneKey = `teacheros_student_done_${item.id || item.topic}`;
-              const isDone = localStorage.getItem(doneKey) === "true";
-              return {
-                id: item.id || `hw_${idx}`,
-                topic: item.topic || "English Lesson",
-                assignedDate: item.createdAt
-                  ? new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                  : "Recently",
-                isDone,
-                questions: item.data?.sections?.[0]?.items?.map((q: any) => ({
-                  id: q.id,
-                  question: q.question,
-                  options: q.options,
-                  answer: q.answer,
-                  explanation: q.explanation
-                }))
-              };
-            });
-            if (mapped.length > 0) {
-              setHomeworkList(mapped);
-            }
-          }
+        if (parsedCls.name) {
+          setClassName(parsedCls.name);
+          activeClsName = parsedCls.name;
         }
       }
+
+      // 3. Load Homework assigned by teacher for this classroom (Server + Local Storage)
+      syncClassroomHomework(activeClsName);
     } catch (e) {
       console.warn("Storage sync error:", e);
     } finally {
       setIsAuthLoading(false);
     }
-  }, []);
+  }, [syncClassroomHomework]);
+
+  // Re-sync homework whenever student switches to homework tab
+  useEffect(() => {
+    if (activeTab === "homework") {
+      syncClassroomHomework();
+    }
+  }, [activeTab, syncClassroomHomework]);
 
   // Auto-scroll Bezbet chat
   useEffect(() => {
@@ -589,7 +679,16 @@ export default function StudentAppPage() {
   const handleHomeworkComplete = (hwId: string, score: number, total: number) => {
     playSoundEffect("success");
     setHomeworkList((prev) =>
-      prev.map((hw) => (hw.id === hwId ? { ...hw, isDone: true, score, totalQuestions: total } : hw))
+      prev.map((hw) => {
+        if (hw.id === hwId || hw.topic === hwId) {
+          try {
+            localStorage.setItem(`teacheros_student_done_${hw.id}`, "true");
+            localStorage.setItem(`teacheros_student_done_${hw.topic}`, "true");
+          } catch (e) {}
+          return { ...hw, isDone: true, score, totalQuestions: total };
+        }
+        return hw;
+      })
     );
     try {
       localStorage.setItem(`teacheros_student_done_${hwId}`, "true");

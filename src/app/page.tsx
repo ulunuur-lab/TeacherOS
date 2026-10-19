@@ -4116,7 +4116,7 @@ export default function StitchTeacherOS() {
             /* ============================================================ */
             /* STANDALONE HOMEWORK REVIEW (Floating Directly on Dotted Canvas) */
             /* ============================================================ */
-            <div className="w-full max-w-6xl px-4 sm:px-6 z-20 flex flex-col items-center justify-center animate-fade-in my-auto py-2 sm:py-4">
+            <div className="w-full max-w-6xl h-full max-h-[calc(100vh-2rem)] px-2 sm:px-6 z-20 flex flex-col items-center justify-between animate-fade-in my-auto py-1 sm:py-2 overflow-hidden">
               <HomeworkViewer
                 topic={activeHomeworkTopic || topicInput.trim() || "Present Perfect"}
                 data={generatedHomeworkData}
@@ -4128,6 +4128,7 @@ export default function StitchTeacherOS() {
                 appLanguage={appLanguage}
                 isLight={isBoardLight}
                 activeClassroomName={workspaceMode === 'classroom' ? currentClassroom.name : (appLanguage === 'en' ? "Solo Mode" : appLanguage === 'ru' ? "Индивидуальный" : "Yakkaxon rejim")}
+                activeClassroomId={workspaceMode === 'classroom' ? currentClassroom.id : 'solo'}
                 onSwitchClassroom={() => {
                   setClassroomModalMode('list');
                   setShowClassroomModal(true);

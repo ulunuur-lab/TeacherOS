@@ -118,8 +118,9 @@ export default function StudentHomeworkModal({
   const handleFinish = () => {
     let correctCount = 0;
     questions.forEach((q, idx) => {
-      const chosen = selectedAnswers[idx];
-      if (chosen && (chosen === q.answer || chosen.startsWith(q.answer.charAt(0)))) {
+      const chosen = (selectedAnswers[idx] || "").trim().toLowerCase();
+      const ans = (q.answer || "").trim().toLowerCase();
+      if (chosen && (chosen === ans || chosen.startsWith(ans.charAt(0)) || ans.includes(chosen) || (ans.includes("->") && ans.split("->").some(part => chosen.includes(part.trim()))))) {
         correctCount++;
       }
     });
@@ -188,27 +189,39 @@ export default function StudentHomeworkModal({
               </p>
             </div>
 
-            {/* Options */}
-            <div className="space-y-2.5">
-              {currentQ.options?.map((opt, oIdx) => {
-                const isSelected = selectedAnswers[currentIndex] === opt;
-                return (
-                  <button
-                    key={oIdx}
-                    type="button"
-                    onClick={() => handleSelectOption(opt)}
-                    className={`w-full text-left p-3.5 sm:p-4 rounded-xl border text-sm sm:text-base font-medium transition-all flex items-center justify-between cursor-pointer ${
-                      isSelected
-                        ? "bg-[#635BFF]/25 border-[#635BFF] text-white shadow-[0_0_15px_rgba(99,91,255,0.35)]"
-                        : "bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white"
-                    }`}
-                  >
-                    <span>{opt}</span>
-                    {isSelected && <CheckCircle2 className="w-5 h-5 text-[#818cf8] shrink-0 ml-2" />}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Options or Text Input */}
+            {currentQ.options && currentQ.options.length > 0 ? (
+              <div className="space-y-2.5">
+                {currentQ.options.map((opt, oIdx) => {
+                  const isSelected = selectedAnswers[currentIndex] === opt;
+                  return (
+                    <button
+                      key={oIdx}
+                      type="button"
+                      onClick={() => handleSelectOption(opt)}
+                      className={`w-full text-left p-3.5 sm:p-4 rounded-xl border text-sm sm:text-base font-medium transition-all flex items-center justify-between cursor-pointer ${
+                        isSelected
+                          ? "bg-[#635BFF]/25 border-[#635BFF] text-white shadow-[0_0_15px_rgba(99,91,255,0.35)]"
+                          : "bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white"
+                      }`}
+                    >
+                      <span>{opt}</span>
+                      {isSelected && <CheckCircle2 className="w-5 h-5 text-[#818cf8] shrink-0 ml-2" />}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={selectedAnswers[currentIndex] || ""}
+                  onChange={(e) => handleSelectOption(e.target.value)}
+                  placeholder={appLanguage === "en" ? "Type your answer here..." : appLanguage === "ru" ? "Введите ваш ответ здесь..." : "Javobingizni bu yerga yozing..."}
+                  className="w-full p-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-[#635BFF] focus:ring-1 focus:ring-[#635BFF] text-base"
+                />
+              </div>
+            )}
 
             {/* Navigation Buttons */}
             <div className="flex items-center justify-between pt-4 border-t border-white/10">

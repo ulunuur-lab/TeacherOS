@@ -25,8 +25,10 @@ import {
   Link2,
   ExternalLink,
   Eye,
-  EyeOff
+  EyeOff,
+  RotateCw
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 export interface HomeworkSectionItem {
   id: number;
@@ -70,7 +72,9 @@ interface HomeworkViewerProps {
   appLanguage?: 'uz' | 'en' | 'ru';
   isLight?: boolean;
   activeClassroomName?: string;
+  activeClassroomId?: string | null;
   onSwitchClassroom?: () => void;
+  onAssign?: (data: HomeworkGeneratedData) => void;
 }
 
 // Icon mapping for top icon bar matching user copybook drawing
@@ -454,7 +458,9 @@ export default function HomeworkViewer({
   appLanguage = 'uz',
   isLight = false,
   activeClassroomName,
-  onSwitchClassroom
+  activeClassroomId,
+  onSwitchClassroom,
+  onAssign
 }: HomeworkViewerProps) {
 
   // Available tabs: generated sections + vocabulary (guaranteed full set)
@@ -488,12 +494,85 @@ export default function HomeworkViewer({
   const [showAllAnswers, setShowAllAnswers] = useState<boolean>(false);
   const [revealedAnswers, setRevealedAnswers] = useState<Record<string, boolean>>({});
 
+  // Direct assign & feedback state
+  const [isAssigning, setIsAssigning] = useState<boolean>(false);
+  const [isAssigned, setIsAssigned] = useState<boolean>(false);
+  const [assignToast, setAssignToast] = useState<string | null>(null);
+
   // Assign modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState<boolean>(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   const isEn = appLanguage === 'en';
   const isRu = appLanguage === 'ru';
+
+  // 1-Click Direct Assign to Classroom
+  const handleDirectAssign = async () => {
+    if (!data || isAssigning) return;
+    setIsAssigning(true);
+
+    try {
+      const targetClassroomName = activeClassroomName || "Yakkaxon rejim";
+      const targetClassroomId = activeClassroomId || (typeof window !== "undefined" ? localStorage.getItem("teacheros_active_classroom_id") : null) || "classroom_1";
+
+      const payload = {
+        classroomId: targetClassroomId,
+        classroomName: targetClassroomName,
+        topic: topic,
+        data: data,
+        assignedBy: typeof window !== "undefined" ? (JSON.parse(localStorage.getItem("teacheros_auth_user") || "{}").first_name || "Ustoz") : "Ustoz"
+      };
+
+      // 1. Post to persistent API
+      await fetch('/api/classroom-homework', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      // 2. Also persist in localStorage for instant local sync
+      if (typeof window !== "undefined") {
+        const key = `teacheros_homeworks_${targetClassroomId}`;
+        const existing = JSON.parse(localStorage.getItem(key) || "[]");
+        const newEntry = {
+          id: `hw_${Date.now()}`,
+          topic: topic,
+          classroomId: targetClassroomId,
+          classroomName: targetClassroomName,
+          createdAt: Date.now(),
+          data: data
+        };
+        const updated = [newEntry, ...existing.filter((x: any) => x.topic !== topic)];
+        localStorage.setItem(key, JSON.stringify(updated));
+        // Global sync keys for student app
+        localStorage.setItem("teacheros_homeworks_all", JSON.stringify(updated));
+        localStorage.setItem("teacheros_latest_assigned_hw", JSON.stringify(newEntry));
+      }
+
+      // 3. Confetti effect
+      confetti({
+        particleCount: 90,
+        spread: 70,
+        origin: { y: 0.85, x: 0.85 }
+      });
+
+      setIsAssigned(true);
+      const successMsg = isEn
+        ? `✔ Assigned to ${targetClassroomName}!`
+        : isRu
+        ? `✔ Назначено для ${targetClassroomName}!`
+        : `✔ "${targetClassroomName}" sinfiga biriktirildi!`;
+      setAssignToast(successMsg);
+      setTimeout(() => setAssignToast(null), 4000);
+
+      onAssign?.(data);
+    } catch (e: any) {
+      console.error("Assign failed:", e);
+      setAssignToast(isEn ? "Failed to assign" : isRu ? "Ошибка назначения" : "Xatolik yuz berdi");
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   // Current active section or vocabulary
   const isVocabTab = activeTabKey === 'vocabulary';
@@ -620,25 +699,25 @@ export default function HomeworkViewer({
   };
 
   return (
-    <div className="w-full flex flex-col justify-between space-y-6 sm:space-y-8 select-none animate-fade-in relative">
+    <div className="w-full h-full max-h-[calc(100vh-2rem)] flex flex-col justify-between select-none animate-fade-in relative overflow-y-auto scrollbar-thin px-1 py-1 gap-2 sm:gap-3">
       {/* 1. TOP BAR: [X] Button on left + Question Type Icons Row in center + Key Toggle on right */}
-      <div className="w-full flex items-center justify-between gap-3 shrink-0">
-        {/* [X] Close Button (matching drawing top-left) */}
+      <div className="w-full flex items-center justify-between gap-2 sm:gap-3 shrink-0">
+        {/* [X] Close Button */}
         <button
           type="button"
           onClick={onClose}
-          className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition-all cursor-pointer shadow-md shrink-0 active:scale-95 backdrop-blur-md ${
+          className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all cursor-pointer shadow-md shrink-0 active:scale-95 backdrop-blur-md ${
             isLight
               ? 'bg-white hover:bg-slate-100 border-slate-300 text-slate-700 shadow-sm'
               : 'bg-white/5 hover:bg-white/15 border-white/15 text-slate-300 hover:text-white'
           }`}
           title="Yopish (Close)"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
-        {/* Center Row of Question Type Icons (matching drawing top bar) */}
-        <div className="flex items-center space-x-2 sm:space-x-3 overflow-x-auto py-1 px-2 scrollbar-none justify-center flex-1 max-w-2xl">
+        {/* Center Row of Question Type Icons */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2.5 overflow-x-auto py-1 px-1 scrollbar-none justify-center flex-1 max-w-xl">
           {availableTabs.map((typeKey) => {
             const isActive = activeTabKey === typeKey;
             const def = TYPE_ICON_MAP[typeKey] || { icon: HelpCircle };
@@ -649,16 +728,16 @@ export default function HomeworkViewer({
                 key={typeKey}
                 type="button"
                 onClick={() => handleTabChange(typeKey)}
-                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl border flex items-center justify-center transition-all cursor-pointer shrink-0 relative backdrop-blur-md ${
+                className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all cursor-pointer shrink-0 relative backdrop-blur-md ${
                   isActive
-                    ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 border-emerald-300 text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.55)] scale-105 font-black'
+                    ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 border-emerald-300 text-slate-950 shadow-[0_0_20px_rgba(16,185,129,0.55)] scale-105 font-black'
                     : isLight
                     ? 'bg-white hover:bg-slate-100 border-slate-300 text-slate-600 hover:text-slate-950 shadow-sm'
                     : 'bg-white/5 hover:bg-white/10 border-white/15 text-slate-400 hover:text-white hover:border-white/30'
                 }`}
                 title={TYPE_ICON_MAP[typeKey]?.labelEn || typeKey}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
+                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
 
                 {/* Micro indicator dot if active */}
                 {isActive && (
@@ -673,7 +752,7 @@ export default function HomeworkViewer({
         <button
           type="button"
           onClick={() => setShowAllAnswers((prev) => !prev)}
-          className={`h-11 px-3.5 rounded-2xl border text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 backdrop-blur-md ${
+          className={`h-9 sm:h-11 px-2.5 sm:px-3.5 rounded-xl sm:rounded-2xl border text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 backdrop-blur-md ${
             showAllAnswers
               ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/40 font-black'
               : isLight
@@ -691,14 +770,14 @@ export default function HomeworkViewer({
         </button>
       </div>
 
-      {/* 2. TITLE: Centered Bold Uppercase (matching drawing "MULTIPLE CHOICE QUESTIONS") */}
-      <div className="text-center space-y-1.5 shrink-0">
+      {/* 2. TITLE: Centered Bold Uppercase */}
+      <div className="text-center space-y-1 shrink-0">
         {activeClassroomName && (
           <div className="flex items-center justify-center">
             <button
               type="button"
               onClick={onSwitchClassroom}
-              className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer shadow-sm ${
+              className={`inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold border transition-all cursor-pointer shadow-sm ${
                 isLight
                   ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300'
                   : 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/25 hover:border-indigo-400/40'
@@ -706,14 +785,14 @@ export default function HomeworkViewer({
               title="Sinfxonani almashtirish (Switch Classroom)"
             >
               <span>🏫 {activeClassroomName}</span>
-              {onSwitchClassroom && <span className="opacity-70 text-[11px] font-bold">⇄</span>}
+              {onSwitchClassroom && <span className="opacity-70 text-[10px] font-bold">⇄</span>}
             </button>
           </div>
         )}
-        <h2 className={`text-lg sm:text-2xl font-black tracking-widest uppercase font-sans ${isLight ? "text-slate-900" : "text-white"}`}>
+        <h2 className={`text-base sm:text-xl font-black tracking-widest uppercase font-sans ${isLight ? "text-slate-900" : "text-white"}`}>
           {activeTitle}
         </h2>
-        <p className={`text-xs font-medium ${isLight ? "text-slate-600" : "text-slate-400"}`}>
+        <p className={`text-[11px] sm:text-xs font-medium ${isLight ? "text-slate-600" : "text-slate-400"}`}>
           {isVocabTab
             ? `${data?.vocabulary?.length || 0} core terms for ${topic}`
             : currentSection?.instruction || `${totalItemsCount} practice questions`}
@@ -721,13 +800,13 @@ export default function HomeworkViewer({
       </div>
 
       {/* 3. CENTER CAROUSEL: [<] Arrow + Sliding Track of 3 Visible Cards + [>] Arrow */}
-      <div className="w-full flex items-center justify-between gap-3 sm:gap-4 relative my-auto">
+      <div className="w-full flex-1 flex items-center justify-between gap-2 sm:gap-3 relative my-auto min-h-0">
         {/* Left Arrow Button [<] */}
         <button
           type="button"
           onClick={handlePrev}
           disabled={pageIndex === 0}
-          className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all shrink-0 cursor-pointer shadow-xl backdrop-blur-md ${
+          className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all shrink-0 cursor-pointer shadow-xl backdrop-blur-md ${
             pageIndex === 0
               ? 'bg-transparent border-transparent text-slate-400 opacity-20 cursor-not-allowed'
               : isLight
@@ -736,11 +815,11 @@ export default function HomeworkViewer({
           }`}
           title="Oldingi (Previous)"
         >
-          <ChevronLeft className="w-7 h-7" />
+          <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
 
         {/* Carousel Viewport: overflow-hidden */}
-        <div className="flex-1 overflow-hidden relative py-2">
+        <div className="flex-1 overflow-hidden relative py-1">
           {/* Sliding Track: Physically pushes 3 cards to left upon Next */}
           <div
             className="flex transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
@@ -749,7 +828,7 @@ export default function HomeworkViewer({
             {pages.map((pageCards, pIdx) => (
               <div
                 key={pIdx}
-                className="w-full shrink-0 grid grid-cols-1 md:grid-cols-3 gap-5 px-1 items-stretch"
+                className="w-full shrink-0 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 px-1 items-stretch"
               >
                 {pageCards.map((item: any, cardIdx: number) => {
                   const itemNumber = pIdx * 3 + cardIdx + 1;
@@ -762,18 +841,18 @@ export default function HomeworkViewer({
                     return (
                       <div
                         key={vocab.id || cardIdx}
-                        className={`rounded-3xl border p-5 sm:p-6 flex flex-col justify-between space-y-3.5 shadow-2xl backdrop-blur-xl transition-all group ${
+                        className={`rounded-2xl sm:rounded-3xl border p-4 sm:p-5 flex flex-col justify-between space-y-2.5 sm:space-y-3.5 shadow-xl backdrop-blur-xl transition-all group ${
                           isLight
                             ? 'bg-white border-slate-200 hover:border-emerald-500/60 text-slate-900 shadow-xl'
                             : 'bg-[#141624]/90 border-white/10 hover:border-emerald-500/40 text-white'
                         }`}
                       >
-                        <div className="space-y-3">
+                        <div className="space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 font-black text-xs flex items-center justify-center font-mono">
+                            <span className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 font-black text-xs flex items-center justify-center font-mono">
                               {itemNumber}
                             </span>
-                            <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
                               isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-white/5 text-slate-300 border border-white/10'
                             }`}>
                               {vocab.pos}
@@ -781,7 +860,7 @@ export default function HomeworkViewer({
                           </div>
 
                           <div>
-                            <h4 className={`text-lg sm:text-xl font-black transition-colors ${
+                            <h4 className={`text-base sm:text-lg font-black transition-colors ${
                               isLight ? 'text-slate-900 group-hover:text-emerald-600' : 'text-white group-hover:text-emerald-300'
                             }`}>
                               {vocab.word}
@@ -795,14 +874,14 @@ export default function HomeworkViewer({
                             {vocab.definition}
                           </p>
 
-                          <div className={`p-3 rounded-2xl border text-xs italic ${
+                          <div className={`p-2.5 rounded-xl border text-xs italic ${
                             isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-black/40 border-white/5 text-slate-200'
                           }`}>
                             "{vocab.example}"
                           </div>
 
                           {vocab.collocation && (
-                            <div className={`text-[11px] font-mono pt-1 ${isLight ? 'text-amber-700 font-bold' : 'text-amber-300/90'}`}>
+                            <div className={`text-[11px] font-mono pt-0.5 ${isLight ? 'text-amber-700 font-bold' : 'text-amber-300/90'}`}>
                               🔗 <b>Collocation:</b> {vocab.collocation}
                             </div>
                           )}
@@ -811,28 +890,28 @@ export default function HomeworkViewer({
                     );
                   }
 
-                  // Standard Question Card (matching user drawing: 1. ... A B C D)
+                  // Standard Question Card
                   const qItem = item as HomeworkSectionItem;
                   return (
                     <div
                       key={qItem.id || cardIdx}
-                      className={`rounded-3xl border p-5 sm:p-6 flex flex-col justify-between space-y-4 shadow-2xl backdrop-blur-xl transition-all text-left group ${
+                      className={`rounded-2xl sm:rounded-3xl border p-3.5 sm:p-4 md:p-5 flex flex-col justify-between space-y-2.5 sm:space-y-3.5 shadow-xl backdrop-blur-xl transition-all text-left group overflow-hidden ${
                         isLight
                           ? 'bg-white border-slate-200 hover:border-emerald-500/60 text-slate-900 shadow-xl'
                           : 'bg-[#141624]/90 border-white/10 hover:border-emerald-500/40 text-white'
                       }`}
                     >
-                      <div className="space-y-3.5 flex-1">
+                      <div className="space-y-2.5 flex-1 min-h-0 flex flex-col justify-between">
                         {/* Card Header: Number badge + Answer reveal toggle */}
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 font-black text-xs flex items-center justify-center font-mono shrink-0">
+                        <div className="flex items-center justify-between gap-2 pb-0.5">
+                          <span className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 font-black text-xs flex items-center justify-center font-mono shrink-0">
                             {itemNumber}
                           </span>
 
                           <button
                             type="button"
                             onClick={() => toggleAnswerReveal(itemKey)}
-                            className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
                               isRevealed
                                 ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 font-black'
                                 : isLight
@@ -845,7 +924,7 @@ export default function HomeworkViewer({
                         </div>
 
                         {/* Question Prompt */}
-                        <div className={`text-xs sm:text-sm font-bold leading-relaxed whitespace-pre-line ${
+                        <div className={`text-xs sm:text-[13px] md:text-sm font-bold leading-snug whitespace-pre-line ${
                           isLight ? 'text-slate-900' : 'text-white'
                         }`}>
                           {qItem.question}
@@ -853,7 +932,7 @@ export default function HomeworkViewer({
 
                         {/* Secondary Prompt (e.g. for transformation) */}
                         {qItem.promptSecond && (
-                          <div className={`p-2.5 rounded-2xl border text-xs font-mono ${
+                          <div className={`p-2 rounded-xl border text-[11px] sm:text-xs font-mono ${
                             isLight
                               ? 'bg-indigo-50 border-indigo-200 text-indigo-900'
                               : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300'
@@ -864,7 +943,7 @@ export default function HomeworkViewer({
 
                         {/* Key Word Badge */}
                         {qItem.keyWord && (
-                          <div className={`inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md border text-[11px] font-mono font-black ${
+                          <div className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-md border text-[10px] sm:text-[11px] font-mono font-black ${
                             isLight
                               ? 'bg-amber-100 border-amber-300 text-amber-900'
                               : 'bg-amber-500/20 border-amber-500/40 text-amber-300'
@@ -874,13 +953,13 @@ export default function HomeworkViewer({
                           </div>
                         )}
 
-                        {/* Options (matching drawing: A, B, C, D) */}
+                        {/* Options */}
                         {qItem.options && qItem.options.length > 0 && (
-                          <div className="space-y-2 pt-1">
+                          <div className="space-y-1 sm:space-y-1.5 pt-0.5 overflow-y-auto max-h-[26vh] sm:max-h-[32vh] scrollbar-thin">
                             {qItem.options.map((opt, oIdx) => (
                               <div
                                 key={oIdx}
-                                className={`p-2.5 rounded-2xl border text-xs font-medium transition-colors ${
+                                className={`py-1.5 sm:py-2 px-2.5 sm:px-3 rounded-xl border text-[11px] sm:text-xs font-medium transition-colors ${
                                   isLight
                                     ? 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100'
                                     : 'bg-black/40 border-white/5 text-slate-300 hover:bg-white/5'
@@ -895,7 +974,7 @@ export default function HomeworkViewer({
 
                       {/* Revealed Answer Box */}
                       {isRevealed && (
-                        <div className={`p-3 rounded-2xl border text-xs space-y-1 animate-fade-in shrink-0 ${
+                        <div className={`p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs space-y-0.5 animate-fade-in shrink-0 mt-2 ${
                           isLight
                             ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
                             : 'bg-emerald-950/50 border-emerald-500/30 text-emerald-300'
@@ -907,7 +986,7 @@ export default function HomeworkViewer({
                             <span>{qItem.answer}</span>
                           </div>
                           {qItem.explanation && (
-                            <p className={`text-[11px] pl-5 leading-snug ${
+                            <p className={`text-[10px] sm:text-[11px] pl-5 leading-tight ${
                               isLight ? 'text-slate-700' : 'text-slate-300'
                             }`}>
                               💡 {qItem.explanation}
@@ -928,7 +1007,7 @@ export default function HomeworkViewer({
           type="button"
           onClick={handleNext}
           disabled={pageIndex >= pages.length - 1}
-          className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all shrink-0 cursor-pointer shadow-xl backdrop-blur-md ${
+          className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all shrink-0 cursor-pointer shadow-xl backdrop-blur-md ${
             pageIndex >= pages.length - 1
               ? 'bg-transparent border-transparent text-slate-400 opacity-20 cursor-not-allowed'
               : isLight
@@ -937,12 +1016,12 @@ export default function HomeworkViewer({
           }`}
           title="Keyingi (Next)"
         >
-          <ChevronRight className="w-7 h-7" />
+          <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
       </div>
 
-      {/* 4. BOTTOM BAR: Page indicator on left + [ASSIGN] Capsule Pill Button on right */}
-      <div className="w-full flex items-center justify-between pt-2 shrink-0">
+      {/* 4. BOTTOM BAR: Page indicator on left + 1-Click [ASSIGN] Button on right */}
+      <div className="w-full flex items-center justify-between pt-1 sm:pt-2 shrink-0">
         <div className={`text-xs font-mono flex items-center space-x-2 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
           <span className={`font-bold ${isLight ? 'text-slate-900' : 'text-slate-300'}`}>
             {totalItemsCount > 0
@@ -955,15 +1034,43 @@ export default function HomeworkViewer({
           </span>
         </div>
 
-        {/* ASSIGN Capsule Pill Button (matching drawing bottom-right) */}
-        <button
-          type="button"
-          onClick={() => setIsAssignModalOpen(true)}
-          className="px-8 py-3 rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer shadow-[0_0_30px_rgba(16,185,129,0.55)] hover:shadow-[0_0_40px_rgba(16,185,129,0.75)] hover:scale-105 active:scale-95 flex items-center space-x-2"
-        >
-          <Share2 className="w-4 h-4 stroke-[2.5]" />
-          <span>ASSIGN</span>
-        </button>
+        {/* 1-Click ASSIGN Button directly assigning to active classroom */}
+        <div className="flex items-center space-x-2.5">
+          {assignToast && (
+            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/30 animate-fade-in flex items-center space-x-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>{assignToast}</span>
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={handleDirectAssign}
+            disabled={isAssigning}
+            className={`px-7 py-2.5 sm:py-3 rounded-full font-black text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer flex items-center space-x-2 shadow-lg active:scale-95 ${
+              isAssigned
+                ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.7)]"
+                : "bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:shadow-[0_0_35px_rgba(16,185,129,0.7)] hover:scale-105"
+            }`}
+          >
+            {isAssigned ? (
+              <>
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>{isEn ? "ASSIGNED ✔" : isRu ? "НАЗНАЧЕНО ✔" : "BIRIKTIRILDI ✔"}</span>
+              </>
+            ) : isAssigning ? (
+              <>
+                <RotateCw className="w-4 h-4 animate-spin" />
+                <span>{isEn ? "ASSIGNING..." : isRu ? "НАЗНАЧЕНИЕ..." : "BIRIKTIRILMOQDA..."}</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-4 h-4 stroke-[2.5]" />
+                <span>ASSIGN</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* 5. ASSIGN TO STUDENTS MODAL */}
