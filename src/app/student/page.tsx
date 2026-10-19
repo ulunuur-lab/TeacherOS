@@ -275,6 +275,12 @@ export default function StudentAppPage() {
   // Homework State (Default empty if no teacher homework exists)
   const [homeworkList, setHomeworkList] = useState<StudentHomeworkItem[]>([]);
   const [activeModalHomework, setActiveModalHomework] = useState<StudentHomeworkItem | null>(null);
+  const [solvingHomework, setSolvingHomework] = useState<StudentHomeworkItem | null>(null);
+  const [availableClassrooms, setAvailableClassrooms] = useState<string[]>([
+    "Intermediate group",
+    "Class 9A",
+    "IELTS 7.0"
+  ]);
 
   // Bezbet AI Chat State
   const [chatMessages, setChatMessages] = useState<Array<{ sender: "user" | "bezbet"; text: string; image?: string; time: string }>>([]);
@@ -418,17 +424,27 @@ export default function StudentAppPage() {
         `/api/classroom-homework`
       ];
 
+      const discoveredClassrooms = new Set<string>(["Intermediate group", "Class 9A", "IELTS 7.0"]);
+      if (activeName) discoveredClassrooms.add(activeName);
+
       for (const url of urls) {
         try {
           const res = await fetch(url);
           if (res.ok) {
             const data = await res.json();
             if (data.success && Array.isArray(data.homeworks)) {
-              data.homeworks.forEach((h: any) => addHomeworkItem(h));
+              data.homeworks.forEach((h: any) => {
+                addHomeworkItem(h);
+                if (h.classroomName && h.classroomName !== "all" && h.classroomName !== "solo") {
+                  discoveredClassrooms.add(h.classroomName);
+                }
+              });
             }
           }
         } catch (e) {}
       }
+
+      setAvailableClassrooms(Array.from(discoveredClassrooms));
 
       if (collected.length > 0) {
         setHomeworkList([...collected]);
@@ -821,11 +837,32 @@ export default function StudentAppPage() {
                 {t.app_student}
               </span>
             </div>
-            <div className="flex items-center space-x-1.5 px-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <p className={`text-xs font-semibold truncate ${isLight ? "text-slate-600" : "text-slate-400"}`}>
-                {className}
-              </p>
+            <div className={`p-1.5 rounded-xl border flex items-center space-x-2 transition-all ${
+              isLight ? "bg-slate-100 border-slate-200" : "bg-white/5 border-white/10"
+            }`}>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0 ml-1" />
+              <select
+                value={className}
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  setClassName(newName);
+                  try {
+                    localStorage.setItem("teacheros_classroom", JSON.stringify({ id: newName.toLowerCase().replace(/\s+/g, "_"), name: newName }));
+                  } catch (err) {}
+                  syncClassroomHomework(newName);
+                  playSoundEffect("click");
+                }}
+                className={`text-xs font-bold bg-transparent border-none focus:outline-none cursor-pointer truncate w-full ${
+                  isLight ? "text-slate-800" : "text-white"
+                }`}
+                title="Sinfxonani tanlash"
+              >
+                {availableClassrooms.map((cls) => (
+                  <option key={cls} value={cls} className={isLight ? "bg-white text-slate-900" : "bg-[#131428] text-white"}>
+                    {cls}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -966,7 +1003,7 @@ export default function StudentAppPage() {
         {/* Top Window Control Bar (Streak, ···, ✕) */}
         <header className="w-full flex items-center justify-between px-8 py-5 shrink-0 z-20">
           <span className={`text-xs font-mono uppercase tracking-widest ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-            {activeTab.toUpperCase()}
+            {solvingHomework ? `${className} • VAZIFANI YECHISH` : activeTab.toUpperCase()}
           </span>
 
           <div className="flex items-center space-x-3">
@@ -1014,10 +1051,27 @@ export default function StudentAppPage() {
         </header>
 
         {/* ======================================================== */}
-        {/* TAB 1: CLASSROOM (Picture 2)                             */}
+        {/* IN-PLACE FULL-WIDTH HOMEWORK SOLVER (Replaces modal)     */}
         {/* ======================================================== */}
-        {activeTab === "classroom" && (
-          <div className="w-full max-w-5xl mx-auto px-6 pb-12 space-y-6 animate-fade-in">
+        {solvingHomework ? (
+          <div className="w-full flex-1 flex flex-col px-6 sm:px-10 pb-12 animate-fade-in">
+            <StudentHomeworkModal
+              isOpen={true}
+              isEmbedded={true}
+              onClose={() => setSolvingHomework(null)}
+              homework={solvingHomework}
+              onComplete={handleHomeworkComplete}
+              appLanguage={lang}
+              studentName={studentName}
+            />
+          </div>
+        ) : (
+          <>
+            {/* ======================================================== */}
+            {/* TAB 1: CLASSROOM (Picture 2)                             */}
+            {/* ======================================================== */}
+            {activeTab === "classroom" && (
+              <div className="w-full px-6 sm:px-10 pb-12 space-y-6 animate-fade-in">
             {/* Top Student Profile Card */}
             <div
               className={`w-full p-6 sm:p-8 rounded-[24px] border shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden ${
@@ -1076,7 +1130,7 @@ export default function StudentAppPage() {
             </div>
 
             {/* Bottom 2 Cards Grid: Recent & Best Achievers */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
               {/* Card 1: RECENT */}
               <div
                 className={`p-6 rounded-[24px] border shadow-xl space-y-4 flex flex-col justify-between ${
@@ -1105,12 +1159,12 @@ export default function StudentAppPage() {
                         </p>
                       </div>
                     ) : (
-                      homeworkList.slice(0, 3).map((hw) => (
+                      homeworkList.slice(0, 4).map((hw) => (
                         <div
                           key={hw.id}
                           onClick={() => {
                             playSoundEffect("click");
-                            setActiveModalHomework(hw);
+                            setSolvingHomework(hw);
                           }}
                           className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${
                             hw.isDone
@@ -1234,7 +1288,7 @@ export default function StudentAppPage() {
         {/* TAB 2: HOMEWORK (Picture 3)                              */}
         {/* ======================================================== */}
         {activeTab === "homework" && (
-          <div className="w-full max-w-4xl mx-auto px-6 pb-12 space-y-6 animate-fade-in">
+          <div className="w-full px-6 sm:px-10 pb-12 space-y-6 animate-fade-in">
             <div className={`flex items-center justify-between border-b pb-4 ${
               isLight ? "border-slate-200" : "border-white/10"
             }`}>
@@ -1264,7 +1318,7 @@ export default function StudentAppPage() {
                     key={hw.id}
                     onClick={() => {
                       playSoundEffect("click");
-                      setActiveModalHomework(hw);
+                      setSolvingHomework(hw);
                     }}
                     className={`p-5 rounded-[22px] border flex items-center justify-between transition-all cursor-pointer group shadow-lg hover:scale-[1.01] active:scale-[0.99] ${
                       hw.isDone
@@ -1359,7 +1413,7 @@ export default function StudentAppPage() {
         {/* TAB 3: BEZBET (AI Smurf Cat Tutor, ChatGPT Flow)          */}
         {/* ======================================================== */}
         {activeTab === "bezbet" && (
-          <div className="w-full max-w-4xl mx-auto px-6 h-[calc(100vh-100px)] flex flex-col justify-between pb-6 animate-fade-in">
+          <div className="w-full px-6 sm:px-10 h-[calc(100vh-100px)] flex flex-col justify-between pb-6 animate-fade-in">
             {/* If conversation has NOT started: Centered Cat Welcome */}
             {chatMessages.length === 0 ? (
               <div className="my-auto flex flex-col items-center justify-center text-center space-y-6 max-w-xl mx-auto py-8">
@@ -1634,7 +1688,7 @@ export default function StudentAppPage() {
         {/* TAB 4: SETTINGS & ACCOUNT (Picture 5)                     */}
         {/* ======================================================== */}
         {activeTab === "settings" && (
-          <div className="w-full max-w-4xl mx-auto px-6 pb-12 space-y-6 animate-fade-in">
+          <div className="w-full px-6 sm:px-10 pb-12 space-y-6 animate-fade-in">
             {/* Card 1: ACCOUNT */}
             <div
               className={`p-6 rounded-[24px] border shadow-xl space-y-4 ${
@@ -1677,6 +1731,53 @@ export default function StudentAppPage() {
                   </p>
                   <p className="text-xs text-[#635BFF] font-semibold">{className}</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Card: CLASSROOM SYNC & SELECTION */}
+            <div
+              className={`p-6 rounded-[24px] border shadow-xl space-y-4 ${
+                isLight ? "bg-white border-slate-200" : "bg-[#1a1c36] border-white/10"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`text-xs font-mono uppercase tracking-widest ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                  Faol Sinfxona & Bog'lanish
+                </span>
+                <span className="text-xs font-mono text-emerald-400 font-bold flex items-center space-x-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Jonli ulanish</span>
+                </span>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <label className={`text-xs font-semibold ${isLight ? "text-slate-600" : "text-slate-300"}`}>
+                  Siz biriktirilgan sinfxona:
+                </label>
+                <select
+                  value={className}
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    setClassName(newName);
+                    try {
+                      localStorage.setItem("teacheros_classroom", JSON.stringify({ id: newName.toLowerCase().replace(/\s+/g, "_"), name: newName }));
+                    } catch (err) {}
+                    syncClassroomHomework(newName);
+                    playSoundEffect("success");
+                  }}
+                  className={`w-full p-4 rounded-xl border text-sm font-bold focus:outline-none focus:border-[#635BFF] cursor-pointer ${
+                    isLight ? "bg-slate-50 border-slate-200 text-slate-900" : "bg-[#131428] border-white/10 text-white"
+                  }`}
+                >
+                  {availableClassrooms.map((cls) => (
+                    <option key={cls} value={cls} className={isLight ? "bg-white text-slate-900" : "bg-[#131428] text-white"}>
+                      {cls}
+                    </option>
+                  ))}
+                </select>
+                <p className={`text-[11px] leading-relaxed ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                  Ustozingiz dars o'tadigan sinfxonani tanlang. Barcha darslar va uyga vazifalar avtomatik tarzda ushbu sinfga moslanadi.
+                </p>
               </div>
             </div>
 
@@ -1892,15 +1993,21 @@ export default function StudentAppPage() {
             </div>
           </div>
         )}
+      </>
+    )}
 
-        {/* Interactive Homework Solver Modal */}
-        <StudentHomeworkModal
-          isOpen={!!activeModalHomework}
-          onClose={() => setActiveModalHomework(null)}
-          homework={activeModalHomework}
-          onComplete={handleHomeworkComplete}
-          appLanguage={lang}
-        />
+        {/* Fallback Full-Stage Homework Solver Modal */}
+        {activeModalHomework && (
+          <StudentHomeworkModal
+            isOpen={true}
+            isEmbedded={false}
+            onClose={() => setActiveModalHomework(null)}
+            homework={activeModalHomework}
+            onComplete={handleHomeworkComplete}
+            appLanguage={lang}
+            studentName={studentName}
+          />
+        )}
 
         {/* Edit Name Modal */}
         {isEditingName && (

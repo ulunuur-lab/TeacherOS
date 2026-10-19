@@ -1,0 +1,492 @@
+[
+  {
+    "id": "hw_1792387470429_1379",
+    "classroomId": "class_1",
+    "classroomName": "IELTS 7.0",
+    "topic": "Past Perfect Tense",
+    "intensity": "medium",
+    "totalCount": 5,
+    "sections": [
+      {
+        "instruction": "Choose correct answer",
+        "title": "Multiple Choice",
+        "typeKey": "mcq",
+        "items": [
+          {
+            "explanation": "Past Perfect",
+            "answer": "had left",
+            "id": 1,
+            "question": "By the time we arrived, the train had left.",
+            "options": "had left has left left leaving"
+          }
+        ]
+      }
+    ],
+    "vocabulary": [],
+    "assignedAt": "2026-10-19T05:24:30.429Z",
+    "assignedBy": "Ustoz"
+  },
+  {
+    "id": "hw_1792387025193_535n",
+    "classroomId": "solo",
+    "classroomName": "Yakkaxon rejim",
+    "topic": "present simple",
+    "intensity": "medium",
+    "totalCount": 50,
+    "sections": [
+      {
+        "typeKey": "mcq",
+        "title": "Ko'p tanlovli savollar",
+        "instruction": "To'g'ri javobni tanlang.",
+        "items": [
+          {
+            "id": 1,
+            "question": "She ______ to the gym every morning.",
+            "options": [
+              "A) go",
+              "B) goes",
+              "C) going",
+              "D) gone"
+            ],
+            "answer": "B) goes",
+            "explanation": "Uchinchi shaxs birlikda fe'lga -es qo'shiladi."
+          },
+          {
+            "id": 2,
+            "question": "They ______ coffee in the afternoon.",
+            "options": [
+              "A) drink",
+              "B) drinks",
+              "C) drinking",
+              "D) drank"
+            ],
+            "answer": "A) drink",
+            "explanation": "Ko'plik shaklida fe'l o'zgarmaydi."
+          },
+          {
+            "id": 3,
+            "question": "______ he like playing football?",
+            "options": [
+              "A) Do",
+              "B) Does",
+              "C) Is",
+              "D) Are"
+            ],
+            "answer": "B) Does",
+            "explanation": "He uchun 'does' yordamchi fe'li ishlatiladi."
+          },
+          {
+            "id": 4,
+            "question": "I ______ not like spicy food.",
+            "options": [
+              "A) do",
+              "B) does",
+              "C) am",
+              "D) is"
+            ],
+            "answer": "A) do",
+            "explanation": "I uchun 'do' yordamchi fe'li ishlatiladi."
+          },
+          {
+            "id": 5,
+            "question": "The sun ______ in the east.",
+            "options": [
+              "A) rise",
+              "B) rises",
+              "C) rising",
+              "D) risen"
+            ],
+            "answer": "B) rises",
+            "explanation": "Tabiat qonunlari uchun Present Simple ishlatiladi."
+          },
+          {
+            "id": 6,
+            "question": "We ______ usually late for work.",
+            "options": [
+              "A) aren't",
+              "B) don't",
+              "C) doesn't",
+              "D) isn't"
+            ],
+            "answer": "A) aren't",
+            "explanation": "To be fe'li bilan 'not' ishlatiladi."
+          },
+          {
+            "id": 7,
+            "question": "______ you speak English?",
+            "options": [
+              "A) Does",
+              "B) Do",
+              "C) Are",
+              "D) Is"
+            ],
+            "answer": "B) Do",
+            "explanation": "You uchun 'do' yordamchi fe'li ishlatiladi."
+          },
+          {
+            "id": 8,
+            "question": "He ______ his homework at night.",
+            "options": [
+              "A) do",
+              "B) does",
+              "C) doing",
+              "D) did"
+            ],
+            "answer": "B) does",
+            "explanation": "Uchinchi shaxs birlikda 'do' fe'li 'does' bo'ladi."
+          },
+          {
+            "id": 9,
+            "question": "My cat ______ milk.",
+            "options": [
+              "A) like",
+              "B) likes",
+              "C) liking",
+              "D) liked"
+            ],
+            "answer": "B) likes",
+            "explanation": "Cat (it) uchun fe'lga -s qo'shiladi."
+          },
+          {
+            "id": 10,
+            "question": "They ______ in Tashkent.",
+            "options": [
+              "A) live",
+              "B) lives",
+              "C) living",
+              "D) lived"
+            ],
+            "answer": "A) live",
+            "explanation": "They uchun fe'l o'zgarmaydi."
+          }
+        ]
+      },
+      {
+        "typeKey": "mistake_hunter",
+        "title": "Xatolarni toping",
+        "instruction": "Gapdagi xatoni toping va to'g'rilang.",
+        "items": [
+          {
+            "id": 1,
+            "question": "He go to school by bus.",
+            "answer": "He goes to school by bus.",
+            "explanation": "Uchinchi shaxs birlikda 'goes' bo'lishi kerak."
+          },
+          {
+            "id": 2,
+            "question": "They likes pizza.",
+            "answer": "They like pizza.",
+            "explanation": "They uchun fe'lga -s qo'shilmaydi."
+          },
+          {
+            "id": 3,
+            "question": "Does she plays tennis?",
+            "answer": "Does she play tennis?",
+            "explanation": "Does ishlatilganda fe'l o'z holida qoladi."
+          },
+          {
+            "id": 4,
+            "question": "I doesn't know him.",
+            "answer": "I don't know him.",
+            "explanation": "I uchun 'don't' ishlatiladi."
+          },
+          {
+            "id": 5,
+            "question": "The train arrive at 5 PM.",
+            "answer": "The train arrives at 5 PM.",
+            "explanation": "Train (it) uchun fe'lga -s qo'shiladi."
+          },
+          {
+            "id": 6,
+            "question": "She do not work here.",
+            "answer": "She does not work here.",
+            "explanation": "She uchun 'does' ishlatiladi."
+          },
+          {
+            "id": 7,
+            "question": "We eats lunch at noon.",
+            "answer": "We eat lunch at noon.",
+            "explanation": "We uchun fe'lga -s qo'shilmaydi."
+          },
+          {
+            "id": 8,
+            "question": "Do he like apples?",
+            "answer": "Does he like apples?",
+            "explanation": "He uchun 'does' ishlatiladi."
+          },
+          {
+            "id": 9,
+            "question": "My brother study English.",
+            "answer": "My brother studies English.",
+            "explanation": "Uchinchi shaxs birlikda 'studies' bo'ladi."
+          },
+          {
+            "id": 10,
+            "question": "It rain a lot here.",
+            "answer": "It rains a lot here.",
+            "explanation": "It uchun fe'lga -s qo'shiladi."
+          }
+        ]
+      },
+      {
+        "typeKey": "word_formation",
+        "title": "So'z yasalishi",
+        "instruction": "Qavs ichidagi so'zning to'g'ri shaklini yozing.",
+        "items": [
+          {
+            "id": 1,
+            "question": "She [WRITE] emails every day.",
+            "answer": "writes",
+            "explanation": "Uchinchi shaxs birlik."
+          },
+          {
+            "id": 2,
+            "question": "They [COOK] dinner together.",
+            "answer": "cook",
+            "explanation": "Ko'plik shakli."
+          },
+          {
+            "id": 3,
+            "question": "He [FIX] his car on Sundays.",
+            "answer": "fixes",
+            "explanation": "Uchinchi shaxs birlik."
+          },
+          {
+            "id": 4,
+            "question": "We [FLY] to London every year.",
+            "answer": "fly",
+            "explanation": "Ko'plik shakli."
+          },
+          {
+            "id": 5,
+            "question": "It [CRY] when it is hungry.",
+            "answer": "cries",
+            "explanation": "Uchinchi shaxs birlik."
+          },
+          {
+            "id": 6,
+            "question": "I [WASH] my face every morning.",
+            "answer": "wash",
+            "explanation": "Birinchi shaxs birlik."
+          },
+          {
+            "id": 7,
+            "question": "She [TEACH] English at school.",
+            "answer": "teaches",
+            "explanation": "Uchinchi shaxs birlik."
+          },
+          {
+            "id": 8,
+            "question": "They [BUY] groceries on Saturdays.",
+            "answer": "buy",
+            "explanation": "Ko'plik shakli."
+          },
+          {
+            "id": 9,
+            "question": "He [TRY] to be on time.",
+            "answer": "tries",
+            "explanation": "Uchinchi shaxs birlik."
+          },
+          {
+            "id": 10,
+            "question": "We [ENJOY] listening to music.",
+            "answer": "enjoy",
+            "explanation": "Ko'plik shakli."
+          }
+        ]
+      },
+      {
+        "typeKey": "sentence_transformation",
+        "title": "Gaplarni qayta tuzish",
+        "instruction": "Qavs ichidagi so'zdan foydalanib gapni qayta yozing.",
+        "items": [
+          {
+            "id": 1,
+            "question": "She likes tea. (NOT)",
+            "answer": "She does not like tea.",
+            "explanation": "Inkor shakli."
+          },
+          {
+            "id": 2,
+            "question": "They play chess. (DO)",
+            "answer": "Do they play chess?",
+            "explanation": "So'roq shakli."
+          },
+          {
+            "id": 3,
+            "question": "He works hard. (DOESN'T)",
+            "answer": "He doesn't work hard.",
+            "explanation": "Inkor shakli."
+          },
+          {
+            "id": 4,
+            "question": "We study English. (DO)",
+            "answer": "Do we study English?",
+            "explanation": "So'roq shakli."
+          },
+          {
+            "id": 5,
+            "question": "I eat meat. (DO NOT)",
+            "answer": "I do not eat meat.",
+            "explanation": "Inkor shakli."
+          },
+          {
+            "id": 6,
+            "question": "She goes to school. (DOES)",
+            "answer": "Does she go to school?",
+            "explanation": "So'roq shakli."
+          },
+          {
+            "id": 7,
+            "question": "They live here. (DO NOT)",
+            "answer": "They do not live here.",
+            "explanation": "Inkor shakli."
+          },
+          {
+            "id": 8,
+            "question": "He speaks French. (DOES)",
+            "answer": "Does he speak French?",
+            "explanation": "So'roq shakli."
+          },
+          {
+            "id": 9,
+            "question": "It rains often. (DOES NOT)",
+            "answer": "It does not rain often.",
+            "explanation": "Inkor shakli."
+          },
+          {
+            "id": 10,
+            "question": "You like music. (DO)",
+            "answer": "Do you like music?",
+            "explanation": "So'roq shakli."
+          }
+        ]
+      },
+      {
+        "typeKey": "open_cloze",
+        "title": "Bo'sh joylarni to'ldiring",
+        "instruction": "Gapni to'g'ri shakl bilan to'ldiring.",
+        "items": [
+          {
+            "id": 1,
+            "question": "She _______ (work) in a bank.",
+            "answer": "works",
+            "explanation": "Uchinchi shaxs birlik."
+          },
+          {
+            "id": 2,
+            "question": "They _______ (play) football every Friday.",
+            "answer": "play",
+            "explanation": "Ko'plik shakli."
+          },
+          {
+            "id": 3,
+            "question": "_______ (do) he live in London?",
+            "answer": "Does",
+            "explanation": "So'roq gap."
+          },
+          {
+            "id": 4,
+            "question": "I _______ (not/like) cold weather.",
+            "answer": "don't like",
+            "explanation": "Inkor shakli."
+          },
+          {
+            "id": 5,
+            "question": "The earth _______ (go) around the sun.",
+            "answer": "goes",
+            "explanation": "Umumiy haqiqat."
+          },
+          {
+            "id": 6,
+            "question": "My sister _______ (study) medicine.",
+            "answer": "studies",
+            "explanation": "Uchinchi shaxs birlik."
+          },
+          {
+            "id": 7,
+            "question": "We _______ (not/watch) TV often.",
+            "answer": "don't watch",
+            "explanation": "Inkor shakli."
+          },
+          {
+            "id": 8,
+            "question": "_______ (do) you speak Uzbek?",
+            "answer": "Do",
+            "explanation": "So'roq gap."
+          },
+          {
+            "id": 9,
+            "question": "He _______ (have) a fast car.",
+            "answer": "has",
+            "explanation": "Have fe'lining uchinchi shaxs shakli."
+          },
+          {
+            "id": 10,
+            "question": "Cats _______ (sleep) a lot.",
+            "answer": "sleep",
+            "explanation": "Ko'plik shakli."
+          }
+        ]
+      }
+    ],
+    "vocabulary": [
+      {
+        "id": 1,
+        "word": "Habitual",
+        "pos": "adj",
+        "translation": "odat tusiga kirgan",
+        "definition": "Done or doing constantly or as a habit",
+        "example": "He has a habitual way of checking his watch.",
+        "collocation": "habitual action"
+      },
+      {
+        "id": 2,
+        "word": "Frequency",
+        "pos": "noun",
+        "translation": "takrorlanish darajasi",
+        "definition": "The rate at which something occurs",
+        "example": "We use adverbs of frequency to show how often we do things.",
+        "collocation": "high frequency"
+      },
+      {
+        "id": 3,
+        "word": "Routine",
+        "pos": "noun",
+        "translation": "kundalik tartib",
+        "definition": "A sequence of actions regularly followed",
+        "example": "My morning routine starts at 7 AM.",
+        "collocation": "daily routine"
+      },
+      {
+        "id": 4,
+        "word": "Permanent",
+        "pos": "adj",
+        "translation": "doimiy",
+        "definition": "Lasting or intended to last indefinitely",
+        "example": "She lives in London; it is her permanent residence.",
+        "collocation": "permanent address"
+      },
+      {
+        "id": 5,
+        "word": "General truth",
+        "pos": "noun",
+        "translation": "umumiy haqiqat",
+        "definition": "A fact that is always true",
+        "example": "The sun rises in the east is a general truth.",
+        "collocation": "scientific general truth"
+      },
+      {
+        "id": 6,
+        "word": "Schedule",
+        "pos": "noun",
+        "translation": "jadval",
+        "definition": "A plan for carrying out a process or procedure",
+        "example": "The train schedule is fixed.",
+        "collocation": "tight schedule"
+      }
+    ],
+    "assignedAt": "2026-10-19T05:17:05.193Z",
+    "assignedBy": "Ulug'bek"
+  }
+]
