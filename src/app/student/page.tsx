@@ -262,9 +262,16 @@ export default function StudentAppPage() {
   const [telegramUsername, setTelegramUsername] = useState<string>("ulunur");
   const [telegramAvatar, setTelegramAvatar] = useState<string | null>(null);
   const [className, setClassName] = useState<string>("Intermediate group");
-  const [attendancePercent, setAttendancePercent] = useState<number>(93);
-  const [absentCount, setAbsentCount] = useState<number>(4);
-  const [streakDays, setStreakDays] = useState<number>(9);
+  const [attendancePercent, setAttendancePercent] = useState<number>(0);
+  const [absentCount, setAbsentCount] = useState<number>(0);
+  const [streakDays, setStreakDays] = useState<number>(0);
+  const [leaderboardList, setLeaderboardList] = useState<Array<{
+    rank: number;
+    name: string;
+    attend: string;
+    streak: number;
+    isYou: boolean;
+  }>>([]);
 
   // Edit Name Modal State
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
@@ -362,7 +369,7 @@ export default function StudentAppPage() {
   const syncClassroomHomework = useCallback(async (targetClassName?: string) => {
     if (typeof window === "undefined") return;
 
-    const activeName = targetClassName || className || "Class 9A";
+    const activeName = targetClassName || className || "Intermediate group";
     const collected: StudentHomeworkItem[] = [];
     const seenTopics = new Set<string>();
 
@@ -394,7 +401,7 @@ export default function StudentAppPage() {
       });
     };
 
-    // 1. Check local storage first (instant responsiveness)
+    // 1. Check local storage first (scoped to active classroom or 'all')
     try {
       const allKeys = Object.keys(localStorage);
       const hwKeys = allKeys.filter((k) => k.startsWith("teacheros_homeworks_") || k === "teacheros_latest_assigned_hw");
@@ -404,56 +411,114 @@ export default function StudentAppPage() {
           if (val) {
             const parsed = JSON.parse(val);
             if (Array.isArray(parsed)) {
-              parsed.forEach((p) => addHomeworkItem(p));
+              parsed.forEach((p) => {
+                const cName = (p.classroomName || "").toLowerCase().trim();
+                if (!p.classroomName || cName === activeName.toLowerCase() || cName === "all") {
+                  addHomeworkItem(p);
+                }
+              });
             } else if (parsed && typeof parsed === "object") {
-              addHomeworkItem(parsed);
+              const cName = (parsed.classroomName || "").toLowerCase().trim();
+              if (!parsed.classroomName || cName === activeName.toLowerCase() || cName === "all") {
+                addHomeworkItem(parsed);
+              }
             }
           }
         } catch (e) {}
       });
     } catch (e) {}
 
-    if (collected.length > 0) {
-      setHomeworkList([...collected]);
-    }
-
-    // 2. Fetch from persistent API for this classroom & all classrooms
+    // 2. Fetch from persistent API strictly for this classroom
     try {
-      const urls = [
-        `/api/classroom-homework?classroomName=${encodeURIComponent(activeName)}`,
-        `/api/classroom-homework?all=true`,
-        `/api/classroom-homework`
-      ];
-
-      const discoveredClassrooms = new Set<string>(["Intermediate group", "Class 9A", "IELTS 7.0"]);
-      if (activeName) discoveredClassrooms.add(activeName);
-
-      for (const url of urls) {
-        try {
-          const res = await fetch(url);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && Array.isArray(data.homeworks)) {
-              data.homeworks.forEach((h: any) => {
-                addHomeworkItem(h);
-                if (h.classroomName && h.classroomName !== "all" && h.classroomName !== "solo") {
-                  discoveredClassrooms.add(h.classroomName);
-                }
-              });
-            }
-          }
-        } catch (e) {}
-      }
-
-      setAvailableClassrooms(Array.from(discoveredClassrooms));
-
-      if (collected.length > 0) {
-        setHomeworkList([...collected]);
+      const res = await fetch(`/api/classroom-homework?classroomName=${encodeURIComponent(activeName)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.homeworks)) {
+          data.homeworks.forEach((h: any) => {
+            addHomeworkItem(h);
+          });
+        }
       }
     } catch (e) {
       console.warn("Classroom homework sync failed:", e);
     }
+
+    setHomeworkList([...collected]);
   }, [className]);
+
+  // Dynamically calculate real attendance, absent count, and streak from actual data
+  useEffect(() => {
+    const total = homeworkList.length;
+    const completed = homeworkList.filter((h) => h.isDone).length;
+    const absent = Math.max(0, total - completed);
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    let streak = 0;
+    try {
+      const savedStreak = localStorage.getItem("teacheros_student_streak");
+      if (savedStreak !== null) {
+        streak = parseInt(savedStreak, 10) || 0;
+      } else {
+        streak = completed;
+      }
+    } catch (e) {}
+
+    setAttendancePercent(percent);
+    setAbsentCount(absent);
+    setStreakDays(streak);
+  }, [homeworkList]);
+
+  // Fetch real students leaderboard from persistent DB
+  useEffect(() => {
+    let isMounted = true;
+    const loadLeaderboard = async () => {
+      try {
+        const res = await fetch("/api/submissions?mode=summary");
+        let peers: Array<{ name: string; attend: number; streak: number; isYou: boolean }> = [];
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.students)) {
+            peers = data.students
+              .filter((s: any) => s.name && !s.name.startsWith("__") && !s.name.toLowerCase().includes("test") && s.name.trim().toLowerCase() !== studentName.trim().toLowerCase())
+              .map((s: any) => ({
+                name: s.name,
+                attend: s.highestPercent || 0,
+                streak: s.totalSubmissions || 0,
+                isYou: false
+              }));
+          }
+        }
+        const all = [
+          ...peers,
+          { name: studentName, attend: attendancePercent, streak: streakDays, isYou: true }
+        ];
+        all.sort((a, b) => {
+          if ((b.streak || 0) !== (a.streak || 0)) {
+            return (b.streak || 0) - (a.streak || 0);
+          }
+          return (b.attend || 0) - (a.attend || 0);
+        });
+        const mapped = all.map((st, i) => ({
+          rank: i + 1,
+          name: st.name,
+          attend: `${st.attend}%`,
+          streak: st.streak,
+          isYou: !!st.isYou
+        }));
+        if (isMounted) setLeaderboardList(mapped);
+      } catch (e) {
+        if (isMounted) {
+          setLeaderboardList([
+            { rank: 1, name: studentName, attend: `${attendancePercent}%`, streak: streakDays, isYou: true }
+          ]);
+        }
+      }
+    };
+    loadLeaderboard();
+    return () => {
+      isMounted = false;
+    };
+  }, [studentName, attendancePercent, streakDays]);
 
   // Check Telegram session & classroom homework on mount
   useEffect(() => {
@@ -515,14 +580,16 @@ export default function StudentAppPage() {
       }
 
       // 2. Sync Classroom name
-      const savedClass = localStorage.getItem("teacheros_classroom");
-      let activeClsName = "Class 9A";
+      const savedClass = localStorage.getItem("teacheros_student_classroom") || localStorage.getItem("teacheros_classroom");
+      let activeClsName = "Intermediate group";
       if (savedClass) {
-        const parsedCls = JSON.parse(savedClass);
-        if (parsedCls.name) {
-          setClassName(parsedCls.name);
-          activeClsName = parsedCls.name;
-        }
+        try {
+          const parsedCls = JSON.parse(savedClass);
+          if (parsedCls.name) {
+            setClassName(parsedCls.name);
+            activeClsName = parsedCls.name;
+          }
+        } catch (e) {}
       }
 
       // 3. Load Homework assigned by teacher for this classroom (Server + Local Storage)
@@ -700,32 +767,12 @@ export default function StudentAppPage() {
     );
     try {
       localStorage.setItem(`teacheros_student_done_${hwId}`, "true");
+      const currentStreak = Number(localStorage.getItem("teacheros_student_streak") || streakDays);
+      const nextStreak = currentStreak + 1;
+      localStorage.setItem("teacheros_student_streak", String(nextStreak));
+      setStreakDays(nextStreak);
     } catch (e) {}
-    setStreakDays((p) => p + 1);
   };
-
-  // Add demo homework if list is empty
-  const handleAddDemoHomework = () => {
-    playSoundEffect("click");
-    const demoHw: StudentHomeworkItem = {
-      id: "demo_hw_1",
-      topic: "Past Perfect Tense",
-      assignedDate: "Bugun",
-      isDone: false
-    };
-    setHomeworkList([demoHw]);
-  };
-
-  // Leaderboard students
-  const LEADERBOARD_STUDENTS = [
-    { rank: 1, name: "Jasur R.", attend: "100%", streak: 15, isYou: false },
-    { rank: 2, name: "Malika S.", attend: "98%", streak: 12, isYou: false },
-    { rank: 3, name: studentName, attend: `${attendancePercent}%`, streak: streakDays, isYou: true },
-    { rank: 4, name: "Kamron B.", attend: "90%", streak: 7, isYou: false },
-    { rank: 5, name: "Dilnoza M.", attend: "88%", streak: 5, isYou: false },
-    { rank: 6, name: "Sardor K.", attend: "85%", streak: 4, isYou: false },
-    { rank: 7, name: "Madina T.", attend: "82%", streak: 3, isYou: false }
-  ];
 
   // =========================================================================
   // TELEGRAM AUTHENTICATION GATE SCREEN FOR STUDENTS
@@ -1095,7 +1142,9 @@ export default function StudentAppPage() {
 
                 <div className="flex items-center justify-between text-[11px] pt-1">
                   <span className={isLight ? "text-slate-600" : "text-slate-400"}>{t.status_absent}:</span>
-                  <span className="text-amber-500 font-bold">{absentCount} dars</span>
+                  <span className="text-amber-500 font-bold">
+                    {homeworkList.length === 0 ? "0 dars" : `${absentCount} dars`}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1187,69 +1236,95 @@ export default function StudentAppPage() {
                 </div>
 
                 <div className="space-y-2 pt-2">
-                  {(showFullLeaderboard ? LEADERBOARD_STUDENTS : LEADERBOARD_STUDENTS.slice(0, 5)).map((st) => (
-                    <div
-                      key={st.rank}
-                      className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all ${
-                        st.isYou
-                          ? isLight
-                            ? "bg-indigo-50 border-indigo-200 shadow-sm"
-                            : "bg-[#635BFF]/20 border-[#635BFF]/50 shadow-sm"
-                          : isLight
-                          ? "bg-slate-50 border-slate-200"
-                          : "bg-[#131428] border-white/5"
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span
-                          className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[11px] ${
-                            st.rank === 1
-                              ? "bg-amber-400 text-slate-950 shadow-md shadow-amber-400/30"
-                              : st.rank === 2
-                              ? "bg-slate-300 text-slate-950"
-                              : st.rank === 3
-                              ? "bg-amber-700 text-white"
+                  {leaderboardList.length === 0 ? (
+                    <div className="py-6 px-4 text-center flex flex-col items-center justify-center space-y-2">
+                      <div className="w-9 h-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-base text-amber-400">
+                        🏆
+                      </div>
+                      <p className={`text-xs font-semibold ${isLight ? "text-slate-700" : "text-slate-300"}`}>
+                        {lang === "en" ? "No leaderboard records yet" : lang === "ru" ? "Рейтинг пока пуст" : "Hozircha reyting mavjud emas"}
+                      </p>
+                      <p className={`text-[11px] max-w-[240px] leading-relaxed ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                        {lang === "en" ? "Complete homework assignments to get ranked here!" : lang === "ru" ? "Выполняйте задания, чтобы появиться в рейтинге!" : "Topshiriqlarni bajarib, sinf reytingida o'z o'rningizga ega bo'ling!"}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {(showFullLeaderboard ? leaderboardList : leaderboardList.slice(0, 5)).map((st) => (
+                        <div
+                          key={st.rank + st.name}
+                          className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all ${
+                            st.isYou
+                              ? isLight
+                                ? "bg-indigo-50 border-indigo-200 shadow-sm"
+                                : "bg-[#635BFF]/20 border-[#635BFF]/50 shadow-sm"
                               : isLight
-                              ? "bg-slate-200 text-slate-600"
-                              : "bg-white/10 text-slate-400"
+                              ? "bg-slate-50 border-slate-200"
+                              : "bg-[#131428] border-white/5"
                           }`}
                         >
-                          {st.rank}
-                        </span>
-                        <span className={`font-bold ${
-                          st.isYou
-                            ? "text-[#635BFF]"
-                            : isLight
-                            ? "text-slate-900"
-                            : "text-white"
-                        }`}>
-                          {st.name} {st.isYou && `(${lang === 'uz' ? 'Siz' : lang === 'ru' ? 'Вы' : 'You'})`}
-                        </span>
-                      </div>
+                          <div className="flex items-center space-x-3">
+                            <span
+                              className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[11px] ${
+                                st.rank === 1
+                                  ? "bg-amber-400 text-slate-950 shadow-md shadow-amber-400/30"
+                                  : st.rank === 2
+                                  ? "bg-slate-300 text-slate-950"
+                                  : st.rank === 3
+                                  ? "bg-amber-700 text-white"
+                                  : isLight
+                                  ? "bg-slate-200 text-slate-600"
+                                  : "bg-white/10 text-slate-400"
+                              }`}
+                            >
+                              {st.rank}
+                            </span>
+                            <span className={`font-bold ${
+                              st.isYou
+                                ? "text-[#635BFF]"
+                                : isLight
+                                ? "text-slate-900"
+                                : "text-white"
+                            }`}>
+                              {st.name} {st.isYou && `(${lang === 'uz' ? 'Siz' : lang === 'ru' ? 'Вы' : 'You'})`}
+                            </span>
+                          </div>
 
-                      <div className="flex items-center space-x-4 font-mono">
-                        <span className="text-emerald-500 font-bold">{st.attend}</span>
-                        <span className="text-amber-500 font-bold flex items-center space-x-0.5">
-                          <span>{st.streak}</span>
-                          <span>🔥</span>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                          <div className="flex items-center space-x-4 font-mono">
+                            <span className="text-emerald-500 font-bold">{st.attend}</span>
+                            <span className="text-amber-500 font-bold flex items-center space-x-0.5">
+                              <span>{st.streak}</span>
+                              <span>🔥</span>
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+
+                      {leaderboardList.length === 1 && leaderboardList[0].isYou && streakDays === 0 && (
+                        <div className={`p-2.5 rounded-xl border text-center text-[11px] leading-relaxed ${
+                          isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-white/5 border-white/5 text-slate-400"
+                        }`}>
+                          {lang === "en" ? "Complete your first homework to gain streak points!" : lang === "ru" ? "Выполните первое задание, чтобы набрать очки!" : "Streak ochkolarini olish uchun birinchi vazifangizni bajaring!"}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    playSoundEffect("click");
-                    setShowFullLeaderboard((p) => !p);
-                  }}
-                  className={`w-full py-2 text-center text-xs font-bold transition-colors cursor-pointer ${
-                    isLight ? "text-slate-500 hover:text-slate-800" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  {showFullLeaderboard ? t.less_btn : t.more_btn}
-                </button>
+                {leaderboardList.length > 5 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSoundEffect("click");
+                      setShowFullLeaderboard((p) => !p);
+                    }}
+                    className={`w-full py-2 text-center text-xs font-bold transition-colors cursor-pointer ${
+                      isLight ? "text-slate-500 hover:text-slate-800" : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {showFullLeaderboard ? t.less_btn : t.more_btn}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1366,15 +1441,6 @@ export default function StudentAppPage() {
                     {t.hw_empty_subtitle}
                   </p>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleAddDemoHomework}
-                  className="px-5 py-2.5 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center space-x-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>{t.hw_empty_demo_btn}</span>
-                </button>
               </div>
             )}
           </div>

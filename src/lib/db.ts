@@ -142,6 +142,7 @@ export async function getStudentsSummary() {
   }> = {};
 
   submissions.forEach(sub => {
+    if (!sub.student_name || sub.student_name.startsWith('__')) return;
     const key = sub.student_name.trim();
     if (!studentMap[key]) {
       studentMap[key] = {

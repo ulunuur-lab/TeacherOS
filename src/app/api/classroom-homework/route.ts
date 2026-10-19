@@ -149,12 +149,13 @@ export async function GET(req: NextRequest) {
         const cName = (h.classroomName || "").toLowerCase().trim();
         return (
           (classroomId && classroomId !== "solo" && classroomId !== "all" && cId === classroomId) ||
-          (classroomName && classroomName !== "all" && classroomName !== "solo" && cName === classroomName)
+          (classroomName && classroomName !== "all" && classroomName !== "solo" && cName === classroomName) ||
+          cId === "all" ||
+          cName === "all"
         );
       });
 
-      // If matched items found, return them. If classroom has no specific homework, return all recent homeworks so the student is never left with an empty state!
-      filtered = matched.length > 0 ? matched : allAssignments;
+      filtered = matched;
     }
 
     return NextResponse.json({
