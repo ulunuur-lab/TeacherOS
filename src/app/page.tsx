@@ -6711,61 +6711,6 @@ export default function StitchTeacherOS() {
                       );
                     })}
                   </div>
-
-                  {/* Bottom utility buttons */}
-                  <div className={`w-full pt-2 border-t mt-2 flex flex-col space-y-1.5 ${
-                    isBoardLight ? "border-slate-200" : "border-white/10"
-                  } ${isRightBarExpanded ? "" : "items-center"}`}>
-                    <button
-                      onClick={() => {
-                        setIsBoardLight((prev) => !prev);
-                      }}
-                      className={`rounded-xl transition-all flex items-center hover-lift cursor-pointer ${
-                        isRightBarExpanded
-                          ? `w-full px-3 py-2 space-x-2.5 text-left ${
-                              isBoardLight
-                                ? "text-amber-600 bg-amber-50 hover:bg-amber-100 font-bold"
-                                : "text-slate-300 hover:bg-white/10"
-                            }`
-                          : `p-2.5 justify-center ${
-                              isBoardLight
-                                ? "text-amber-600 hover:bg-amber-50"
-                                : "text-slate-300 hover:bg-white/10"
-                            }`
-                      }`}
-                      title={isBoardLight ? "To'q doska (Dark)" : "Yorug' doska (Light)"}
-                    >
-                      {isBoardLight ? <Moon className="w-4 h-4 shrink-0" /> : <Sun className="w-4 h-4 shrink-0 text-amber-500 fill-amber-400" />}
-                      {isRightBarExpanded && (
-                        <span className="text-xs font-bold">
-                          {isBoardLight ? "Dark" : "Light"}
-                        </span>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={toggleFullscreen}
-                      className={`rounded-xl transition-all flex items-center hover-lift ${
-                        isRightBarExpanded
-                          ? `w-full px-3 py-2 space-x-2.5 text-left ${
-                              isBoardLight
-                                ? "hover:bg-slate-100 text-slate-700 hover:text-slate-900"
-                                : "hover:text-white hover:bg-white/5 text-slate-300"
-                            }`
-                          : `p-2.5 justify-center ${
-                              isBoardLight
-                                ? "hover:bg-slate-100 text-slate-700 hover:text-slate-900"
-                                : "hover:text-white hover:bg-white/5 text-slate-300"
-                            }`
-                      }`}
-                      title="Katta ekran (F)"
-                    >
-                      <Crop className="w-4 h-4 shrink-0" />
-                      {isRightBarExpanded && (
-                        <span className="text-xs font-medium">Katta ekran (F)</span>
-                      )}
-                    </button>
-                  </div>
                 </aside>
               )}
             </div>
