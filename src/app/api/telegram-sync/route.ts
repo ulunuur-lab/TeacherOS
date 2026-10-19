@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const BOT_TOKEN = process.env.TELEGRAM_AUTH_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA';
+const BOT_TOKEN = '8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA';
 
 export async function POST(req: Request) {
   try {

@@ -554,6 +554,7 @@ export default function StitchTeacherOS() {
   const [generationStep, setGenerationStep] = useState<string>("");
   const [generationStage, setGenerationStage] = useState<number>(1);
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
+  const [lessonCurriculumBackup, setLessonCurriculumBackup] = useState<Curriculum | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
 
@@ -825,34 +826,20 @@ export default function StitchTeacherOS() {
   // Launch Homework directly from the current generated lesson
   const handleLaunchHomeworkFromLesson = () => {
     const activeTopic = curriculum?.topic || topicInput.trim() || "General English";
+    if (curriculum) {
+      setLessonCurriculumBackup(curriculum);
+    }
+    setCurriculum(null);
     setActiveHomeworkTopic(activeTopic);
     setTopicInput(activeTopic);
     setStudioMode('homework');
-    if (generatedHomeworkData && activeHomeworkTopic?.toLowerCase() === activeTopic.toLowerCase()) {
-      setHomeworkStep('review');
-    } else {
-      setHomeworkStep('config');
-    }
-    showToast(
-      appLanguage === 'en'
-        ? `Configuring homework for "${activeTopic}"`
-        : appLanguage === 'ru'
-        ? `Настройка задания по теме "${activeTopic}"`
-        : `"${activeTopic}" darsi bo'yicha vazifa sozlash`
-    );
+    setHomeworkStep('config');
   };
 
   // Launch Baamboozle Group Quiz directly from the current generated lesson
   const handleLaunchGroupQuizFromLesson = () => {
     const activeTopic = curriculum?.topic || topicInput.trim() || "General English";
     setActiveGroupQuizTopic(activeTopic);
-    showToast(
-      appLanguage === 'en'
-        ? `Launching Baamboozle quiz: "${activeTopic}"`
-        : appLanguage === 'ru'
-        ? `Запуск викторины Baamboozle: "${activeTopic}"`
-        : `"${activeTopic}" bo'yicha Baamboozle musobaqasi!`
-    );
   };
 
   // Sync isolated history, classrooms, real Telegram avatar, and teacher display name when user logs in / switches accounts
@@ -2956,7 +2943,7 @@ export default function StitchTeacherOS() {
 
       {/* Interactive Baamboozle Group Quiz Modal */}
       {activeGroupQuizTopic && (
-        <div className="fixed inset-0 z-50 bg-[#0D0F14]/95 backdrop-blur-xl flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-[#0D0F14]/95 backdrop-blur-xl flex items-center justify-center p-4">
           <BaamboozleQuiz
             topic={activeGroupQuizTopic}
             teamsCount={quizTeamsCount}
@@ -4084,7 +4071,7 @@ export default function StitchTeacherOS() {
                 </p>
               </div>
             </div>
-          ) : studioMode === 'homework' && (homeworkStep === 'review' || activeHomeworkTopic) ? (
+          ) : studioMode === 'homework' && homeworkStep === 'review' && generatedHomeworkData ? (
             /* ============================================================ */
             /* STANDALONE HOMEWORK REVIEW (Floating Directly on Dotted Canvas) */
             /* ============================================================ */
@@ -4093,9 +4080,15 @@ export default function StitchTeacherOS() {
                 topic={activeHomeworkTopic || topicInput.trim() || "Present Perfect"}
                 data={generatedHomeworkData}
                 onClose={() => {
-                  setActiveHomeworkTopic(null);
-                  setGeneratedHomeworkData(null);
-                  setHomeworkStep('prompt');
+                  if (lessonCurriculumBackup) {
+                    setCurriculum(lessonCurriculumBackup);
+                    setLessonCurriculumBackup(null);
+                    setStudioMode('lesson');
+                  } else {
+                    setActiveHomeworkTopic(null);
+                    setGeneratedHomeworkData(null);
+                    setHomeworkStep('prompt');
+                  }
                 }}
                 appLanguage={appLanguage}
                 isLight={isBoardLight}
@@ -4107,7 +4100,7 @@ export default function StitchTeacherOS() {
                 }}
               />
             </div>
-          ) : studioMode === 'homework' && homeworkStep === 'config' ? (
+          ) : studioMode === 'homework' && (homeworkStep === 'config' || !generatedHomeworkData) ? (
             /* ============================================================ */
             /* STANDALONE HOMEWORK STUDIO (Floating Directly on Dotted Canvas) */
             /* ============================================================ */
@@ -4118,16 +4111,24 @@ export default function StitchTeacherOS() {
                 {/* Back Button */}
                 <button
                   type="button"
-                  onClick={() => setHomeworkStep('prompt')}
+                  onClick={() => {
+                    if (lessonCurriculumBackup) {
+                      setCurriculum(lessonCurriculumBackup);
+                      setLessonCurriculumBackup(null);
+                      setStudioMode('lesson');
+                    } else {
+                      setHomeworkStep('prompt');
+                    }
+                  }}
                   className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border flex items-center space-x-1.5 backdrop-blur-md hover-lift ${
                     isBoardLight
                       ? "bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-300 shadow-sm"
                       : "bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white border-white/10"
                   }`}
-                  title={appLanguage === 'en' ? "Back to Prompt" : appLanguage === 'ru' ? "Назад к запросу" : "Orqaga (Ko'rsatmaga qaytish)"}
+                  title={appLanguage === 'en' ? "Back" : appLanguage === 'ru' ? "Назад" : "Orqaga"}
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  <span>{appLanguage === 'en' ? "Back" : appLanguage === 'ru' ? "Назад" : "Orqaga"}</span>
+                  <span>{lessonCurriculumBackup ? (appLanguage === 'en' ? "Back to Lesson" : "Darsga qaytish") : (appLanguage === 'en' ? "Back" : "Orqaga")}</span>
                 </button>
 
                 {/* THE 3 INTENSITY CAPSULE PILLS (Shape of the User's Image) */}

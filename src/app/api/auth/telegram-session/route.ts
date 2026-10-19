@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-const BOT_TOKEN = process.env.TELEGRAM_AUTH_BOT_TOKEN || '8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA';
-const BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'app_teacheros_bot';
+const BOT_TOKEN = '8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA';
+const BOT_USERNAME = 'app_teacheros_bot';
 
 // In-memory session store (persists across requests during server runtime)
 interface AuthSession {

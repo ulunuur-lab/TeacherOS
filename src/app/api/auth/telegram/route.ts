@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-const BOT_TOKEN = process.env.TELEGRAM_AUTH_BOT_TOKEN || '8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA';
+const BOT_TOKEN = '8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://myedysrfbijtgttxnhhq.supabase.co';
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_47gY7ucKybitgovW_2pEPw_c6fB8djL';
 

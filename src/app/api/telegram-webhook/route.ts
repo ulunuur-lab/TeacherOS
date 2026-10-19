@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA";
+const BOT_TOKEN = "8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA";
 const APP_URL = process.env.APP_URL || "https://teacher-os-beryl.vercel.app";
 
 async function sendTelegramMessage(chatId: number | string, text: string, replyMarkup?: any) {
