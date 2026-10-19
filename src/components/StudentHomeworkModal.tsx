@@ -131,11 +131,81 @@ export default function StudentHomeworkModal({
           }
         ];
 
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
+  const storageKey = `teacheros_hw_progress_${homework.id || homework.topic.replace(/\s+/g, '_')}`;
+
+  const [currentIndex, setCurrentIndex] = useState<number>(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(`teacheros_hw_progress_${homework.id || homework.topic.replace(/\s+/g, '_')}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (typeof parsed.currentIndex === "number" && parsed.currentIndex < questions.length) {
+            return parsed.currentIndex;
+          }
+        }
+      }
+    } catch (e) {}
+    return 0;
+  });
+
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(`teacheros_hw_progress_${homework.id || homework.topic.replace(/\s+/g, '_')}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.selectedAnswers && typeof parsed.selectedAnswers === "object") {
+            return parsed.selectedAnswers;
+          }
+        }
+      }
+    } catch (e) {}
+    return {};
+  });
+
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [score, setScore] = useState<number>(0);
   const [showReview, setShowReview] = useState<boolean>(false);
+
+  // Auto-save whenever currentIndex or selectedAnswers change
+  useEffect(() => {
+    if (isSubmitted) {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch (e) {}
+      return;
+    }
+    try {
+      if (Object.keys(selectedAnswers).length > 0 || currentIndex > 0) {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            currentIndex,
+            selectedAnswers,
+            savedAt: Date.now()
+          })
+        );
+      }
+    } catch (e) {}
+  }, [currentIndex, selectedAnswers, isSubmitted, storageKey]);
+
+  // Restore state if homework prop switches
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (typeof parsed.currentIndex === "number" && parsed.currentIndex < questions.length) {
+            setCurrentIndex(parsed.currentIndex);
+          }
+          if (parsed.selectedAnswers && typeof parsed.selectedAnswers === "object") {
+            setSelectedAnswers(parsed.selectedAnswers);
+          }
+        }
+      }
+    } catch (e) {}
+  }, [storageKey, questions.length]);
 
   const currentQ = questions[currentIndex] || questions[0];
   const isLast = currentIndex === questions.length - 1;

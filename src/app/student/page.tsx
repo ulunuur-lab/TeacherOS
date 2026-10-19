@@ -510,16 +510,6 @@ export default function StudentAppPage() {
             if (parsed.first_name) setStudentName(parsed.first_name);
             if (parsed.photo_url) setTelegramAvatar(parsed.photo_url);
             setIsAuthenticated(true);
-          } else {
-            // Check if teacher logged in previously to populate student name if convenient
-            const teacherAuth = localStorage.getItem("teacheros_auth_user");
-            if (teacherAuth) {
-              const parsed = JSON.parse(teacherAuth);
-              if (parsed.username) setTelegramUsername(parsed.username);
-              if (parsed.first_name) setStudentName(parsed.first_name);
-              if (parsed.photo_url) setTelegramAvatar(parsed.photo_url);
-              setIsAuthenticated(true);
-            }
           }
         }
       }
@@ -826,65 +816,52 @@ export default function StudentAppPage() {
         }`}
       >
         <div className="space-y-6">
-          {/* Logo (TeacherOS Official Brand Header + Prominent Class Selector) */}
-          <div className="px-2 space-y-3">
-            <div className="flex items-center space-x-2">
+          {/* Logo (TeacherOS Official Brand Header - Bigger, Sharper & Prominent) */}
+          <div className="px-1 space-y-4">
+            <div className="flex items-center space-x-3 py-1">
               <img
                 src={isLight ? "/logo-blue.png" : "/logo-white.png"}
                 alt="TeacherOS"
-                className="h-8 w-auto max-w-[120px] object-contain shrink-0 drop-shadow-[0_0_15px_rgba(99,91,255,0.4)]"
+                className="h-10 sm:h-11 w-auto object-contain shrink-0 drop-shadow-[0_4px_16px_rgba(99,91,255,0.45)]"
               />
-              <span className={`text-base font-black tracking-tight ${
+              <span className={`text-2xl sm:text-[26px] font-black tracking-tight leading-none font-sans select-none flex items-center ${
                 isLight ? "text-slate-900" : "text-white"
               }`}>
-                Teacher<span className="text-[#635BFF]">OS</span>
+                Teacher<span className="bg-gradient-to-r from-[#635BFF] via-[#818cf8] to-[#a855f7] bg-clip-text text-transparent font-black">OS</span>
               </span>
             </div>
 
-            {/* Evident Group / Classroom Selector Box */}
-            <div className={`p-2.5 rounded-2xl border transition-all shadow-md ${
+            {/* Display Joined Classroom Card (Single group - no dropdown) */}
+            <div className={`p-3 rounded-2xl border transition-all ${
               isLight
-                ? "bg-gradient-to-br from-indigo-50/90 via-white to-purple-50/90 border-indigo-200/90 shadow-indigo-100/50"
-                : "bg-gradient-to-br from-indigo-950/40 via-[#181A28] to-purple-950/40 border-indigo-500/30 shadow-indigo-950/40"
+                ? "bg-gradient-to-br from-indigo-50/90 via-white to-purple-50/90 border-indigo-200/90 shadow-sm"
+                : "bg-gradient-to-br from-indigo-950/40 via-[#181A28] to-purple-950/40 border-indigo-500/30 shadow-md shadow-indigo-950/40"
             }`}>
               <div className="flex items-center justify-between mb-1.5 px-0.5">
-                <span className={`text-[10px] font-extrabold uppercase tracking-wider flex items-center space-x-1.5 ${
+                <span className={`text-[10px] font-black uppercase tracking-wider flex items-center space-x-1.5 ${
                   isLight ? "text-indigo-600" : "text-indigo-400"
                 }`}>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                  <span>{lang === 'en' ? "Class Group" : lang === 'ru' ? "Группа класса" : "Sinf Guruh"}</span>
+                  <span>{lang === 'en' ? "Joined Classroom" : lang === 'ru' ? "Подключённый класс" : "Biriktirilgan Sinf"}</span>
                 </span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
-                  isLight ? "bg-indigo-100/80 text-indigo-700 border-indigo-200" : "bg-indigo-500/20 text-indigo-300 border-indigo-500/30"
+                <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border uppercase tracking-wider ${
+                  isLight ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
                 }`}>
-                  Live
+                  Faol
                 </span>
               </div>
 
-              <div className="relative flex items-center">
-                <select
-                  value={className}
-                  onChange={(e) => {
-                    const newName = e.target.value;
-                    setClassName(newName);
-                    try {
-                      localStorage.setItem("teacheros_classroom", JSON.stringify({ id: newName.toLowerCase().replace(/\s+/g, "_"), name: newName }));
-                    } catch (err) {}
-                    syncClassroomHomework(newName);
-                    playSoundEffect("click");
-                  }}
-                  className={`text-xs font-black bg-transparent border-none focus:outline-none cursor-pointer truncate w-full pr-6 py-0.5 ${
-                    isLight ? "text-slate-900" : "text-white"
-                  }`}
-                  title="Sinfxonani tanlash"
-                >
-                  {availableClassrooms.map((cls) => (
-                    <option key={cls} value={cls} className={isLight ? "bg-white text-slate-900" : "bg-[#131428] text-white"}>
-                      {cls}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-0.5 shrink-0 ${isLight ? "text-slate-600" : "text-slate-400"}`} />
+              <div className="flex items-center space-x-2 px-0.5 pt-0.5">
+                <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                  isLight ? "bg-indigo-100 text-indigo-700" : "bg-indigo-500/20 text-indigo-300"
+                }`}>
+                  <Users className="w-3.5 h-3.5" />
+                </div>
+                <span className={`text-sm sm:text-base font-black truncate tracking-tight ${
+                  isLight ? "text-slate-900" : "text-white"
+                }`}>
+                  {className || "Intermediate group"}
+                </span>
               </div>
             </div>
           </div>
@@ -1040,43 +1017,13 @@ export default function StudentAppPage() {
               <span>{streakDays} {t.status_streak}</span>
             </div>
 
-            {/* Three Dots Button (···) */}
-            <button
-              type="button"
-              onClick={() => {
-                playSoundEffect("click");
-                setActiveTab("settings");
-              }}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                isLight
-                  ? "bg-slate-200 hover:bg-slate-300 text-slate-700"
-                  : "bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white"
-              }`}
-              title="Sozlamalar"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
-
-            {/* Close / Sign out Button (✕) */}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                isLight
-                  ? "bg-slate-200 hover:bg-red-100 text-slate-600 hover:text-red-600"
-                  : "bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-red-400"
-              }`}
-              title={t.logout_btn}
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
         </header>
 
         {/* ======================================================== */}
         {/* IN-PLACE FULL-WIDTH HOMEWORK SOLVER (Replaces modal)     */}
         {/* ======================================================== */}
-        {solvingHomework ? (
+        {solvingHomework && (activeTab === "classroom" || activeTab === "homework") ? (
           <div className="w-full flex-1 flex flex-col px-6 sm:px-10 pb-12 animate-fade-in">
             <StudentHomeworkModal
               isOpen={true}
