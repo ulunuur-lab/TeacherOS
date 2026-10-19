@@ -1065,6 +1065,131 @@ export function enrichCurriculumWithSections(c: Curriculum, length: LessonLength
     };
   }
 
+  // 6. Ensure Slides Count (Short: 4, Medium: 6, Long: 8)
+  const targetSlidesCount = length === "short" ? 4 : length === "long" ? 8 : 6;
+  if (!result.slides || result.slides.length < targetSlidesCount) {
+    const existingSlides = result.slides || [];
+    const topic = c.topic || "English Lesson";
+    const extraSlides: any[] = [
+      {
+        id: "s_extra_1",
+        tag: "AMALIY NAMUNA",
+        title: `${topic} — Namunaviy Matn & Kontekst`,
+        body: `• <b>Mavzuni tushunish:</b> <b>${topic}</b> qoidasini turli misollar bilan mustahkamlash.<br>• <b>Tavsiya:</b> Gapdagi har bir bo'lak vazifasini anglash o'rganishni osonlashtiradi.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>Eslatma:</b> Namunaviy jumlalarni ovoz chiqarib o'qish nutq ravonligini oshiradi.</div>`,
+        visual: {
+          type: "sentence_anatomy",
+          title: "Gap Tuzilishi Tahlili",
+          subtitle: "Namunaviy gap anatomiyasi",
+          data: {
+            sentence: `Students learn ${topic} quickly with practical examples.`,
+            translation: "O'quvchilar amaliy misollar bilan mavzuni tez o'rganadilar.",
+            rule: `${topic} qo'llanish qoidasi`,
+            tokens: [
+              { text: "Students", role: "Ega (Subject)", color: "indigo", note: "Bajaruvchi shaxs" },
+              { text: "learn", role: "Fe'l (Verb)", color: "purple", note: "Harakat" },
+              { text: topic, role: "To'ldiruvchi", color: "sky", note: "Mavzu obyekti" },
+              { text: "with practical examples.", role: "Holat", color: "emerald", note: "Qo'shimcha tafsilot" }
+            ]
+          }
+        }
+      },
+      {
+        id: "s_extra_2",
+        tag: "TAQQOSLASH & FARQLAR",
+        title: `${topic} — To'g'ri vs Noto'g'ri Taqqosi`,
+        body: `• <b>O'quvchilar ko'p adashadigan nuqta:</b> O'zbek tili fikrlash tarzi bilan ingliz tili qolipi farqi.<br>• <b>Qoida:</b> Doimo grammatik signal so'zlarga va zamon mosligiga e'tibor qarating.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(239,68,68,0.12); border-left:3px solid #ef4444; border-radius:6px; font-size:0.9rem;'>⚠️ <b>Diqqat:</b> Xatolardan qochish uchun doim to'g'ri namunaga tayaning.</div>`,
+        visual: {
+          type: "comparison",
+          title: "Taqqoslash Jadvali",
+          data: {
+            categories: [
+              { title: "To'g'ri Shakl ✅", items: [`${topic} qoidasiga to'liq muvofiq jumla`, "To'g'ri so'z tartibi va yordamchi fe'l"] },
+              { title: "Xato Shakl ❌", items: ["So'zma-so'z tarjima xatosi", "Yordamchi elementni tushirib qoldirish"] }
+            ]
+          }
+        }
+      },
+      {
+        id: "s_extra_3",
+        tag: "XATOLAR USTIDA ISHLASH",
+        title: `${topic} — Nozik Qopqonlar Tahlili`,
+        body: `• <b>1-Qopqon:</b> Inkor yoki so'roq shaklida yordamchi fe'lni unutish.<br>• <b>2-Qopqon:</b> Zamon ko'rsatkichini noto'g'ri ishlatish.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(245,158,11,0.14); border-left:3px solid #f59e0b; border-radius:6px; font-size:0.9rem;'>🎯 <b>Oltin Maslahat:</b> Imtihonlarda tekshiriladigan asosiy jihat aynan shu tuzoqlardir.</div>`,
+        visual: {
+          type: "visual_diff",
+          title: "Vizual Taqqoslash: To'g'ri vs Xato",
+          subtitle: "O'quvchilar eng ko'p adashadigan holat",
+          data: {
+            correct: `We practice ${topic} correctly in every lesson.`,
+            correctLabel: "To'g'ri variant",
+            correctWhy: "Grammatik qolipga to'liq mos.",
+            wrong: `We practicing ${topic} wrong without auxiliary.`,
+            wrongLabel: "O'quvchi xatosi",
+            wrongWhy: "Yordamchi strukturadagi chalkashlik."
+          }
+        }
+      },
+      {
+        id: "s_extra_4",
+        tag: "MASTERY & YAKUNIY XULOSA",
+        title: `${topic} — Yakuniy Xulosa & Nazorat`,
+        body: `• <b>Asosiy xulosa:</b> Ushbu darsda o'rganilgan barcha andozalarni birlashtiring.<br>• <b>Keyingi qadam:</b> Fleshkartalar va test savollari orqali bilimlaringizni sinab ko'ring.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(16,185,129,0.15); border-left:3px solid #10b981; border-radius:6px; font-size:0.9rem;'>🏆 <b>Natija:</b> Mavzu bo'yicha to'liq nazariy va amaliy bilim shakllandi!</div>`,
+        visual: {
+          type: "concept_pyramid",
+          title: "O'zlashtirish Pog'onalari",
+          subtitle: "Boshlang'ichdan mustaqil so'zlashuvgacha",
+          data: {
+            topic: topic,
+            levels: [
+              { name: "Qoida", scope: "Grammatik formula va mohiyat", examples: ["Formula va andoza"], color: "indigo" },
+              { name: "Amaliyot", scope: "Yozma mashqlar va testlar", examples: ["Xatosiz tuzish"], color: "purple" },
+              { name: "Ravonlik", scope: "Jonli nutqda erkin qo'llash", examples: ["Avtomatik nutq"], color: "emerald" }
+            ]
+          }
+        }
+      },
+      {
+        id: "s_extra_5",
+        tag: "JONLI NUTQ SSENARIYSI",
+        title: `${topic} — Muloqot Mashg'uloti`,
+        body: `• <b>Muloqot vaziyati:</b> Ushbu qoidani haqiqiy suhbatda ikkilanmasdan qo'llang.<br>• <b>Nutqiy tavsiya:</b> Intonatsiya va so'z urg'usiga e'tibor bering.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💬 <b>Maslahat:</b> Juftlikda yoki o'qituvchi bilan faol mashq qiling.</div>`,
+        visual: {
+          type: "sentence_anatomy",
+          title: "Muloqot Jumlasi Tahlili",
+          subtitle: "Suhbatdoshga qaratilgan jumla",
+          data: {
+            sentence: `Can you explain how ${topic} works in this context?`,
+            translation: "Ushbu kontekstda mavzu qanday ishlashini tushuntirib bera olasizmi?",
+            rule: "Odobli so'rov shakli",
+            tokens: [
+              { text: "Can you", role: "Odobli murojaat", color: "indigo", note: "Modallik" },
+              { text: "explain", role: "Asosiy fe'l", color: "purple", note: "Harakat" },
+              { text: topic, role: "Mavzu", color: "sky", note: "Predmet" },
+              { text: "in this context?", role: "Sharoit", color: "emerald", note: "Holat" }
+            ]
+          }
+        }
+      },
+      {
+        id: "s_extra_6",
+        tag: "INTENSIV NAZORAT",
+        title: `${topic} — Chuqurlashtirilgan Tahlil`,
+        body: `• <b>Yuqori darajadagi qo'llanish:</b> CEFR standartlari bo'yicha mukammal bilim.<br>• <b>Oltin qoidalar:</b> Hech qachon shoshilmasdan gapning butun kontekstini o'qing.`,
+        visual: {
+          type: "metaphor",
+          title: "Xotira Kaliti",
+          subtitle: "Vizual assotsiatsiya",
+          data: {
+            metaphor: "Mukammal Zanjir",
+            explanation: "Har bir bo'lak o'z o'rnida bo'lgandagina fikr to'liq yetib boradi."
+          }
+        }
+      }
+    ];
+
+    const needed = targetSlidesCount - existingSlides.length;
+    result.slides = [...existingSlides, ...extraSlides.slice(0, needed)];
+  }
+
   return result;
 }
 

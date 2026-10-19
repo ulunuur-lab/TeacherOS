@@ -11,18 +11,21 @@ function getGeminiKey(): string {
 }
 
 export function cleanTopicTitle(raw: string): string {
-  if (!raw || typeof raw !== "string") return "English Lesson";
+  if (!raw || typeof raw !== "string") return "";
   let cleaned = raw.trim();
 
   // Strip common prompt prefix patterns in English & Uzbek:
   const prefixes = [
-    /^(?:please\s+)?(?:can\s+you\s+)?(?:could\s+you\s+)?(?:i\s+want\s+(?:you\s+)?to\s+)?(?:create|generate|make|build|design|write|produce|prepare|teach|explain|give\s+me|show\s+me)(?:\s+me)?(?:\s+(?:a|an))?(?:\s+(?:complete|interactive|detailed|quick|short|good))?\s+(?:lesson|curriculum|class|presentation|slides?|guide|module|test|topic|explanation|dars)?(?:\s+(?:about|on|for|regarding|of|around))?\s+/i,
+    /^(?:please\s+)?(?:can\s+you\s+)?(?:could\s+you\s+)?(?:i\s+want\s+(?:you\s+)?to\s+)?(?:create|generate|make|build|design|write|produce|prepare|teach|explain|give\s+me|show\s+me)(?:\s+me)?(?:\s+(?:a|an))?(?:\s+(?:complete|interactive|detailed|quick|short|good|intensive|fun|engaging))?\s+(?:lesson|curriculum|class|presentation|slides?|guide|module|test|topic|explanation|dars)?(?:\s+(?:about|on|for|regarding|of|around|based\s+on))?\s+/i,
+    /^(?:create\s+a\s+lesson\s+based\s+on\s+(?:the\s+)?(?:topic\s+)?(?:of\s+)?(?:the\s+)?(?:images?|pictures?|photos?|files?|scans?|documents?|pdf))\s*/i,
+    /^(?:based\s+on\s+(?:the\s+)?(?:topic\s+)?(?:of\s+)?(?:the\s+)?(?:images?|pictures?|photos?|files?|scans?|documents?|pdf))\s*/i,
+    /^(?:rasmlar\s+va\s+fayllar\s+asosida\s+dars\s+yarat(?:ing)?)\s*/i,
     /^(?:let'?s\s+(?:learn|teach|study|cover|do))(?:\s+(?:about|on))?\s+/i,
     /^(?:today(?:'s)?\s+(?:lesson|topic|class)\s+is)\s+/i,
     /^(?:we\s+are\s+(?:learning|studying|talking\s+about))\s+/i,
     /^(?:how\s+to\s+(?:use|learn|teach))\s+/i,
     /^(?:iltimos\s+)?(?:menga\s+)?(?:bugun\s+)?dars\s+(?:tayyorla(?:b\s+ber)?|yarat|o't|tuz|qil|ber)(?:\s*[:\-])?\s*/i,
-    /^(?:iltimos\s+)?(?:menga\s+)?(?:[a-z0-9\s\-]+?)\s+(?:haqida|to'g'risida|mavzusida)\s+(?:dars|slayd|taqdimot)\s+(?:tayyorla|yarat|o't|tuz|qil)(?:b\s+ber)?/i,
+    /^(?:iltimos\s+)?(?:menga\s+)?(?:bugun\s+)?(?:[a-z0-9\s\-]+?)\s+(?:haqida|to'g'risida|mavzusida)\s+(?:dars|slayd|taqdimot)\s+(?:tayyorla|yarat|o't|tuz|qil)(?:b\s+ber)?/i,
     /^(?:bugun\s+)?(?:[a-z0-9\s\-]+?)\s+(?:mavzusini|mavzusi)\s+(?:o'tamiz|o'rganamiz|o'tmoqchiman)/i,
     /^(?:mavzu|tema)\s*[:\-]\s*/i,
   ];
@@ -33,7 +36,28 @@ export function cleanTopicTitle(raw: string): string {
     }
   }
 
-  cleaned = cleaned.replace(/[\.\?!,;]+$/, "").trim();
+  // Strip trailing instructional specifications in English & Uzbek:
+  const suffixes = [
+    /\s+(?:with\s+(?:practical\s+|real-life\s+|lots\s+of\s+)?(?:exercises?|examples?|activities|tasks|practice|situations?)).*$/i,
+    /\s+(?:focusing\s+on|including|covering|explaining)\s+.*$/i,
+    /\s+(?:for\s+(?:my\s+)?(?:students?|learners?|uzbek\s+students?|beginners?|intermediates?|[a-c][1-2](?:\s+level)?)).*$/i,
+    /\s+(?:haqida|to'g'risida|mavzusi(?:da)?|boyicha|bo'yicha)\s*(?:dars|slayd|taqdimot)?$/i,
+    /\s+(?:amaliy\s+mashqlar|misollar)\s+bilan.*$/i,
+    /\s+uchun.*$/i,
+  ];
+
+  for (const rx of suffixes) {
+    if (rx.test(cleaned)) {
+      cleaned = cleaned.replace(rx, "").trim();
+    }
+  }
+
+  cleaned = cleaned.replace(/[\.\?!,;:]+$/, "").trim();
+
+  // If the prompt was just "the images", "images", "textbook", etc., return empty so image title is extracted
+  if (/^(?:the\s+)?(?:images?|pictures?|photos?|files?|scans?|documents?|pdf|textbook\s+lesson|topic|prompt)$/i.test(cleaned)) {
+    return "";
+  }
 
   if (cleaned.length > 0) {
     cleaned = cleaned
@@ -48,7 +72,7 @@ export function cleanTopicTitle(raw: string): string {
       .join(" ");
   }
 
-  return cleaned || raw;
+  return cleaned;
 }
 
 export async function POST(req: NextRequest) {
@@ -56,32 +80,81 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       topic: rawTopic = "Present Perfect Simple",
+      rawPrompt = "",
       level = "B1",
       length = "medium" as LessonLength,
-      files = []
+      files = [],
+      lang: rawLang = "uz"
     } = body;
+    const lang: "uz" | "en" | "ru" = (rawLang === "en" || rawLang === "ru" || rawLang === "uz") ? rawLang : "uz";
 
-    const topic = cleanTopicTitle(rawTopic);
     const hasFiles = Array.isArray(files) && files.length > 0;
+    const cleanedTopic = cleanTopicTitle(rawTopic || rawPrompt);
+    const topic = cleanedTopic || (hasFiles ? "Textbook Lesson" : "English Lesson");
     const apiKey = getGeminiKey();
 
     const isShort = length === "short";
     const isMedium = length === "medium";
     const isLong = length === "long";
+    const targetSlidesCount = isShort ? 4 : isLong ? 8 : 6;
 
-    const prompt = `You are a Cambridge/Oxford certified English Language Curriculum Specialist and master Uzbek bilingual educator.
-Create a complete, authentic, pedagogically flawless interactive curriculum for the topic: "${topic}" at CEFR level "${level}".
-User's raw prompt/input: "${rawTopic}".
-${hasFiles ? `ATTACHED TEXTBOOK FILES / IMAGES (${files.length} item(s)):
-- The user attached ${files.length} image(s) or document(s) (e.g. textbook screenshots, workbook pages).
-- THOROUGHLY SCAN all text, exercises, explanations, and diagrams in these attached images!
-- If the user prompt is general or empty, extract the EXACT lesson title directly from the textbook heading in the image and build the entire curriculum directly from the textbook's content.
-- If the user provided a prompt, generate the lesson aligned with the textbook screenshots.` : ""}
+    const langRole = lang === "en"
+      ? "Cambridge/Oxford certified native English Language Curriculum Specialist and master ESL educator"
+      : lang === "ru"
+      ? "Cambridge/Oxford certified English Language Curriculum Specialist and master Russian bilingual educator"
+      : "Cambridge/Oxford certified English Language Curriculum Specialist and master Uzbek bilingual educator";
+
+    const langInstruction = lang === "en"
+      ? `CRITICAL LANGUAGE REQUIREMENT: 100% IMMERSIVE ENGLISH
+- Teach English COMPLETELY IN ENGLISH.
+- Every pedagogical explanation, tip, rule, caution box, trap callout, quiz explanation, and summary MUST be in clear, authentic, natural ENGLISH.
+- DO NOT use any Uzbek or Russian words anywhere!
+- Slide callout format: <div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>Key Pro Tip / Common Trap:</b> Explanation in clear English.</div>
+- In flashcards: The "uz" field MUST contain the English definition or synonym (e.g. "To visit or explore new places").
+- Slide tags, slide titles, descriptions, and hints MUST be 100% in English.`
+      : lang === "ru"
+      ? `CRITICAL LANGUAGE REQUIREMENT: RUSSIAN (РУССКИЙ ЯЗЫК)
+- Teach English with all pedagogical explanations, tips, rules, caution boxes, slide tags, slide titles, and summaries in natural, engaging, grammatically flawless RUSSIAN.
+- English examples remain in authentic English.
+- Slide callout format: <div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>Русскоязычная ловушка:</b> Подробное объяснение разницы с русским языком.</div>
+- In flashcards: The "uz" field MUST contain the Russian translation (e.g. "путешествовать").
+- Dialogs: The "uz" field MUST contain the Russian translation.`
+      : `CRITICAL LANGUAGE REQUIREMENT: UZBEK (O'ZBEK TILI)
+- Teach English with all pedagogical explanations, tips, rules, caution boxes, slide tags, slide titles, and summaries in natural, engaging UZBEK language.
+- English examples remain in authentic English.
+- Slide callout format: <div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>O'zbekcha qopqon:</b> O'zbek tili bilan farqi haqida tushuntirish.</div>
+- In flashcards: The "uz" field MUST contain the Uzbek translation.`;
+
+    const prompt = `You are a ${langRole}.
+USER INPUT: "${rawPrompt || rawTopic}"
+Target CEFR Level: "${level}"
+Requested lesson length: "${length}" (MANDATORY EXACTLY ${targetSlidesCount} SLIDES).
+Target Language: "${lang}"
+
+${langInstruction}
+
+STEP 1: THINK & EXTRACT TOPIC (TWO CASES):
+Examine the user's input:
+- CASE 1 (DIRECT TOPIC): The user typed just a topic name (e.g. "Present Continuous", "First Conditional", "Prepositions of Place", "Job Interview English").
+- CASE 2 (INSTRUCTIONAL PROMPT): The user typed an instructional prompt, request, or description (e.g. "Create a lesson about conditionals for my B1 students with lots of speaking practice", "Bugun o'quvchimga passive voice bo'yicha qiziqarli dars tayyorla", "I want an intensive lesson covering travel vocabulary and airport situations").
+
+YOUR MANDATORY ACTION:
+1. THINK and deduce the EXACT CANONICAL EDUCATIONAL TOPIC (e.g. "Conditionals", "Passive Voice", "Travel & Airport English", "Present Continuous", "Relative Clauses").
+2. Set the "topic" property in the JSON output STRICTLY to this concise, canonical topic title (2-4 words max, Title Case).
+3. NEVER put prompt commands, questions, or instructional phrases like "Create a lesson about", "Dars tayyorla", "Please explain" into the "topic" field or slide titles!
+4. FULFILL ALL USER INSTRUCTIONS from the prompt in the lesson content (e.g. if the user asked for specific rules, exercises, or context, focus the slides, dialogs, and questions on those exact needs).
+
+${hasFiles ? `ATTACHED TEXTBOOK / PDF DOCUMENTS / IMAGES (${files.length} item(s)):
+- You are provided with ${files.length} attached document(s) / image(s) (scanned textbook pages, workbook worksheets, multi-page PDF documents up to 5 pages, OR handwritten teacher board sketches/stylus writing).
+- OCR & SCANNING INSTRUCTION: Perform high-fidelity optical character recognition (OCR) and read every single heading, unit number, grammar rule, vocabulary list, or teacher's handwriting.
+- HANDWRITTEN PROMPT / BOARD RECOGNITION: If the image is a handwritten canvas from a smartboard, read the teacher's handwriting, deduce what topic or grammar rule they wrote (e.g. "Present Continuous", "Conditionals", "Prepositions"), and generate the full curriculum for that topic!
+- CRITICAL TOPIC EXTRACTION: Do NOT name the lesson after instructional prompts like "create a lesson based on images". Instead, extract the REAL educational lesson title directly from the textbook unit heading or handwriting, and set the "topic" field strictly to THAT EXTRACTED TOPIC NAME!
+- Generate the complete interactive curriculum strictly matching the scanned lesson's grammar, vocabulary, and exercises.` : ""}
 
 TOPIC TITLE EXTRACTION & CANONICALIZATION:
 - In the JSON output, the "topic" field MUST contain ONLY the clean, concise, canonical topic title (e.g. "History of Sports", "Present Perfect", "Relative Clauses", "Countable and Uncountable Nouns").
 - NEVER include prompt phrases like "Create a lesson about", "Dars tayyorla", "Please explain" in the topic or titles!
-Requested lesson length: "${length}".
+Requested lesson length: "${length}" (MANDATORY EXACTLY ${targetSlidesCount} SLIDES).
 
 TOPIC AWARENESS & ADAPTABILITY:
 The topic can be ANYTHING in English language teaching:
@@ -90,8 +163,6 @@ The topic can be ANYTHING in English language teaching:
 - Vocabulary topics (Countable/Uncountable Nouns, Prepositions, Articles, Phrasal Verbs, Idioms, Sports, etc.)
 - Thematic & Historical topics (History of Sports, Olympic Games, Technology, etc.)
 - Communicative topics (Job Interview, Travel English, Ordering at a Restaurant, etc.)
-- Vocabulary topics (Countable/Uncountable Nouns, Prepositions, Articles, Phrasal Verbs, Idioms, etc.)
-- Communicative topics (Job Interview, Travel English, Ordering at a Restaurant, etc.)
 - Biographical/Thematic topics (Famous people, Historical events, etc.)
 
 YOU MUST ADAPT ALL CONTENT DYNAMICALLY. Do NOT force tense formulas, timelines, or grammatical positive/negative/question patterns onto non-grammar topics.
@@ -99,20 +170,22 @@ YOU MUST ADAPT ALL CONTENT DYNAMICALLY. Do NOT force tense formulas, timelines, 
 CRITICAL REQUIREMENTS:
 1. NEVER output generic placeholders ("Shakl A", "Key Particle", "keyword1", "Variant 1").
 2. Every slide, question, keyword, and example MUST be 100% SPECIFIC TO "${topic}".
-3. All pedagogical explanations, tips, and traps MUST be in natural, engaging UZBEK language.
+3. All pedagogical explanations, tips, and traps MUST follow the target language specification: ${lang === 'en' ? 'ENGLISH (100% in English, no other language)' : lang === 'ru' ? 'RUSSIAN (in Russian)' : 'UZBEK (in Uzbek)'}.
 4. All English examples must be modern, authentic, and grammatically perfect.
-5. EXACTLY 5 ITEMS IN EVERY SECTION:
-   - 5 slides
-   - 5 quickQuestions
-   - 5 quiz
-   - 5 flashcards
-   - 5 dialog turns
-   - 5 errorHunt
+5. SLIDE COUNT STRICT REQUIREMENT:
+   Generate EXACTLY ${targetSlidesCount} slides for the "slides" array (since requested length is "${length}").
+   - Every single slide (all ${targetSlidesCount} slides) MUST contain rich pedagogical body HTML and a dedicated "visual" diagram!
+   - EXACTLY 5 items in other interactive sections:
+     * 5 quickQuestions
+     * 5 quiz
+     * 5 flashcards
+     * 5 dialog turns
+     * 5 errorHunt
    ${isLong ? "- 5 fillGap exercises (Bo'shliqni to'ldirish)\n   - summary object with title, takeaway, and 3 golden rules (Oltin qoidalar)" : ""}
 6. JSON ENCODING: Output ONLY valid JSON. Use double quotes for all keys and string values. Uzbek apostrophes (ko'rmoq, o'tgan) go inside double-quoted strings.
 
 SLIDE STRUCTURE - 100% VISUAL & INTERACTIVE WHITEBOARD:
-Every single slide (all 5 slides) MUST contain a dedicated, topic-tailored "visual" diagram! NEVER OMIT the visual field!
+Every single slide (all ${targetSlidesCount} slides) MUST contain a dedicated, topic-tailored "visual" diagram! NEVER OMIT the visual field!
 Available visual types:
 1. "sentence_anatomy": Breakdown of an authentic sentence into interactive clickable tokens with roles, colors, and notes.
    data: { sentence: string, translation: string, rule: string, tokens: [{ text: string, role: string, color: "indigo|purple|sky|amber|rose|emerald", note: string }] }
@@ -165,7 +238,7 @@ ${isLong ? `- Fill the gap: Exactly 5 items specifically testing "${topic}" rule
 Return ONLY a strict JSON object with this schema:
 {
   "id": "gen_${Date.now()}",
-  "topic": "${topic}",
+  "topic": "Concise canonical educational topic (e.g. Conditionals, Passive Voice, Travel English)",
   "level": "${level}",
   "length": "${length}",
   "category": "Grammar & Communication",
@@ -353,14 +426,19 @@ Return ONLY a strict JSON object with this schema:
 
     const promptParts: any[] = [];
 
-    // Multimodal attachments: images, scanned book pages, PDFs
+    // Multimodal attachments: images, scanned book pages, PDFs (up to 5 pages)
     if (Array.isArray(files) && files.length > 0) {
       for (const f of files) {
-        if (f.data) {
-          const base64Data = f.data.includes(",") ? f.data.split(",")[1] : f.data;
+        const rawBase64 = f.base64 || f.data;
+        if (rawBase64) {
+          const base64Data = rawBase64.includes(",") ? rawBase64.split(",")[1] : rawBase64;
+          let mimeType = f.type || "image/jpeg";
+          if (f.name?.toLowerCase().endsWith(".pdf") || mimeType === "application/pdf") {
+            mimeType = "application/pdf";
+          }
           promptParts.push({
             inlineData: {
-              mimeType: f.type || "image/jpeg",
+              mimeType,
               data: base64Data
             }
           });
@@ -371,11 +449,10 @@ Return ONLY a strict JSON object with this schema:
     promptParts.push({ text: prompt });
 
     const models = [
-      "gemini-2.5-flash",
-      "gemini-1.5-flash",
-      "gemini-2.0-flash",
-      "gemini-1.5-flash-8b",
-      "gemini-1.5-pro"
+      "gemini-flash-lite-latest",
+      "gemini-flash-latest",
+      "gemini-2.5-flash-lite",
+      "gemini-3.1-flash-lite"
     ];
 
     let lastError = "";
@@ -384,7 +461,7 @@ Return ONLY a strict JSON object with this schema:
       try {
         console.log(`[Gemini API] Requesting ${model} for topic: "${topic}" (${level}, ${hasFiles ? `${files.length} file(s)` : "text-only"})...`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s per model
+        const timeoutId = setTimeout(() => controller.abort(), 14000); // 14s per model (fast fallback)
 
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -544,13 +621,15 @@ Return ONLY a strict JSON object with this schema:
       ? "Could you tell me more about this position?"
       : `How is ${topic} used naturally in English speaking?`;
 
+    const t_str = (uz: string, en: string, ru: string) => lang === "en" ? en : lang === "ru" ? ru : uz;
+
     const slide1Body = isTense
-      ? `• <b>Asosiy qoida:</b> <b>${topic}</b> ingliz tilida nutqni aniq, tabiiy va ravon ifodalash uchun xizmat qiladi.<br>• <b>Amaliy kontekst:</b> Ona tilimizdan so'zma-so'z tarjima qilmasdan, ingliz tili mantiqiy modeliga tayanish zarur.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>O'zbekcha qopqon:</b> O'zbek tilidagi fe'l qo'shimchasi bilan inglizcha strukturani solishtirishdagi asosiy farqni doim hisobga oling.</div>`
+      ? `• <b>${t_str("Asosiy qoida:", "Core Rule:", "Основное правило:")}</b> <b>${topic}</b> ${t_str("ingliz tilida nutqni aniq, tabiiy va ravon ifodalash uchun xizmat qiladi.", "is used in English to express ideas clearly, accurately, and naturally.", "служит в английском языке для точной, естественной и беглой речи.")}<br>• <b>${t_str("Amaliy kontekst:", "Practical Context:", "Практический контекст:")}</b> ${t_str("Ona tilimizdan so'zma-so'z tarjima qilmasdan, ingliz tili mantiqiy modeliga tayanish zarur.", "Focus on the underlying English conceptual model rather than literal translation.", "Опирайтесь на логическую модель английского языка, избегая дословного перевода.")}<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>${t_str("O'zbekcha qopqon:", "Language Trap / Pro Tip:", "Русскоязычная ловушка:")}</b> ${t_str("O'zbek tilidagi fe'l qo'shimchasi bilan inglizcha strukturani solishtirishdagi asosiy farqni doim hisobga oling.", "Always distinguish this structure from similar forms by checking context and signal markers.", "Всегда учитывайте ключевые различия между грамматикой русского и английского языков.")}</div>`
       : isVocabTopic
-      ? `• <b>Mavzu mohiyati:</b> <b>${topic}</b> — ingliz tilida so'zlarni to'g'ri tanlash, ularni guruhlarga ajratish va nutqda xatosiz qo'llash asosi.<br>• <b>Real kontekst:</b> Kundalik muloqot, xarid, ta'lim va kasbiy faoliyatda tushunmovchiliklarning oldini oladi.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>O'zbekcha qopqon:</b> O'zbek tilidagi so'z mantiqi (masalan, sanaladigan/sanalmaydigan tushunchalar) inglizchadan farq qiladi. Doim inglizcha qoidaga tayanadi.</div><div style='margin-top:10px; padding:10px 14px; background:rgba(16,185,129,0.12); border-left:3px solid #10b981; border-radius:6px; font-size:0.9rem;'>✅ <b>Misol:</b> <i>'${exPos}'</i></div>`
+      ? `• <b>${t_str("Mavzu mohiyati:", "Topic Core:", "Суть темы:")}</b> <b>${topic}</b> — ${t_str("ingliz tilida so'zlarni to'g'ri tanlash, ularni guruhlarga ajratish va nutqda xatosiz qo'llash asosi.", "mastering word choice, categorization, and accurate usage in real communication.", "основа правильного выбора слов, их классификации и грамотного использования в речи.")}<br>• <b>${t_str("Real kontekst:", "Real-World Context:", "Реальный контекст:")}</b> ${t_str("Kundalik muloqot, xarid, ta'lim va kasbiy faoliyatda tushunmovchiliklarning oldini oladi.", "Prevents misunderstandings in daily discussions, shopping, study, and professional life.", "Предотвращает недопонимание в повседневном общении, учёбе и работе.")}<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>${t_str("O'zbekcha qopqon:", "Key Pro Tip:", "Русскоязычная ловушка:")}</b> ${t_str("O'zbek tilidagi so'z mantiqi inglizchadan farq qiladi. Doim inglizcha qoidaga tayanadi.", "English word usage patterns often differ from other languages. Always rely on English rules.", "Логика употребления английских слов отличается от русского языка. Опирайтесь на правила английского.")}</div><div style='margin-top:10px; padding:10px 14px; background:rgba(16,185,129,0.12); border-left:3px solid #10b981; border-radius:6px; font-size:0.9rem;'>✅ <b>${t_str("Misol:", "Example:", "Пример:")}</b> <i>'${exPos}'</i></div>`
       : isCommTopic
-      ? `• <b>Muloqot strategiyasi:</b> <b>${topic}</b> bo'yicha tabiiy va ishonchli gapirish — muvaffaqiyatli kommunikatsiya garovi.<br>• <b>Amaliy kontekst:</b> Suhbat, intervyu, rasmiy uchrashuv va sayohatlarda qo'llaniladigan tayyor nutqiy andozalar.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💬 <b>Muloqot siri:</b> So'zma-so'z tarjima emas, balki ingliz tilida qabul qilingan odobli va turg'un iboralarni qo'llang.</div><div style='margin-top:10px; padding:10px 14px; background:rgba(16,185,129,0.12); border-left:3px solid #10b981; border-radius:6px; font-size:0.9rem;'>✅ <b>Namunaviy jumla:</b> <i>'${exPos}'</i></div>`
-      : `• <b>Asosiy tushuncha:</b> <b>${topic}</b> ingliz tilida fikrni ravon, aniq va CEFR ${level} darajasiga mos yetkazish uchun xizmat qiladi.<br>• <b>Amaliy kontekst:</b> Ona tilimizdan to'g'ridan-to'g'ri ko'chirmasdan, ingliz tili tabiatiga mos uslubni o'zlashtirish zarur.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>O'zbekcha qopqon:</b> Ona tili grammatikasi bilan yuzaki o'xshashlikka aldanmang — kontekst va signal belgilarga e'tibor qarating.</div><div style='margin-top:10px; padding:10px 14px; background:rgba(16,185,129,0.12); border-left:3px solid #10b981; border-radius:6px; font-size:0.9rem;'>✅ <b>Namunaviy jumla:</b> <i>'${exPos}'</i></div>`;
+      ? `• <b>${t_str("Muloqot strategiyasi:", "Communication Strategy:", "Стратегия общения:")}</b> <b>${topic}</b> — ${t_str("bo'yicha tabiiy va ishonchli gapirish muvaffaqiyat garovi.", "speaking naturally and with confidence is the key to effective communication.", "уверенная и естественная речь — залог успешной коммуникации.")}<br>• <b>${t_str("Amaliy kontekst:", "Practical Context:", "Практический контекст:")}</b> ${t_str("Suhbat, intervyu, rasmiy uchrashuv va sayohatlarda qo'llaniladigan tayyor nutqiy andozalar.", "Ready-to-use spoken frameworks for interviews, meetings, and travel.", "Готовые речевые шаблоны для бесед, собеседований и путешествий.")}<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💬 <b>${t_str("Muloqot siri:", "Communication Tip:", "Секрет общения:")}</b> ${t_str("So'zma-so'z tarjima emas, balki ingliz tilida qabul qilingan odobli va turg'un iboralarni qo'llang.", "Use standard polite English collocations rather than word-for-word translation.", "Используйте устойчивые вежливые фразы вместо дословного перевода.")}</div><div style='margin-top:10px; padding:10px 14px; background:rgba(16,185,129,0.12); border-left:3px solid #10b981; border-radius:6px; font-size:0.9rem;'>✅ <b>${t_str("Namunaviy jumla:", "Model sentence:", "Пример фразы:")}</b> <i>'${exPos}'</i></div>`
+      : `• <b>${t_str("Asosiy tushuncha:", "Core Concept:", "Основная концепция:")}</b> <b>${topic}</b> ${t_str(`ingliz tilida fikrni ravon, aniq va CEFR ${level} darajasiga mos yetkazish uchun xizmat qiladi.`, `serves to convey ideas smoothly, accurately, and aligned with CEFR ${level}.`, `служит для ясного, беглого и точного выражения мыслей на уровне CEFR ${level}.`)}<br>• <b>${t_str("Amaliy kontekst:", "Practical Context:", "Практический контекст:")}</b> ${t_str("Ona tilimizdan to'g'ridan-to'g'ri ko'chirmasdan, ingliz tili tabiatiga mos uslubni o'zlashtirish zarur.", "Adopt the authentic English style rather than direct literal transfer.", "Важно освоить естественный стиль английского языка без калькирования.")}<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>${t_str("O'zbekcha qopqon:", "Language Trap / Pro Tip:", "Русскоязычная ловушка:")}</b> ${t_str("Ona tili grammatikasi bilan yuzaki o'xshashlikka aldanmang — kontekst va signal belgilarga e'tibor qarating.", "Do not be misled by superficial similarities with other languages — watch context and signal words.", "Не обманывайтесь внешним сходством с родным языком — обращайте внимание на контекст и слова-маркеры.")}</div><div style='margin-top:10px; padding:10px 14px; background:rgba(16,185,129,0.12); border-left:3px solid #10b981; border-radius:6px; font-size:0.9rem;'>✅ <b>${t_str("Namunaviy jumla:", "Model sentence:", "Пример:")}</b> <i>'${exPos}'</i></div>`;
 
     const slide2Body = isGrammarStructure
       ? `• <b>Asosiy formula:</b> ${formulaStr}<br>• <b>1. Darak shakli:</b> <i>'${exPos}'</i> ✅<br>• <b>2. Inkor shakli:</b> <i>'${exNeg}'</i><br>• <b>3. So'roq shakli:</b> <i>'${exQues}'</i>`
@@ -594,12 +673,12 @@ Return ONLY a strict JSON object with this schema:
       level,
       length,
       category: "Grammar & Communication",
-      description: `${topic} mavzusi bo'yicha mukammal CEFR ${level} darajasidagi interaktiv darslik paketi.`,
+      description: t_str(`${topic} mavzusi bo'yicha mukammal CEFR ${level} darajasidagi interaktiv darslik paketi.`, `Complete interactive CEFR ${level} lesson deck on ${topic}.`, `Полный интерактивный пакет уроков уровня CEFR ${level} по теме ${topic}.`),
       slides: [
         {
           id: "s1",
-          tag: "1. MOHIYAT & HOOK",
-          title: `${topic} — Asosiy Tushuncha & Kontekst`,
+          tag: t_str("1. MOHIYAT & HOOK", "1. HOOK & CONCEPT", "1. СУТЬ И ВВЕДЕНИЕ"),
+          title: t_str(`${topic} — Asosiy Tushuncha & Kontekst`, `${topic} — Core Concept & Context`, `${topic} — Основная концепция и контекст`),
           body: slide1Body,
           visual: isTense && (normTopic.includes("continuous") || normTopic.includes("past")) ? {
             type: "interruption_timeline" as const,
@@ -684,7 +763,7 @@ Return ONLY a strict JSON object with this schema:
           title: "Tanqidiy Farqlar (✅ To'g'ri vs ❌ Noto'g'ri)",
           body: slide3Body,
           visual: {
-            type: "comparison",
+            type: "comparison" as const,
             title: "Taqqoslash Jadvali",
             data: {
               categories: slide3Categories
@@ -697,7 +776,7 @@ Return ONLY a strict JSON object with this schema:
           title: "O'quvchilar Tushadigan 3 Katta Xato",
           body: `1. ❌ <i>'O'zbekchadan so'zma-so'z tarjima qilish'</i> ➔ ✅ <i>'Ingliz tili formulasiga tayanish'</i>.<br>2. ❌ <i>'Yordamchi fe'lni tushirib qoldirish'</i> ➔ ✅ <i>'To'liq yordamchi strukturani saqlash'</i>.<br>3. ❌ <i>'Vaqt ko'rsatkichlarini chalkashtirish'</i> ➔ ✅ <i>'Vaqt belgilariga qat'iy e'tibor berish'</i>.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(239,68,68,0.12); border-left:3px solid #ef4444; border-radius:6px; font-size:0.9rem;'>⚠️ <b>Oltin qoida:</b> Imtihonlarda va jonli nutqda eng ko'p tekshiriladigan nuqta.</div>`,
           visual: {
-            type: "visual_diff",
+            type: "visual_diff" as const,
             title: "To'g'ri vs Xato: Vizual Taqqoslash",
             subtitle: "O'quvchilar eng ko'p adashadigan nozik nuqta",
             data: {
@@ -716,7 +795,7 @@ Return ONLY a strict JSON object with this schema:
           title: "Qaysi Shaklni Tanlash Kerak? (Decision Logic)",
           body: `1. <b>Birinchi holatda:</b> ➔ <b>${formulaStr}</b> qo'llaniladi.<br>2. <b>Vaqt ko'rsatkichi aniq bo'lsa:</b> ➔ <b>Mos o'tmish yoki kelajak shakli</b> tanlanadi.<br>3. <b>Jonli nutqda:</b> ➔ <b>Qisqartma shakllar (I've, He's, Won't)</b> ishlatiladi.`,
           visual: {
-            type: "metaphor",
+            type: "metaphor" as const,
             title: "Xulosa & Eslab Qolish Kaliti",
             subtitle: "Miyada eslab qolish uchun vizual tasavvur",
             data: {
@@ -724,8 +803,67 @@ Return ONLY a strict JSON object with this schema:
               explanation: "Ushbu qoida orqali nutqingiz tabiiy va ravon eshitiladi."
             }
           }
+        },
+        {
+          id: "s6",
+          tag: "6. REAL MULOQOT & NUTQ AMALIYOTI",
+          title: "Jonli Nutqda Qo'llash Ssenariysi",
+          body: `• <b>Muloqot vaziyati:</b> Ushbu tuzilmani tabiiy suhbatda ikkilanmasdan qo'llang.<br>• <b>Nutqiy tavsiya:</b> Qoidani yodlash yetarli emas, uni real kontekstda to'g'ri intonatsiya bilan talaffuz qiling.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(245,158,11,0.14); border-left:3px solid #f59e0b; border-radius:6px; font-size:0.9rem;'>🎯 <b>Haqiqiy Vazifa:</b> Suhbatdoshga o'z fikringizni ifodalab bering: <i>'${exPos}'</i></div>`,
+          visual: {
+            type: "sentence_anatomy" as const,
+            title: "Muloqot Sintaksisi",
+            subtitle: "Jonli nutq bloklari",
+            data: {
+              sentence: exPos,
+              translation: "Jonli nutq namunasi",
+              rule: "Tabiiy muloqot intonatsiyasi",
+              tokens: [
+                { text: exPos.split(" ")[0] || "I", role: "Spiker", color: "indigo", note: "Fikr egasi" },
+                { text: exPos.split(" ").slice(1, 3).join(" ") || "action", role: "Nutq markazi", color: "sky", note: "Asosiy ifoda" },
+                { text: exPos.split(" ").slice(3).join(" ") || "context", role: "Kontekst", color: "emerald", note: "Mazmun to'ldiruvchisi" }
+              ]
+            }
+          }
+        },
+        {
+          id: "s7",
+          tag: "7. XATOLARNI TAHLIL QILISH & DRILL",
+          title: "Imtihon & Grammatika Nozikliklari",
+          body: `• <b>Eng xavfli xato:</b> Ona tilidagi so'z tartibi inglizcha struktura bilan to'qnashganda adashish.<br>• <b>Yechim:</b> Signal so'zlar va fe'l shakllarini avtomatik tarzda taniy olish.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(239,68,68,0.12); border-left:3px solid #ef4444; border-radius:6px; font-size:0.9rem;'>❌ <b>Xato:</b> <i>'${exNeg.replace("not", "").replace("n't", "")}'</i> ➔ ✅ <b>To'g'ri:</b> <i>'${exPos}'</i></div>`,
+          visual: {
+            type: "visual_diff" as const,
+            title: "Nozik Nuqtalar Taqqosi",
+            subtitle: "Imtihonlardagi asosiy tuzoq",
+            data: {
+              correct: exPos,
+              correctLabel: "To'g'ri tuzilma",
+              correctWhy: "Grammatik me'yorga to'liq javob beradi.",
+              wrong: exNeg.replace("not", "").replace("n't", ""),
+              wrongLabel: "Chalkashlik",
+              wrongWhy: "Yordamchi yoki qoidaviy element tushirib qoldirilgan."
+            }
+          }
+        },
+        {
+          id: "s8",
+          tag: "8. YAKUNIY NAZORAT & MASTERY",
+          title: "Mavzuni 100% O'zlashtirish Xulosasi",
+          body: `• <b>1-Oltin Qoida:</b> ${formulaStr}.<br>• <b>2-Oltin Qoida:</b> Doimo kontekst va zamon signallariga e'tibor qarating.<br>• <b>3-Oltin Qoida:</b> Xatolar ustida ishlab, ularni nutqda tuzatib boring.<br><div style='margin-top:10px; padding:10px 14px; background:rgba(16,185,129,0.15); border-left:3px solid #10b981; border-radius:6px; font-size:0.9rem;'>🏆 <b>Natija:</b> Mavzu to'liq o'zlashtirildi. Keyingi bosqich mashqlariga o'tishingiz mumkin!</div>`,
+          visual: {
+            type: "concept_pyramid" as const,
+            title: "Mastery Piramidasi",
+            subtitle: "O'zlashtirish bosqichlari",
+            data: {
+              topic: topic,
+              levels: [
+                { name: "Nazariya", scope: "Qoida va formulani anglash", examples: [formulaStr], color: "indigo" },
+                { name: "Mashq", scope: "Yozma testlar va xato ovlash", examples: [exPos], color: "purple" },
+                { name: "Muloqot", scope: "Jonli nutqda ravon qo'llash", examples: [exQues], color: "emerald" }
+              ]
+            }
+          }
         }
-      ],
+      ].slice(0, targetSlidesCount),
       quickQuestions: [
         {
           id: "qq1",

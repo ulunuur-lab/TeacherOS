@@ -47,3 +47,4 @@ debug-*.*
 *.raw.txt
 gemini_output_raw.txt
 test_modal_output.json
+cloudflared.exe

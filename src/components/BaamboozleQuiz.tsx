@@ -19,15 +19,34 @@ interface BaamboozleQuizProps {
   topic: string;
   teamsCount: 2 | 3;
   onClose: () => void;
+  appLanguage?: 'uz' | 'en' | 'ru';
 }
 
-export default function BaamboozleQuiz({ topic, teamsCount, onClose }: BaamboozleQuizProps) {
-  // Teams setup
+export default function BaamboozleQuiz({ topic, teamsCount, onClose, appLanguage = 'uz' }: BaamboozleQuizProps) {
+  const isEn = appLanguage === 'en';
+  const isRu = appLanguage === 'ru';
+
+  // Teams setup with localized names
   const [teams, setTeams] = useState<Array<{ name: string; score: number; color: string; border: string }>>([
-    { name: 'Guruh 1 (Burgutlar)', score: 0, color: 'bg-emerald-600', border: 'border-emerald-400' },
-    { name: 'Guruh 2 (Sherlar)', score: 0, color: 'bg-indigo-600', border: 'border-indigo-400' },
+    {
+      name: isEn ? 'Team 1 (Eagles)' : isRu ? 'Команда 1 (Орлы)' : 'Guruh 1 (Burgutlar)',
+      score: 0,
+      color: 'bg-emerald-600',
+      border: 'border-emerald-400'
+    },
+    {
+      name: isEn ? 'Team 2 (Lions)' : isRu ? 'Команда 2 (Львы)' : 'Guruh 2 (Sherlar)',
+      score: 0,
+      color: 'bg-indigo-600',
+      border: 'border-indigo-400'
+    },
     ...(teamsCount === 3
-      ? [{ name: 'Guruh 3 (Lochinlar)', score: 0, color: 'bg-amber-600', border: 'border-amber-400' }]
+      ? [{
+          name: isEn ? 'Team 3 (Falcons)' : isRu ? 'Команда 3 (Соколы)' : 'Guruh 3 (Lochinlar)',
+          score: 0,
+          color: 'bg-amber-600',
+          border: 'border-amber-400'
+        }]
       : [])
   ]);
 
@@ -35,20 +54,148 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
   const [selectedTile, setSelectedTile] = useState<QuizTile | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
 
-  // 12 Authentic Baamboozle Tiles for the chosen topic
+  // 12 Authentic Baamboozle Tiles for the chosen topic in selected language
   const [tiles, setTiles] = useState<QuizTile[]>([
-    { id: 1, points: 15, question: `"${topic}" mavzusidagi asosiy qoida nima?`, answer: "Qoida bo'yicha to'g'ri grammatik tuzilma va kontekst", opened: false },
-    { id: 2, points: 20, question: `Xatoni toping: "She doesn't has a car"`, answer: "doesn't has ➔ doesn't have", opened: false },
-    { id: 3, points: 10, question: `Tarjima qiling: "Men har kuni soat 7da uyg'onaman"`, answer: "I wake up at 7 o'clock every day", opened: false },
-    { id: 4, points: 25, question: "🎁 BONUS! Guruhga qo'shimcha 25 ball beriladi!", answer: "Tabriklaymiz!", isSpecial: true, specialType: 'bonus', opened: false },
-    { id: 5, points: 20, question: `Gapni to'ldiring: "They ______ (live) here since 2020."`, answer: "have lived / have been living", opened: false },
-    { id: 6, points: 15, question: `Savol tuzing: "She speaks three languages."`, answer: "Does she speak three languages?", opened: false },
-    { id: 7, points: 20, question: `To'g'ri fe'l shaklini ayting: "Go" ning 3-shakli (V3)?`, answer: "Go ➔ Went ➔ Gone", opened: false },
-    { id: 8, points: 25, question: `⚡ TEZKOR SAVOL: "Yesterday" so'zi qaysi zamonda ishlatiladi?`, answer: "Past Simple", opened: false },
-    { id: 9, points: 10, question: `Xatoni tuzating: "He go to school every day."`, answer: "He goes to school every day", opened: false },
-    { id: 10, points: 20, question: "🔥 O'G'IRLIK! Raqib guruhdan 10 ball tortib olinadi!", answer: "Boshqa guruhdan -10 ball!", isSpecial: true, specialType: 'double', opened: false },
-    { id: 11, points: 15, question: `Inkor gap tuzing: "We played tennis yesterday."`, answer: "We didn't play tennis yesterday.", opened: false },
-    { id: 12, points: 30, question: `🏆 FINAL SAVOLI: "${topic}" mavzusida eng ko'p qilinadigan o'zbekcha xato?`, answer: "So'zma-so'z tarjima qilish va fe'l qo'shimchalarini unutish", opened: false }
+    {
+      id: 1,
+      points: 15,
+      question: isEn
+        ? `What is the core grammatical rule of "${topic}"?`
+        : isRu
+        ? `Каково главное правило темы "${topic}"?`
+        : `"${topic}" mavzusidagi asosiy qoida nima?`,
+      answer: isEn
+        ? "Correct grammatical structure and authentic communication context"
+        : isRu
+        ? "Правильная грамматическая структура и реальный контекст"
+        : "Qoida bo'yicha to'g'ri grammatik tuzilma va kontekst",
+      opened: false
+    },
+    {
+      id: 2,
+      points: 20,
+      question: isEn
+        ? `Find the error: "She doesn't has a car"`
+        : isRu
+        ? `Найдите ошибку: "She doesn't has a car"`
+        : `Xatoni toping: "She doesn't has a car"`,
+      answer: "doesn't has ➔ doesn't have",
+      opened: false
+    },
+    {
+      id: 3,
+      points: 10,
+      question: isEn
+        ? `Construct in English: "I wake up at 7 o'clock every day"`
+        : isRu
+        ? `Переведите: "Я просыпаюсь в 7 утра каждый день"`
+        : `Tarjima qiling: "Men har kuni soat 7da uyg'onaman"`,
+      answer: "I wake up at 7 o'clock every day",
+      opened: false
+    },
+    {
+      id: 4,
+      points: 25,
+      question: isEn
+        ? "🎁 BONUS! Your team receives 25 bonus points!"
+        : isRu
+        ? "🎁 БОНУС! Команда получает 25 бонусных очков!"
+        : "🎁 BONUS! Guruhga qo'shimcha 25 ball beriladi!",
+      answer: isEn ? "Congratulations!" : isRu ? "Поздравляем!" : "Tabriklaymiz!",
+      isSpecial: true,
+      specialType: 'bonus',
+      opened: false
+    },
+    {
+      id: 5,
+      points: 20,
+      question: `Fill the gap: "They ______ (live) here since 2020."`,
+      answer: "have lived / have been living",
+      opened: false
+    },
+    {
+      id: 6,
+      points: 15,
+      question: isEn
+        ? `Form a question: "She speaks three languages."`
+        : isRu
+        ? `Составьте вопрос: "She speaks three languages."`
+        : `Savol tuzing: "She speaks three languages."`,
+      answer: "Does she speak three languages?",
+      opened: false
+    },
+    {
+      id: 7,
+      points: 20,
+      question: isEn
+        ? `State the 3rd form (V3) of the verb "Go"?`
+        : isRu
+        ? `Назовите 3-ю форму (V3) глагола "Go"?`
+        : `To'g'ri fe'l shaklini ayting: "Go" ning 3-shakli (V3)?`,
+      answer: "Go ➔ Went ➔ Gone",
+      opened: false
+    },
+    {
+      id: 8,
+      points: 25,
+      question: isEn
+        ? `⚡ QUICK QUESTION: Which tense uses "yesterday"?`
+        : isRu
+        ? `⚡ БЛИЦ: В каком времени используется слово "yesterday"?`
+        : `⚡ TEZKOR SAVOL: "Yesterday" so'zi qaysi zamonda ishlatiladi?`,
+      answer: "Past Simple",
+      opened: false
+    },
+    {
+      id: 9,
+      points: 10,
+      question: isEn
+        ? `Correct the mistake: "He go to school every day."`
+        : isRu
+        ? `Исправьте ошибку: "He go to school every day."`
+        : `Xatoni tuzating: "He go to school every day."`,
+      answer: "He goes to school every day",
+      opened: false
+    },
+    {
+      id: 10,
+      points: 20,
+      question: isEn
+        ? "🔥 STEAL! Steal 10 points from the opposing team!"
+        : isRu
+        ? "🔥 КРАЖА! Заберите 10 очков у команды соперников!"
+        : "🔥 O'G'IRLIK! Raqib guruhdan 10 ball tortib olinadi!",
+      answer: isEn ? "-10 points from opponent!" : isRu ? "-10 очков у соперников!" : "Boshqa guruhdan -10 ball!",
+      isSpecial: true,
+      specialType: 'double',
+      opened: false
+    },
+    {
+      id: 11,
+      points: 15,
+      question: isEn
+        ? `Make negative: "We played tennis yesterday."`
+        : isRu
+        ? `Сделайте отрицание: "We played tennis yesterday."`
+        : `Inkor gap tuzing: "We played tennis yesterday."`,
+      answer: "We didn't play tennis yesterday.",
+      opened: false
+    },
+    {
+      id: 12,
+      points: 30,
+      question: isEn
+        ? `🏆 FINAL QUESTION: What is the most common mistake with "${topic}"?`
+        : isRu
+        ? `🏆 ФИНАЛЬНЫЙ ВОПРОС: Какая самая частая ошибка по теме "${topic}"?`
+        : `🏆 FINAL SAVOLI: "${topic}" mavzusida eng ko'p qilinadigan xato?`,
+      answer: isEn
+        ? "Direct word-for-word translation and omitting auxiliary verb endings"
+        : isRu
+        ? "Дословный перевод и пропуск окончаний вспомогательных глаголов"
+        : "So'zma-so'z tarjima qilish va fe'l qo'shimchalarini unutish",
+      opened: false
+    }
   ]);
 
   const handleTileClick = (tile: QuizTile) => {
@@ -79,7 +226,6 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
 
     setSelectedTile(null);
     setShowAnswer(false);
-    // Switch turn to next team
     setCurrentTurn((prev) => (prev + 1) % teams.length);
   };
 
@@ -100,7 +246,7 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                 Baamboozle Group Quiz
               </span>
-              <span className="text-xs text-slate-400">• {teamsCount} ta guruh</span>
+              <span className="text-xs text-slate-400">• {teamsCount} {isEn ? "teams" : isRu ? "команды" : "ta guruh"}</span>
             </div>
             <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
               {topic}
@@ -112,7 +258,7 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
           onClick={onClose}
           className="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
         >
-          ✕ Chiqish
+          ✕ {isEn ? "Exit" : isRu ? "Выход" : "Chiqish"}
         </button>
       </div>
 
@@ -131,7 +277,7 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
             >
               {isTurn && (
                 <div className="absolute top-2 right-2 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950 animate-pulse">
-                  Navbat
+                  {isEn ? "Turn" : isRu ? "Ход" : "Navbat"}
                 </div>
               )}
               <div className="text-xs font-extrabold text-slate-300 truncate">
@@ -150,10 +296,14 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
         <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-indigo-500/20 border-2 border-amber-400 text-center space-y-2 animate-bounce">
           <Trophy className="w-8 h-8 text-amber-400 mx-auto" />
           <h3 className="text-xl font-black text-white">
-            🏆 G'olib: {leadingTeam.name} ({leadingTeam.score} ball)!
+            🏆 {isEn ? "Winner" : isRu ? "Победитель" : "G'olib"}: {leadingTeam.name} ({leadingTeam.score} pts)!
           </h3>
           <p className="text-xs text-slate-300">
-            Ajoyib o'yin bo'ldi! Barcha savollar muvaffaqiyatli yakunlandi.
+            {isEn
+              ? "Great game! All questions have been completed."
+              : isRu
+              ? "Отличная игра! Все вопросы успешно завершены."
+              : "Ajoyib o'yin bo'ldi! Barcha savollar muvaffaqiyatli yakunlandi."}
           </p>
         </div>
       )}
@@ -173,7 +323,9 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
               }`}
             >
               {tile.opened ? (
-                <span className="text-xs font-bold text-slate-500">✓ Ochildi</span>
+                <span className="text-xs font-bold text-slate-500">
+                  {isEn ? "✓ Done" : isRu ? "✓ Открыто" : "✓ Ochildi"}
+                </span>
               ) : (
                 <>
                   <span className="text-2xl sm:text-3xl font-black">{tile.id}</span>
@@ -192,8 +344,12 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className="w-full max-w-lg rounded-3xl bg-[#181B26] border-2 border-[#5B3DF5] p-6 shadow-2xl space-y-5 text-center animate-fade-in">
             <div className="flex items-center justify-between pb-2 border-b border-white/10 text-xs font-bold text-slate-400">
-              <span>#{selectedTile.id} raqamli savol</span>
-              <span className="text-amber-400 font-black">{selectedTile.points} Ball</span>
+              <span>
+                {isEn ? `Question #${selectedTile.id}` : isRu ? `Вопрос #${selectedTile.id}` : `#${selectedTile.id} raqamli savol`}
+              </span>
+              <span className="text-amber-400 font-black">
+                {selectedTile.points} {isEn ? "Points" : isRu ? "Баллов" : "Ball"}
+              </span>
             </div>
 
             <div className="text-lg sm:text-xl font-black text-white leading-relaxed">
@@ -202,7 +358,7 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
 
             {showAnswer ? (
               <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 text-sm font-bold animate-fade-in">
-                ✅ <b>To'g'ri javob:</b> {selectedTile.answer}
+                ✅ <b>{isEn ? "Correct Answer:" : isRu ? "Правильный ответ:" : "To'g'ri javob:"}</b> {selectedTile.answer}
               </div>
             ) : (
               <button
@@ -210,7 +366,7 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
                 onClick={() => setShowAnswer(true)}
                 className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all cursor-pointer"
               >
-                💡 Javobni Ko'rsatish
+                💡 {isEn ? "Show Answer" : isRu ? "Показать ответ" : "Javobni Ko'rsatish"}
               </button>
             )}
 
@@ -222,7 +378,7 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
                 className="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg active:scale-95 transition-all cursor-pointer"
               >
                 <Check className="w-4 h-4" />
-                <span>To'g'ri (+{selectedTile.points})</span>
+                <span>{isEn ? "Correct" : isRu ? "Верно" : "To'g'ri"} (+{selectedTile.points})</span>
               </button>
 
               <button
@@ -231,7 +387,7 @@ export default function BaamboozleQuiz({ topic, teamsCount, onClose }: Baamboozl
                 className="py-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-black text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg active:scale-95 transition-all cursor-pointer"
               >
                 <X className="w-4 h-4" />
-                <span>Noto'g'ri (0 pts)</span>
+                <span>{isEn ? "Wrong (0 pts)" : isRu ? "Неверно (0 очков)" : "Noto'g'ri (0 pts)"}</span>
               </button>
             </div>
           </div>

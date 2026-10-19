@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Katta Diagnostik Level Check (A0–A1–A2) | TeacherOS</title>
+  <title>Yangi O'quvchi: 2 Darslik Katta Diagnostik Level Check | TeacherOS</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,34 +36,47 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
     body {
       background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; padding-bottom: 90px;
-      background-image: radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.14) 0%, transparent 45%),
-                        radial-gradient(circle at 90% 85%, rgba(139, 92, 246, 0.12) 0%, transparent 45%);
+      background-image: radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.16) 0%, transparent 45%),
+                        radial-gradient(circle at 90% 85%, rgba(16, 185, 129, 0.12) 0%, transparent 45%);
       background-attachment: fixed;
     }
-    .container { max-width: 920px; margin: 0 auto; padding: 20px 16px; }
+    .container { max-width: 940px; margin: 0 auto; padding: 20px 16px; }
 
     header {
-      background: linear-gradient(135deg, #0e172a 0%, #172554 50%, #0f172a 100%);
+      background: linear-gradient(135deg, #0e172a 0%, #1e1b4b 50%, #0f172a 100%);
       border: 1px solid rgba(99, 102, 241, 0.35);
       border-radius: var(--radius-lg); padding: 26px 24px; margin-bottom: 20px;
       box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 30px var(--primary-glow);
     }
-    .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
     .badge {
       font-size: 0.74rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; text-transform: uppercase;
       letter-spacing: 0.04em;
     }
-    .badge-diag { background: rgba(99, 102, 241, 0.18); color: #a5b4fc; border: 1px solid rgba(165, 180, 252, 0.35); }
-    .badge-tiers { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; border: 1px solid rgba(110, 231, 183, 0.35); }
-    .badge-bot { background: rgba(14, 165, 233, 0.18); color: #7dd3fc; border: 1px solid rgba(125, 211, 252, 0.35); }
+    .badge-student { background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+    .badge-scope { background: rgba(99, 102, 241, 0.18); color: #a5b4fc; border: 1px solid rgba(165, 180, 252, 0.35); }
+    .badge-count { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; border: 1px solid rgba(110, 231, 183, 0.35); }
 
     h1 {
-      font-size: 1.85rem; font-weight: 900; margin-bottom: 6px; line-height: 1.25;
+      font-size: 1.85rem; font-weight: 900; margin-bottom: 8px; line-height: 1.25;
       background: linear-gradient(135deg, #ffffff 40%, #c7d2fe 80%, #818cf8 100%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-    .subtitle { color: var(--text-muted); font-size: 0.92rem; max-width: 800px; }
+    .subtitle { color: #cbd5e1; font-size: 0.95rem; max-width: 840px; }
 
+    /* CHEAT SHEET */
+    .cheat-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 18px;
+    }
+    .cheat-card {
+      background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md);
+      padding: 14px 16px; font-size: 0.88rem;
+    }
+    .cheat-title { font-weight: 800; color: #67e8f9; margin-bottom: 6px; }
+    .cheat-rule { color: #e2e8f0; font-weight: 600; margin-bottom: 4px; }
+    .cheat-ex { color: #94a3b8; font-size: 0.82rem; font-style: italic; }
+
+    /* STUDENT INFO */
     .student-card {
       background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md);
       padding: 16px 20px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 14px;
@@ -74,2142 +87,821 @@
     input[type="text"], textarea {
       background: #090f1e; border: 1.5px solid var(--border); color: #fff;
       font-family: inherit; font-size: 0.92rem; padding: 10px 14px; border-radius: 10px; width: 100%;
+      transition: all 0.2s ease;
     }
     input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 12px var(--primary-glow); }
 
-    /* STICKY REALTIME SCORE BAR (STAYS VISIBLE AS STUDENT SCROLLS) */
+    /* STICKY REALTIME SCORE */
     .sticky-score-bar {
-      position: sticky;
-      top: 12px;
-      z-index: 50;
-      background: rgba(15, 23, 42, 0.92);
-      backdrop-filter: blur(14px);
-      border: 1px solid rgba(99, 102, 241, 0.35);
-      border-radius: var(--radius-md);
-      padding: 12px 18px;
-      margin-bottom: 24px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
+      position: sticky; top: 12px; z-index: 50;
+      background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(14px);
+      border: 1px solid rgba(99, 102, 241, 0.35); border-radius: var(--radius-md);
+      padding: 12px 18px; margin-bottom: 24px;
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     .score-left { display: flex; align-items: center; gap: 12px; }
     .score-badge { background: var(--primary); color: #fff; font-size: 1.15rem; font-weight: 900; padding: 4px 14px; border-radius: 8px; }
-    .level-estimate { font-size: 0.92rem; font-weight: 800; color: #67e8f9; }
+    .progress-info { font-size: 0.88rem; font-weight: 700; color: #a5b4fc; }
+    .progress-bar-wrap { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin-top: 6px; }
+    .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #6366f1, #10b981); transition: width 0.3s ease; }
 
-    /* SECTION DIVIDER HEADER */
-    .section-header-banner {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95));
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      border-left: 5px solid var(--primary);
-      border-radius: var(--radius-md);
-      padding: 16px 20px;
-      margin: 34px 0 16px;
+    /* SECTION BOX */
+    .section-box {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 24px 20px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
-    .section-header-banner h2 { font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 2px; }
-    .section-header-banner p { color: var(--text-muted); font-size: 0.86rem; margin: 0; }
+    .sec-title { font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+    .sec-desc { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
 
-    .tier-badge {
-      display: inline-block; font-size: 0.72rem; font-weight: 800; padding: 2px 7px; border-radius: 5px;
-      text-transform: uppercase; margin-bottom: 8px;
+    /* QUESTION CARD */
+    .q-card {
+      background: #090f1e; border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 16px 18px; margin-bottom: 14px; transition: all 0.2s;
     }
-    .tier-A0 { background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
-    .tier-A1 { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.35); }
-    .tier-A1-A2 { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.35); }
+    .q-card.correct { border-color: var(--emerald); background: rgba(16, 185, 129, 0.05); }
+    .q-card.wrong { border-color: var(--rose); background: rgba(239, 68, 68, 0.05); }
+    .q-num { font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
+    .q-prompt { font-size: 0.98rem; font-weight: 600; color: #fff; margin-bottom: 12px; }
+    .q-prompt code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #67e8f9; font-family: 'JetBrains Mono', monospace; }
 
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 18px; margin-bottom: 14px; }
-    .q-text { font-size: 0.96rem; font-weight: 700; color: #f8fafc; margin-bottom: 10px; }
-    .options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 8px; }
-    .opt-btn {
-      background: #090f1e; border: 1.5px solid var(--border); color: #cbd5e1;
-      padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; text-align: left;
+    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    .choice-btn {
+      background: #131d33; border: 1px solid var(--border); color: #e2e8f0;
+      padding: 9px 18px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer;
       transition: all 0.2s;
     }
-    .opt-btn:hover { background: #17233f; border-color: #3b82f6; }
-    .opt-btn.correct { background: rgba(16, 185, 129, 0.2) !important; border-color: var(--emerald) !important; color: #34d399 !important; }
-    .opt-btn.wrong { background: rgba(239, 68, 68, 0.2) !important; border-color: var(--rose) !important; color: #f87171 !important; }
+    .choice-btn:hover:not(:disabled) { background: #1c2742; border-color: var(--primary); color: #fff; transform: translateY(-1px); }
+    .choice-btn.selected-correct { background: var(--emerald) !important; border-color: var(--emerald) !important; color: #fff !important; }
+    .choice-btn.selected-wrong { background: var(--rose) !important; border-color: var(--rose) !important; color: #fff !important; }
 
-    .feedback-box { font-size: 0.84rem; border-radius: 8px; padding: 8px 12px; margin-top: 8px; display: none; }
-    .feedback-box.show { display: block; }
-    .feedback-box.correct { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; }
-    .feedback-box.wrong { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; }
-
-    /* VOCAB */
-    .vocab-quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 16px; }
-    .vocab-quiz-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
-    .vocab-quiz-word { font-size: 1.05rem; font-weight: 800; color: #67e8f9; margin-bottom: 8px; }
-    .vocab-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-    .vocab-opt-btn { background: #090f1e; border: 1px solid var(--border); color: #cbd5e1; padding: 7px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-align: center; }
-    .vocab-opt-btn:hover { border-color: var(--primary); }
-    .vocab-opt-btn.correct { background: rgba(16, 185, 129, 0.25) !important; border-color: var(--emerald) !important; color: #6ee7b7 !important; }
-    .vocab-opt-btn.wrong { background: rgba(239, 68, 68, 0.25) !important; border-color: var(--rose) !important; color: #fca5a5 !important; }
-
-    /* ERROR HUNT */
-    .error-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 12px; }
-    .error-wrong { color: #f87171; font-weight: 700; margin-bottom: 4px; font-size: 0.94rem; }
-    .error-correct { color: #34d399; font-weight: 700; margin-bottom: 4px; font-size: 0.94rem; }
-    .error-expl { font-size: 0.82rem; color: var(--text-muted); }
-
-    /* READING */
-    .reading-box {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
-      border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px;
-      line-height: 1.8; font-size: 0.96rem; color: #e2e8f0;
+    .sentence-box-hunter {
+      background: #131d33; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;
+      padding: 10px 14px; margin-bottom: 12px; font-size: 1.02rem; font-weight: 700; color: #fca5a5;
     }
-    .reading-title { font-size: 1.15rem; font-weight: 800; color: #67e8f9; margin-bottom: 10px; }
 
-    /* MATRIX */
-    .matrix-card {
-      background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg);
-      padding: 22px; margin-top: 18px;
+    .scramble-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .scramble-chip {
+      background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 6px 14px; border-radius: 8px;
+      font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
     }
-    .matrix-title { font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 12px; }
-    .matrix-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1e293b; font-size: 0.92rem; }
-    .matrix-row:last-child { border-bottom: none; }
+    .scramble-chip:hover:not(:disabled) { background: #334155; border-color: var(--primary); }
+    .scramble-chip.used { opacity: 0.3; pointer-events: none; }
+    .scramble-result-box {
+      background: #090f1e; border: 1.5px dashed #334155; border-radius: 8px; min-height: 44px;
+      padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px;
+    }
+    .scramble-item {
+      background: rgba(99, 102, 241, 0.25); border: 1px solid #6366f1; color: #c7d2fe;
+      padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer;
+    }
 
-    /* SUBMIT */
-    .submit-panel {
-      background: linear-gradient(135deg, #0e172a 0%, #172554 100%); border: 1px solid rgba(16, 185, 129, 0.35);
-      border-radius: var(--radius-lg); padding: 32px 24px; text-align: center; margin-top: 36px;
+    .expl-box {
+      font-size: 0.86rem; padding: 10px 14px; border-radius: 8px; margin-top: 10px; display: none; line-height: 1.5;
     }
-    .submit-title { font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
-    .submit-desc { color: #94a3b8; font-size: 0.9rem; max-width: 600px; margin: 0 auto 20px; }
-    .btn-submit-telegram {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff;
-      font-weight: 800; font-size: 1.05rem; border: none; padding: 15px 36px; border-radius: 12px;
-      cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+    .expl-box.show { display: block; }
+    .expl-box.correct { background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border-left: 3px solid var(--emerald); }
+    .expl-box.wrong { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border-left: 3px solid var(--rose); }
+
+    .trans-item { margin-bottom: 16px; background: #090f1e; border: 1px solid var(--border); padding: 14px; border-radius: var(--radius-md); }
+    .trans-prompt { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+    .trans-hint { font-size: 0.8rem; color: #67e8f9; margin-bottom: 8px; }
+
+    .submit-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      border: 1px solid rgba(99, 102, 241, 0.4); border-radius: var(--radius-lg);
+      padding: 26px; text-align: center; margin-top: 30px;
     }
-    .btn-submit-telegram:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(16, 185, 129, 0.45); }
-    .submit-status { margin-top: 14px; font-size: 0.9rem; font-weight: 600; }
+    .submit-btn {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: #fff; border: none; font-size: 1.1rem; font-weight: 800;
+      padding: 14px 38px; border-radius: 12px; cursor: pointer; transition: all 0.25s ease;
+      box-shadow: 0 8px 24px var(--primary-glow);
+    }
+    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px var(--primary-glow); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-msg { margin-top: 14px; font-size: 0.95rem; font-weight: 700; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="badge-row">
-        <span class="badge badge-diag">🎯 Comprehensive Level Check</span>
-        <span class="badge badge-tiers">📈 A0 • A1 • A2 Diagnostic</span>
-        <span class="badge badge-bot">🤖 Telegram Bot Sync</span>
-      </div>
-      <h1>Yangi O'quvchi Uchun Katta Diagnostik Test (Level Check)</h1>
-      <p class="subtitle">Barcha savollar ketma-ket joylashtirilgan. O'quvchi boshidan oxirigacha bittada yechib (in one go), haqiqiy bilim darajasini aniqlab oladi.</p>
-    </header>
 
-    <div class="student-card">
-      <div class="student-inputs">
-        <div class="input-group">
-          <label>O'quvchi Ismi va Familiyasi</label>
-          <input type="text" id="studentName" placeholder="Masalan: Dilnoza Karimova" oninput="saveDraft()">
-        </div>
-        <div class="input-group">
-          <label>Sana</label>
-          <input type="text" id="submissionDate" value="14-Oktyabr, 2026" readonly>
-        </div>
-      </div>
+<div class="container">
+  
+  <header>
+    <div class="badge-row">
+      <span class="badge badge-student">Yangi O'quvchi (New Student)</span>
+      <span class="badge badge-scope">2 Darslik Qamrov: Present Simple & Continuous</span>
+      <span class="badge badge-count">50 Interactive Items</span>
     </div>
+    <h1>Yangi O'quvchi Uchun Katta Diagnostik Level Check</h1>
+    <p class="subtitle">Ushbu test faqat o'tilgan 2 ta darsni (Present Simple va Present Continuous) chuqur va har tomonlama tekshiradi. Hech qanday o'rganilmagan mavzular yo'q. Har bir savolga javob berganda qoidani bilib olasiz!</p>
 
-    <!-- STICKY REALTIME SCORE BAR (STAYS WITH STUDENT AS THEY SCROLL) -->
-    <div class="sticky-score-bar">
-      <div class="score-left">
-        <div class="score-badge" id="liveScore">0 / 63</div>
-        <div>
-          <div style="font-size:0.75rem;color:#94a3b8;font-weight:700;text-transform:uppercase">Hozirgi Natija</div>
-          <div class="level-estimate" id="levelEstimate">Aniqlanmoqda...</div>
-        </div>
+    <div class="cheat-grid">
+      <div class="cheat-card">
+        <div class="cheat-title">1️⃣ Present Simple (Odatlar & Faktlar)</div>
+        <div class="cheat-rule"><b>I/You/We/They</b> &rarr; <code>play / don't play</code></div>
+        <div class="cheat-rule"><b>He/She/It</b> &rarr; <code>plays / doesn't play</code></div>
+        <div class="cheat-ex">Kalit so'zlar: every day, always, usually, often, never</div>
       </div>
-      <div style="font-size:0.82rem;color:#cbd5e1">
-        Savollarni pastga qarab ketma-ket yeching. Har bir to'g'ri javob natijani darhol yangilaydi!
+      <div class="cheat-card">
+        <div class="cheat-title">2️⃣ Present Continuous (Hozir sodir bo'layotgan ish)</div>
+        <div class="cheat-rule"><b>am / is / are + V-ing</b></div>
+        <div class="cheat-rule">I am playing / He is playing / They are playing</div>
+        <div class="cheat-ex">Kalit so'zlar: now, right now, at the moment, Look!, Listen!</div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-title">3️⃣ Stative Verbs (Holat fe'llari)</div>
+        <div class="cheat-rule">Hech qachon <b>-ing</b> olmaydi: <code>like, love, want, need, know</code></div>
+        <div class="cheat-ex">"I want coffee now" ✅ (I am wanting emas ❌)</div>
       </div>
     </div>
+  </header>
 
-    <!-- SECTION 1: GRAMMAR (30 QUESTIONS) -->
-    <div class="section-header-banner">
-      <h2>⚡ 1-Bo'lim: Grammatika Diagnostikasi (30 ta Savol)</h2>
-      <p>3 xil qiyinlik darajasi: A0 Starter (1–10), A1 Elementary (11–20), A1+/A2 Bridge (21–30).</p>
-    </div>
-
-    
-    <div class="card">
-      <span class="tier-badge tier-A0">A0 Daraja</span>
-      <div class="q-text">1. Hello! My name ______ Malika. I ______ 19 years old.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(0, 'am / is', 'is / am', '\'My name\' (it) uchun \'is\', \'I\' uchun \'am\' ishlatiladi: \'My name is Malika. I am 19...\'', 'A0')">
-          am / is
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(0, 'is / am', 'is / am', '\'My name\' (it) uchun \'is\', \'I\' uchun \'am\' ishlatiladi: \'My name is Malika. I am 19...\'', 'A0')">
-          is / am
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(0, 'are / is', 'is / am', '\'My name\' (it) uchun \'is\', \'I\' uchun \'am\' ishlatiladi: \'My name is Malika. I am 19...\'', 'A0')">
-          are / is
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(0, 'is / are', 'is / am', '\'My name\' (it) uchun \'is\', \'I\' uchun \'am\' ishlatiladi: \'My name is Malika. I am 19...\'', 'A0')">
-          is / are
-        </button>
-        
+  <!-- STUDENT INFO -->
+  <div class="student-card">
+    <div class="student-inputs">
+      <div class="input-group">
+        <label>Ism va Familiya</label>
+        <input type="text" id="studentName" placeholder="Masalan: Jasur Rahimov" oninput="saveDraft()">
+      </div>
+      <div class="input-group">
+        <label>Telegram Username (ixtiyoriy)</label>
+        <input type="text" id="studentTelegram" placeholder="@username" oninput="saveDraft()">
       </div>
-      <div id="g-fb-0" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A0">A0 Daraja</span>
-      <div class="q-text">2. They ______ from Uzbekistan. They are from Turkey.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(1, 'isn\'t', 'aren\'t', '\'They\' ko\'plik shaxs bo\'lgani uchun \'to be\' inkorida \'aren\'t\' bo\'ladi.', 'A0')">
-          isn't
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(1, 'aren\'t', 'aren\'t', '\'They\' ko\'plik shaxs bo\'lgani uchun \'to be\' inkorida \'aren\'t\' bo\'ladi.', 'A0')">
-          aren't
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(1, 'not', 'aren\'t', '\'They\' ko\'plik shaxs bo\'lgani uchun \'to be\' inkorida \'aren\'t\' bo\'ladi.', 'A0')">
-          not
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(1, 'am not', 'aren\'t', '\'They\' ko\'plik shaxs bo\'lgani uchun \'to be\' inkorida \'aren\'t\' bo\'ladi.', 'A0')">
-          am not
-        </button>
-        
-      </div>
-      <div id="g-fb-1" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A0">A0 Daraja</span>
-      <div class="q-text">3. Look at that! It is ______ apple and ______ big yellow banana.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(2, 'a / an', 'an / a', '\'apple\' unli tovush bilan boshlangani uchun \'an\', \'banana\' undosh uchun \'a\'.', 'A0')">
-          a / an
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(2, 'an / a', 'an / a', '\'apple\' unli tovush bilan boshlangani uchun \'an\', \'banana\' undosh uchun \'a\'.', 'A0')">
-          an / a
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(2, 'a / a', 'an / a', '\'apple\' unli tovush bilan boshlangani uchun \'an\', \'banana\' undosh uchun \'a\'.', 'A0')">
-          a / a
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(2, 'an / an', 'an / a', '\'apple\' unli tovush bilan boshlangani uchun \'an\', \'banana\' undosh uchun \'a\'.', 'A0')">
-          an / an
-        </button>
-        
-      </div>
-      <div id="g-fb-2" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A0">A0 Daraja</span>
-      <div class="q-text">4. These are my ______ and those are his ______.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(3, 'book / pen', 'books / pens', '\'These\' va \'Those\' ko\'plik ko\'rsatkich olmoshlari, otlar ham ko\'plikda bo\'lishi shart (-s).', 'A0')">
-          book / pen
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(3, 'books / pens', 'books / pens', '\'These\' va \'Those\' ko\'plik ko\'rsatkich olmoshlari, otlar ham ko\'plikda bo\'lishi shart (-s).', 'A0')">
-          books / pens
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(3, 'books / pen', 'books / pens', '\'These\' va \'Those\' ko\'plik ko\'rsatkich olmoshlari, otlar ham ko\'plikda bo\'lishi shart (-s).', 'A0')">
-          books / pen
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(3, 'book / pens', 'books / pens', '\'These\' va \'Those\' ko\'plik ko\'rsatkich olmoshlari, otlar ham ko\'plikda bo\'lishi shart (-s).', 'A0')">
-          book / pens
-        </button>
-        
-      </div>
-      <div id="g-fb-3" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A0">A0 Daraja</span>
-      <div class="q-text">5. ______ is your English teacher? — Mr. John.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(4, 'Where', 'Who', 'Shaxsni so\'rash uchun \'Who\' (Kim?) so\'roq olmoshi ishlatiladi.', 'A0')">
-          Where
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(4, 'What', 'Who', 'Shaxsni so\'rash uchun \'Who\' (Kim?) so\'roq olmoshi ishlatiladi.', 'A0')">
-          What
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(4, 'Who', 'Who', 'Shaxsni so\'rash uchun \'Who\' (Kim?) so\'roq olmoshi ishlatiladi.', 'A0')">
-          Who
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(4, 'When', 'Who', 'Shaxsni so\'rash uchun \'Who\' (Kim?) so\'roq olmoshi ishlatiladi.', 'A0')">
-          When
-        </button>
-        
-      </div>
-      <div id="g-fb-4" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A0">A0 Daraja</span>
-      <div class="q-text">6. This is Jasur. ______ bag is blue and ______ is a student.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(5, 'Her / he', 'His / he', 'Jasur o\'g\'il bola: egalik \'His bag\' (uning sumkasi), kishilik \'he\' (u).', 'A0')">
-          Her / he
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(5, 'His / he', 'His / he', 'Jasur o\'g\'il bola: egalik \'His bag\' (uning sumkasi), kishilik \'he\' (u).', 'A0')">
-          His / he
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(5, 'His / she', 'His / he', 'Jasur o\'g\'il bola: egalik \'His bag\' (uning sumkasi), kishilik \'he\' (u).', 'A0')">
-          His / she
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(5, 'He / his', 'His / he', 'Jasur o\'g\'il bola: egalik \'His bag\' (uning sumkasi), kishilik \'he\' (u).', 'A0')">
-          He / his
-        </button>
-        
-      </div>
-      <div id="g-fb-5" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A0">A0 Daraja</span>
-      <div class="q-text">7. Are you tired? — Yes, ______.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(6, 'I\'m', 'I am', 'Qisqa tasdiq javoblarida qisqartma (\'I\'m\') qilinmaydi, to\'liq yoziladi: \'Yes, I am\'.', 'A0')">
-          I'm
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(6, 'I am', 'I am', 'Qisqa tasdiq javoblarida qisqartma (\'I\'m\') qilinmaydi, to\'liq yoziladi: \'Yes, I am\'.', 'A0')">
-          I am
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(6, 'you are', 'I am', 'Qisqa tasdiq javoblarida qisqartma (\'I\'m\') qilinmaydi, to\'liq yoziladi: \'Yes, I am\'.', 'A0')">
-          you are
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(6, 'I do', 'I am', 'Qisqa tasdiq javoblarida qisqartma (\'I\'m\') qilinmaydi, to\'liq yoziladi: \'Yes, I am\'.', 'A0')">
-          I do
-        </button>
-        
-      </div>
-      <div id="g-fb-6" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A0">A0 Daraja</span>
-      <div class="q-text">8. There ______ three chairs and a table in the room.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(7, 'is', 'are', '\'three chairs\' ko\'plik bo\'lgani uchun \'There are\' ishlatiladi.', 'A0')">
-          is
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(7, 'are', 'are', '\'three chairs\' ko\'plik bo\'lgani uchun \'There are\' ishlatiladi.', 'A0')">
-          are
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(7, 'am', 'are', '\'three chairs\' ko\'plik bo\'lgani uchun \'There are\' ishlatiladi.', 'A0')">
-          am
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(7, 'be', 'are', '\'three chairs\' ko\'plik bo\'lgani uchun \'There are\' ishlatiladi.', 'A0')">
-          be
-        </button>
-        
-      </div>
-      <div id="g-fb-7" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A0">A0 Daraja</span>
-      <div class="q-text">9. What time is it? — It is ______ (7:30).</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(8, 'seven fifteen', 'half past seven', 'Ingliz tilida 7:30 \'half past seven\' yoki \'seven thirty\' deyiladi.', 'A0')">
-          seven fifteen
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(8, 'half past seven', 'half past seven', 'Ingliz tilida 7:30 \'half past seven\' yoki \'seven thirty\' deyiladi.', 'A0')">
-          half past seven
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(8, 'seven forty', 'half past seven', 'Ingliz tilida 7:30 \'half past seven\' yoki \'seven thirty\' deyiladi.', 'A0')">
-          seven forty
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(8, 'eight thirty', 'half past seven', 'Ingliz tilida 7:30 \'half past seven\' yoki \'seven thirty\' deyiladi.', 'A0')">
-          eight thirty
-        </button>
-        
-      </div>
-      <div id="g-fb-8" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A0">A0 Daraja</span>
-      <div class="q-text">10. Today is Monday. Tomorrow is ______.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(9, 'Sunday', 'Tuesday', 'Dushanba (Monday)dan keyin Seshanba (Tuesday) keladi.', 'A0')">
-          Sunday
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(9, 'Tuesday', 'Tuesday', 'Dushanba (Monday)dan keyin Seshanba (Tuesday) keladi.', 'A0')">
-          Tuesday
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(9, 'Wednesday', 'Tuesday', 'Dushanba (Monday)dan keyin Seshanba (Tuesday) keladi.', 'A0')">
-          Wednesday
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(9, 'Thursday', 'Tuesday', 'Dushanba (Monday)dan keyin Seshanba (Tuesday) keladi.', 'A0')">
-          Thursday
-        </button>
-        
-      </div>
-      <div id="g-fb-9" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1">A1 Daraja</span>
-      <div class="q-text">11. My sister ______ in a hospital. She ______ work on Sundays.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(10, 'work / doesn\'t', 'works / doesn\'t', 'Present Simple: he/she/it uchun fe\'lga -s qo\'shiladi (\'works\'), inkorida \'doesn\'t\'.', 'A1')">
-          work / doesn't
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(10, 'works / doesn\'t', 'works / doesn\'t', 'Present Simple: he/she/it uchun fe\'lga -s qo\'shiladi (\'works\'), inkorida \'doesn\'t\'.', 'A1')">
-          works / doesn't
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(10, 'working / don\'t', 'works / doesn\'t', 'Present Simple: he/she/it uchun fe\'lga -s qo\'shiladi (\'works\'), inkorida \'doesn\'t\'.', 'A1')">
-          working / don't
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(10, 'works / don\'t', 'works / doesn\'t', 'Present Simple: he/she/it uchun fe\'lga -s qo\'shiladi (\'works\'), inkorida \'doesn\'t\'.', 'A1')">
-          works / don't
-        </button>
-        
-      </div>
-      <div id="g-fb-10" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1">A1 Daraja</span>
-      <div class="q-text">12. ______ you ______ brothers or sisters?</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(11, 'Have / got', 'Have / got', '\'you\' shaxsi uchun \'Have you got...?\' (Senda bormi?) konstruksiyasi ishlatiladi.', 'A1')">
-          Have / got
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(11, 'Has / got', 'Have / got', '\'you\' shaxsi uchun \'Have you got...?\' (Senda bormi?) konstruksiyasi ishlatiladi.', 'A1')">
-          Has / got
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(11, 'Do / got', 'Have / got', '\'you\' shaxsi uchun \'Have you got...?\' (Senda bormi?) konstruksiyasi ishlatiladi.', 'A1')">
-          Do / got
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(11, 'Are / having', 'Have / got', '\'you\' shaxsi uchun \'Have you got...?\' (Senda bormi?) konstruksiyasi ishlatiladi.', 'A1')">
-          Are / having
-        </button>
-        
-      </div>
-      <div id="g-fb-11" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1">A1 Daraja</span>
-      <div class="q-text">13. I can swim very well, but I ______ drive a car.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(12, 'can\'t', 'can\'t', '\'can\' modal fe\'lining inkori \'cannot\' yoki \'can\'t\'. \'don\'t can\' xato.', 'A1')">
-          can't
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(12, 'don\'t can', 'can\'t', '\'can\' modal fe\'lining inkori \'cannot\' yoki \'can\'t\'. \'don\'t can\' xato.', 'A1')">
-          don't can
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(12, 'not can', 'can\'t', '\'can\' modal fe\'lining inkori \'cannot\' yoki \'can\'t\'. \'don\'t can\' xato.', 'A1')">
-          not can
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(12, 'am not', 'can\'t', '\'can\' modal fe\'lining inkori \'cannot\' yoki \'can\'t\'. \'don\'t can\' xato.', 'A1')">
-          am not
-        </button>
-        
-      </div>
-      <div id="g-fb-12" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1">A1 Daraja</span>
-      <div class="q-text">14. Our lesson starts ______ 9:00 AM ______ the morning.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(13, 'in / at', 'at / in', 'Aniq vaqtlar oldidan \'at 9:00\', kun qismlari oldidan \'in the morning\'.', 'A1')">
-          in / at
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(13, 'at / in', 'at / in', 'Aniq vaqtlar oldidan \'at 9:00\', kun qismlari oldidan \'in the morning\'.', 'A1')">
-          at / in
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(13, 'on / at', 'at / in', 'Aniq vaqtlar oldidan \'at 9:00\', kun qismlari oldidan \'in the morning\'.', 'A1')">
-          on / at
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(13, 'at / on', 'at / in', 'Aniq vaqtlar oldidan \'at 9:00\', kun qismlari oldidan \'in the morning\'.', 'A1')">
-          at / on
-        </button>
-        
-      </div>
-      <div id="g-fb-13" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1">A1 Daraja</span>
-      <div class="q-text">15. Where ______ your parents live?</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(14, 'is', 'do', '\'your parents\' = they (ko\'plik), Present Simple so\'rog\'ida \'do\' yordamchi fe\'li kerak.', 'A1')">
-          is
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(14, 'are', 'do', '\'your parents\' = they (ko\'plik), Present Simple so\'rog\'ida \'do\' yordamchi fe\'li kerak.', 'A1')">
-          are
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(14, 'do', 'do', '\'your parents\' = they (ko\'plik), Present Simple so\'rog\'ida \'do\' yordamchi fe\'li kerak.', 'A1')">
-          do
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(14, 'does', 'do', '\'your parents\' = they (ko\'plik), Present Simple so\'rog\'ida \'do\' yordamchi fe\'li kerak.', 'A1')">
-          does
-        </button>
-        
-      </div>
-      <div id="g-fb-14" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1">A1 Daraja</span>
-      <div class="q-text">16. Listen! Somebody ______ the piano in the next room.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(15, 'plays', 'is playing', '\'Listen!\' ayni daqiqadagi jarayonni bildiradi (Present Continuous): \'is playing\'.', 'A1')">
-          plays
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(15, 'is playing', 'is playing', '\'Listen!\' ayni daqiqadagi jarayonni bildiradi (Present Continuous): \'is playing\'.', 'A1')">
-          is playing
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(15, 'are playing', 'is playing', '\'Listen!\' ayni daqiqadagi jarayonni bildiradi (Present Continuous): \'is playing\'.', 'A1')">
-          are playing
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(15, 'played', 'is playing', '\'Listen!\' ayni daqiqadagi jarayonni bildiradi (Present Continuous): \'is playing\'.', 'A1')">
-          played
-        </button>
-        
-      </div>
-      <div id="g-fb-15" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1">A1 Daraja</span>
-      <div class="q-text">17. Do you like ______ football on weekends?</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(16, 'play', 'playing', '\'like\' fe\'lidan keyin fe\'lga odatda -ing qo\'shiladi: \'like playing\'.', 'A1')">
-          play
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(16, 'playing', 'playing', '\'like\' fe\'lidan keyin fe\'lga odatda -ing qo\'shiladi: \'like playing\'.', 'A1')">
-          playing
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(16, 'plays', 'playing', '\'like\' fe\'lidan keyin fe\'lga odatda -ing qo\'shiladi: \'like playing\'.', 'A1')">
-          plays
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(16, 'to playing', 'playing', '\'like\' fe\'lidan keyin fe\'lga odatda -ing qo\'shiladi: \'like playing\'.', 'A1')">
-          to playing
-        </button>
-        
-      </div>
-      <div id="g-fb-16" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1">A1 Daraja</span>
-      <div class="q-text">18. We don't have ______ milk in the fridge, but we have ______ apples.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(17, 'some / any', 'any / some', 'Inkor gaplarda \'any milk\', tasdiq gaplarda \'some apples\' ishlatiladi.', 'A1')">
-          some / any
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(17, 'any / some', 'any / some', 'Inkor gaplarda \'any milk\', tasdiq gaplarda \'some apples\' ishlatiladi.', 'A1')">
-          any / some
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(17, 'any / any', 'any / some', 'Inkor gaplarda \'any milk\', tasdiq gaplarda \'some apples\' ishlatiladi.', 'A1')">
-          any / any
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(17, 'some / some', 'any / some', 'Inkor gaplarda \'any milk\', tasdiq gaplarda \'some apples\' ishlatiladi.', 'A1')">
-          some / some
-        </button>
-        
-      </div>
-      <div id="g-fb-17" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1">A1 Daraja</span>
-      <div class="q-text">19. My brother usually goes to work ______ bus.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(18, 'on', 'by', 'Transport vositalari oldidan vositani ko\'rsatishda \'by bus\', \'by car\' deyiladi.', 'A1')">
-          on
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(18, 'in', 'by', 'Transport vositalari oldidan vositani ko\'rsatishda \'by bus\', \'by car\' deyiladi.', 'A1')">
-          in
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(18, 'by', 'by', 'Transport vositalari oldidan vositani ko\'rsatishda \'by bus\', \'by car\' deyiladi.', 'A1')">
-          by
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(18, 'with', 'by', 'Transport vositalari oldidan vositani ko\'rsatishda \'by bus\', \'by car\' deyiladi.', 'A1')">
-          with
-        </button>
-        
-      </div>
-      <div id="g-fb-18" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1">A1 Daraja</span>
-      <div class="q-text">20. Anvar is ______ than his brother, but Rustam is the ______ in the class.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(19, 'taller / tallest', 'taller / tallest', 'Qiyosiy daraja: \'taller than\', orttirma daraja: \'the tallest\'.', 'A1')">
-          taller / tallest
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(19, 'tall / taller', 'taller / tallest', 'Qiyosiy daraja: \'taller than\', orttirma daraja: \'the tallest\'.', 'A1')">
-          tall / taller
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(19, 'more tall / most tall', 'taller / tallest', 'Qiyosiy daraja: \'taller than\', orttirma daraja: \'the tallest\'.', 'A1')">
-          more tall / most tall
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(19, 'taller / taller', 'taller / tallest', 'Qiyosiy daraja: \'taller than\', orttirma daraja: \'the tallest\'.', 'A1')">
-          taller / taller
-        </button>
-        
-      </div>
-      <div id="g-fb-19" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1+-A2">A1+/A2 Daraja</span>
-      <div class="q-text">21. Where ______ you yesterday at 5:00 PM?</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(20, 'was', 'were', 'O\'tgan zamonda \'you\' uchun \'to be\' shakli \'were\' bo\'ladi: \'Where were you...?\'', 'A1+/A2')">
-          was
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(20, 'were', 'were', 'O\'tgan zamonda \'you\' uchun \'to be\' shakli \'were\' bo\'ladi: \'Where were you...?\'', 'A1+/A2')">
-          were
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(20, 'did', 'were', 'O\'tgan zamonda \'you\' uchun \'to be\' shakli \'were\' bo\'ladi: \'Where were you...?\'', 'A1+/A2')">
-          did
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(20, 'are', 'were', 'O\'tgan zamonda \'you\' uchun \'to be\' shakli \'were\' bo\'ladi: \'Where were you...?\'', 'A1+/A2')">
-          are
-        </button>
-        
-      </div>
-      <div id="g-fb-20" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1+-A2">A1+/A2 Daraja</span>
-      <div class="q-text">22. Yesterday, I ______ to the supermarket and ______ some bread.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(21, 'go / buy', 'went / bought', '\'go\' ning o\'tgan zamoni \'went\', \'buy\' ning o\'tgan zamoni esa \'bought\'.', 'A1+/A2')">
-          go / buy
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(21, 'went / bought', 'went / bought', '\'go\' ning o\'tgan zamoni \'went\', \'buy\' ning o\'tgan zamoni esa \'bought\'.', 'A1+/A2')">
-          went / bought
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(21, 'went / buyed', 'went / bought', '\'go\' ning o\'tgan zamoni \'went\', \'buy\' ning o\'tgan zamoni esa \'bought\'.', 'A1+/A2')">
-          went / buyed
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(21, 'goed / bought', 'went / bought', '\'go\' ning o\'tgan zamoni \'went\', \'buy\' ning o\'tgan zamoni esa \'bought\'.', 'A1+/A2')">
-          goed / bought
-        </button>
-        
-      </div>
-      <div id="g-fb-21" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1+-A2">A1+/A2 Daraja</span>
-      <div class="q-text">23. Did you ______ your grandmother last Sunday?</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(22, 'visited', 'visit', '\'Did\' yordamchi fe\'li kelganidan so\'ng asosiy fe\'l boshlang\'ich shaklda (V1) qoladi: \'Did you visit\'?', 'A1+/A2')">
-          visited
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(22, 'visit', 'visit', '\'Did\' yordamchi fe\'li kelganidan so\'ng asosiy fe\'l boshlang\'ich shaklda (V1) qoladi: \'Did you visit\'?', 'A1+/A2')">
-          visit
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(22, 'visiting', 'visit', '\'Did\' yordamchi fe\'li kelganidan so\'ng asosiy fe\'l boshlang\'ich shaklda (V1) qoladi: \'Did you visit\'?', 'A1+/A2')">
-          visiting
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(22, 'visits', 'visit', '\'Did\' yordamchi fe\'li kelganidan so\'ng asosiy fe\'l boshlang\'ich shaklda (V1) qoladi: \'Did you visit\'?', 'A1+/A2')">
-          visits
-        </button>
-        
-      </div>
-      <div id="g-fb-22" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1+-A2">A1+/A2 Daraja</span>
-      <div class="q-text">24. While I ______ dinner, my brother was doing his homework.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(23, 'cooked', 'was cooking', 'Parallel davom etayotgan o\'tgan zamon jarayoni: \'While I was cooking\'.', 'A1+/A2')">
-          cooked
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(23, 'was cooking', 'was cooking', 'Parallel davom etayotgan o\'tgan zamon jarayoni: \'While I was cooking\'.', 'A1+/A2')">
-          was cooking
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(23, 'am cooking', 'was cooking', 'Parallel davom etayotgan o\'tgan zamon jarayoni: \'While I was cooking\'.', 'A1+/A2')">
-          am cooking
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(23, 'were cooking', 'was cooking', 'Parallel davom etayotgan o\'tgan zamon jarayoni: \'While I was cooking\'.', 'A1+/A2')">
-          were cooking
-        </button>
-        
-      </div>
-      <div id="g-fb-23" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1+-A2">A1+/A2 Daraja</span>
-      <div class="q-text">25. I was walking in the park when suddenly it ______ to rain.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(24, 'started', 'started', 'Uzoq jarayon paytida to\'satdan sodir bo\'lgan qisqa harakat uchun Past Simple: \'started\'.', 'A1+/A2')">
-          started
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(24, 'was starting', 'started', 'Uzoq jarayon paytida to\'satdan sodir bo\'lgan qisqa harakat uchun Past Simple: \'started\'.', 'A1+/A2')">
-          was starting
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(24, 'starts', 'started', 'Uzoq jarayon paytida to\'satdan sodir bo\'lgan qisqa harakat uchun Past Simple: \'started\'.', 'A1+/A2')">
-          starts
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(24, 'is starting', 'started', 'Uzoq jarayon paytida to\'satdan sodir bo\'lgan qisqa harakat uchun Past Simple: \'started\'.', 'A1+/A2')">
-          is starting
-        </button>
-        
-      </div>
-      <div id="g-fb-24" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1+-A2">A1+/A2 Daraja</span>
-      <div class="q-text">26. We ______ to visit Samarkand next weekend. We have already booked the train tickets.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(25, 'will', 'are going', 'Oldindan qilingan aniq reja va tayyorgarlik uchun \'be going to\' ishlatiladi.', 'A1+/A2')">
-          will
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(25, 'are going', 'are going', 'Oldindan qilingan aniq reja va tayyorgarlik uchun \'be going to\' ishlatiladi.', 'A1+/A2')">
-          are going
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(25, 'go', 'are going', 'Oldindan qilingan aniq reja va tayyorgarlik uchun \'be going to\' ishlatiladi.', 'A1+/A2')">
-          go
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(25, 'went', 'are going', 'Oldindan qilingan aniq reja va tayyorgarlik uchun \'be going to\' ishlatiladi.', 'A1+/A2')">
-          went
-        </button>
-        
-      </div>
-      <div id="g-fb-25" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1+-A2">A1+/A2 Daraja</span>
-      <div class="q-text">27. How ______ sugar do you put in your tea?</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(26, 'many', 'much', '\'sugar\' sanalmaydigan ot, shuning uchun \'How much sugar\' (qancha shakar) bo\'ladi.', 'A1+/A2')">
-          many
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(26, 'much', 'much', '\'sugar\' sanalmaydigan ot, shuning uchun \'How much sugar\' (qancha shakar) bo\'ladi.', 'A1+/A2')">
-          much
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(26, 'any', 'much', '\'sugar\' sanalmaydigan ot, shuning uchun \'How much sugar\' (qancha shakar) bo\'ladi.', 'A1+/A2')">
-          any
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(26, 'long', 'much', '\'sugar\' sanalmaydigan ot, shuning uchun \'How much sugar\' (qancha shakar) bo\'ladi.', 'A1+/A2')">
-          long
-        </button>
-        
-      </div>
-      <div id="g-fb-26" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1+-A2">A1+/A2 Daraja</span>
-      <div class="q-text">28. She is tired ______ she worked very hard all day.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(27, 'so', 'because', 'Sababni ifodalash uchun \'because\' (chunki) bog\'lovchisi to\'g\'ri keladi.', 'A1+/A2')">
-          so
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(27, 'but', 'because', 'Sababni ifodalash uchun \'because\' (chunki) bog\'lovchisi to\'g\'ri keladi.', 'A1+/A2')">
-          but
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(27, 'because', 'because', 'Sababni ifodalash uchun \'because\' (chunki) bog\'lovchisi to\'g\'ri keladi.', 'A1+/A2')">
-          because
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(27, 'although', 'because', 'Sababni ifodalash uchun \'because\' (chunki) bog\'lovchisi to\'g\'ri keladi.', 'A1+/A2')">
-          although
-        </button>
-        
-      </div>
-      <div id="g-fb-27" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1+-A2">A1+/A2 Daraja</span>
-      <div class="q-text">29. Have you ______ been to a foreign country?</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(28, 'never', 'ever', 'Hayotiy tajriba haqidagi savolda \'Have you ever...?\' (Hech borganmisiz?) ishlatiladi.', 'A1+/A2')">
-          never
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(28, 'ever', 'ever', 'Hayotiy tajriba haqidagi savolda \'Have you ever...?\' (Hech borganmisiz?) ishlatiladi.', 'A1+/A2')">
-          ever
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(28, 'yet', 'ever', 'Hayotiy tajriba haqidagi savolda \'Have you ever...?\' (Hech borganmisiz?) ishlatiladi.', 'A1+/A2')">
-          yet
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(28, 'already', 'ever', 'Hayotiy tajriba haqidagi savolda \'Have you ever...?\' (Hech borganmisiz?) ishlatiladi.', 'A1+/A2')">
-          already
-        </button>
-        
-      </div>
-      <div id="g-fb-28" class="feedback-box"></div>
-    </div>
-    
-    <div class="card">
-      <span class="tier-badge tier-A1+-A2">A1+/A2 Daraja</span>
-      <div class="q-text">30. He didn't come to school yesterday ______ he was ill.</div>
-      <div class="options-grid">
-        
-        <button class="opt-btn" onclick="checkGrammar(29, 'so', 'because', 'Sabab-oqibat bog\'lovchisi: kasal bo\'lgani uchun kelmadi (\'because\').', 'A1+/A2')">
-          so
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(29, 'because', 'because', 'Sabab-oqibat bog\'lovchisi: kasal bo\'lgani uchun kelmadi (\'because\').', 'A1+/A2')">
-          because
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(29, 'but', 'because', 'Sabab-oqibat bog\'lovchisi: kasal bo\'lgani uchun kelmadi (\'because\').', 'A1+/A2')">
-          but
-        </button>
-        
-        <button class="opt-btn" onclick="checkGrammar(29, 'and', 'because', 'Sabab-oqibat bog\'lovchisi: kasal bo\'lgani uchun kelmadi (\'because\').', 'A1+/A2')">
-          and
-        </button>
-        
-      </div>
-      <div id="g-fb-29" class="feedback-box"></div>
-    </div>
-    
-
-    <!-- SECTION 2: VOCABULARY (25 ITEMS) -->
-    <div class="section-header-banner">
-      <h2>💎 2-Bo'lim: Asosiy Lug'at Boyligi (25 ta So'z)</h2>
-      <p>Har bir inglizcha so'zning to'g'ri o'zbekcha tarjimasini tanlang.</p>
-    </div>
-
-    <div class="vocab-quiz-grid">
-      
-      <div class="vocab-quiz-card" id="vq-card-0">
-        <div class="vocab-quiz-word">1. family</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(0, 'oila', 'oila')">
-            oila
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(0, 'do\'st', 'oila')">
-            do'st
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(0, 'maktab', 'oila')">
-            maktab
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(0, 'shahar', 'oila')">
-            shahar
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-1">
-        <div class="vocab-quiz-word">2. breakfast</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(1, 'tushlik', 'nonushta')">
-            tushlik
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(1, 'kechki ovqat', 'nonushta')">
-            kechki ovqat
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(1, 'nonushta', 'nonushta')">
-            nonushta
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(1, 'choy', 'nonushta')">
-            choy
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-2">
-        <div class="vocab-quiz-word">3. weather</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(2, 'ob-havo', 'ob-havo')">
-            ob-havo
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(2, 'fasl', 'ob-havo')">
-            fasl
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(2, 'shamol', 'ob-havo')">
-            shamol
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(2, 'yomg\'ir', 'ob-havo')">
-            yomg'ir
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-3">
-        <div class="vocab-quiz-word">4. hospital</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(3, 'mehmonxona', 'shifoxona')">
-            mehmonxona
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(3, 'shifoxona', 'shifoxona')">
-            shifoxona
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(3, 'dorixona', 'shifoxona')">
-            dorixona
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(3, 'maktab', 'shifoxona')">
-            maktab
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-4">
-        <div class="vocab-quiz-word">5. dangerous</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(4, 'chiroyli', 'xavfli')">
-            chiroyli
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(4, 'qiziqarli', 'xavfli')">
-            qiziqarli
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(4, 'xavfli', 'xavfli')">
-            xavfli
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(4, 'qimmat', 'xavfli')">
-            qimmat
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-5">
-        <div class="vocab-quiz-word">6. daughter</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(5, 'o\'g\'il', 'qiz farzand')">
-            o'g'il
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(5, 'qiz farzand', 'qiz farzand')">
-            qiz farzand
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(5, 'singil', 'qiz farzand')">
-            singil
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(5, 'xola', 'qiz farzand')">
-            xola
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-6">
-        <div class="vocab-quiz-word">7. tired</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(6, 'och', 'charchagan')">
-            och
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(6, 'chanqagan', 'charchagan')">
-            chanqagan
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(6, 'charchagan', 'charchagan')">
-            charchagan
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(6, 'g\'amgin', 'charchagan')">
-            g'amgin
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-7">
-        <div class="vocab-quiz-word">8. kitchen</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(7, 'yotoqxona', 'oshxona')">
-            yotoqxona
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(7, 'oshxona', 'oshxona')">
-            oshxona
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(7, 'mehmonxona', 'oshxona')">
-            mehmonxona
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(7, 'hammom', 'oshxona')">
-            hammom
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-8">
-        <div class="vocab-quiz-word">9. expensive</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(8, 'arzon', 'qimmat')">
-            arzon
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(8, 'qimmat', 'qimmat')">
-            qimmat
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(8, 'og\'ir', 'qimmat')">
-            og'ir
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(8, 'qulay', 'qimmat')">
-            qulay
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-9">
-        <div class="vocab-quiz-word">10. arrive</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(9, 'jo\'nab ketmoq', 'yetib kelmoq')">
-            jo'nab ketmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(9, 'yetib kelmoq', 'yetib kelmoq')">
-            yetib kelmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(9, 'qolmoq', 'yetib kelmoq')">
-            qolmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(9, 'yugurmoq', 'yetib kelmoq')">
-            yugurmoq
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-10">
-        <div class="vocab-quiz-word">11. borrow</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(10, 'qarzga bermoq', 'qarzga olmoq')">
-            qarzga bermoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(10, 'qarzga olmoq', 'qarzga olmoq')">
-            qarzga olmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(10, 'sotib olmoq', 'qarzga olmoq')">
-            sotib olmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(10, 'yo\'qotmoq', 'qarzga olmoq')">
-            yo'qotmoq
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-11">
-        <div class="vocab-quiz-word">12. neighbor</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(11, 'qarindosh', 'qo\'shni')">
-            qarindosh
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(11, 'hamkasb', 'qo\'shni')">
-            hamkasb
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(11, 'qo\'shni', 'qo\'shni')">
-            qo'shni
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(11, 'o\'rtoq', 'qo\'shni')">
-            o'rtoq
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-12">
-        <div class="vocab-quiz-word">13. remember</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(12, 'unutmoq', 'eslamoq')">
-            unutmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(12, 'eslamoq', 'eslamoq')">
-            eslamoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(12, 'kechirmoq', 'eslamoq')">
-            kechirmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(12, 'o\'rganmoq', 'eslamoq')">
-            o'rganmoq
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-13">
-        <div class="vocab-quiz-word">14. healthy</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(13, 'foydali/sog\'lom', 'foydali/sog\'lom')">
-            foydali/sog'lom
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(13, 'kasal', 'foydali/sog\'lom')">
-            kasal
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(13, 'kuchsiz', 'foydali/sog\'lom')">
-            kuchsiz
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(13, 'mazali', 'foydali/sog\'lom')">
-            mazali
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-14">
-        <div class="vocab-quiz-word">15. quiet</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(14, 'shovqinli', 'sokin/tinch')">
-            shovqinli
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(14, 'sokin/tinch', 'sokin/tinch')">
-            sokin/tinch
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(14, 'tez', 'sokin/tinch')">
-            tez
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(14, 'sekin', 'sokin/tinch')">
-            sekin
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-15">
-        <div class="vocab-quiz-word">16. choose</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(15, 'tanlamoq', 'tanlamoq')">
-            tanlamoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(15, 'ko\'rmoq', 'tanlamoq')">
-            ko'rmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(15, 'yozmoq', 'tanlamoq')">
-            yozmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(15, 'so\'ramoq', 'tanlamoq')">
-            so'ramoq
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-16">
-        <div class="vocab-quiz-word">17. forget</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(16, 'unutmoq', 'unutmoq')">
-            unutmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(16, 'topmoq', 'unutmoq')">
-            topmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(16, 'eslamoq', 'unutmoq')">
-            eslamoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(16, 'yo\'qotmoq', 'unutmoq')">
-            yo'qotmoq
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-17">
-        <div class="vocab-quiz-word">18. clothes</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(17, 'poyabzal', 'kiyim-kechak')">
-            poyabzal
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(17, 'kiyim-kechak', 'kiyim-kechak')">
-            kiyim-kechak
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(17, 'buyumlar', 'kiyim-kechak')">
-            buyumlar
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(17, 'idishlar', 'kiyim-kechak')">
-            idishlar
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-18">
-        <div class="vocab-quiz-word">19. accident</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(18, 'bayram', 'baxtsiz hodisa')">
-            bayram
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(18, 'baxtsiz hodisa', 'baxtsiz hodisa')">
-            baxtsiz hodisa
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(18, 'uchrashuv', 'baxtsiz hodisa')">
-            uchrashuv
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(18, 'sayohat', 'baxtsiz hodisa')">
-            sayohat
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-19">
-        <div class="vocab-quiz-word">20. strange</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(19, 'oddiy', 'g\'alati')">
-            oddiy
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(19, 'tanish', 'g\'alati')">
-            tanish
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(19, 'g\'alati', 'g\'alati')">
-            g'alati
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(19, 'kulgili', 'g\'alati')">
-            kulgili
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-20">
-        <div class="vocab-quiz-word">21. delicious</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(20, 'achchiq', 'juda mazali')">
-            achchiq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(20, 'shirin', 'juda mazali')">
-            shirin
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(20, 'juda mazali', 'juda mazali')">
-            juda mazali
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(20, 'issiq', 'juda mazali')">
-            issiq
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-21">
-        <div class="vocab-quiz-word">22. suddenly</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(21, 'asta-sekin', 'to\'satdan')">
-            asta-sekin
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(21, 'to\'satdan', 'to\'satdan')">
-            to'satdan
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(21, 'doimo', 'to\'satdan')">
-            doimo
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(21, 'kecha', 'to\'satdan')">
-            kecha
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-22">
-        <div class="vocab-quiz-word">23. wallet</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(22, 'sumka', 'hamyon')">
-            sumka
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(22, 'hamyon', 'hamyon')">
-            hamyon
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(22, 'cho\'ntak', 'hamyon')">
-            cho'ntak
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(22, 'ko\'zoynak', 'hamyon')">
-            ko'zoynak
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-23">
-        <div class="vocab-quiz-word">24. laugh</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(23, 'yig\'lamoq', 'kulmoq')">
-            yig'lamoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(23, 'kulmoq', 'kulmoq')">
-            kulmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(23, 'baqirmoq', 'kulmoq')">
-            baqirmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(23, 'gapirmoq', 'kulmoq')">
-            gapirmoq
-          </button>
-          
-        </div>
-      </div>
-      
-      <div class="vocab-quiz-card" id="vq-card-24">
-        <div class="vocab-quiz-word">25. improve</div>
-        <div class="vocab-opts">
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(24, 'yomonlashmoq', 'yaxshilamoq/o\'smoq')">
-            yomonlashmoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(24, 'yaxshilamoq/o\'smoq', 'yaxshilamoq/o\'smoq')">
-            yaxshilamoq/o'smoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(24, 'to\'xtamoq', 'yaxshilamoq/o\'smoq')">
-            to'xtamoq
-          </button>
-          
-          <button class="vocab-opt-btn" onclick="checkVocab(24, 'o\'zgarmoq', 'yaxshilamoq/o\'smoq')">
-            o'zgarmoq
-          </button>
-          
-        </div>
-      </div>
-      
-    </div>
-
-    <!-- SECTION 3: ERROR HUNT (10 ITEMS) -->
-    <div class="section-header-banner">
-      <h2>🔍 3-Bo'lim: 10 ta Klassik Qopqon & Xatolar Tahlili</h2>
-      <p>Boshlang'ich o'quvchilar eng ko'p qiladigan xatolar va ularning qat'iy qoidalari.</p>
-    </div>
-
-    
-    <div class="error-card">
-      <div class="error-wrong">❌ She have two brothers and one sister.</div>
-      <div class="error-correct">✅ She has two brothers and one sister.</div>
-      <div class="error-expl">💡 <b>Qoida tushuntirishi:</b> 'She' uchun 'have' emas, 'has' ishlatiladi.</div>
-    </div>
-    
-    <div class="error-card">
-      <div class="error-wrong">❌ I don't can play tennis on Sundays.</div>
-      <div class="error-correct">✅ I can't play tennis on Sundays.</div>
-      <div class="error-expl">💡 <b>Qoida tushuntirishi:</b> 'can' modal fe'li 'don't' olmaydi, inkor shakli 'can't'.</div>
-    </div>
-    
-    <div class="error-card">
-      <div class="error-wrong">❌ My father is doctor in a big hospital.</div>
-      <div class="error-correct">✅ My father is a doctor in a big hospital.</div>
-      <div class="error-expl">💡 <b>Qoida tushuntirishi:</b> Kasb-hunarlar oldidan birlikda 'a' yoki 'an' artikli qo'yilishi shart.</div>
-    </div>
-    
-    <div class="error-card">
-      <div class="error-wrong">❌ Yesterday, we was very tired after work.</div>
-      <div class="error-correct">✅ Yesterday, we were very tired after work.</div>
-      <div class="error-expl">💡 <b>Qoida tushuntirishi:</b> 'we' ko'plik, o'tgan zamonda 'were' bo'ladi.</div>
-    </div>
-    
-    <div class="error-card">
-      <div class="error-wrong">❌ He doesn't likes watching horror movies.</div>
-      <div class="error-correct">✅ He doesn't like watching horror movies.</div>
-      <div class="error-expl">💡 <b>Qoida tushuntirishi:</b> 'doesn't' yordamchi fe'lidan keyin asosiy fe'ldagi -s tushib qoladi: 'like'.</div>
-    </div>
-    
-    <div class="error-card">
-      <div class="error-wrong">❌ She is more tall than her mother.</div>
-      <div class="error-correct">✅ She is taller than her mother.</div>
-      <div class="error-expl">💡 <b>Qoida tushuntirishi:</b> Bir bo'g'inli sifatlarga 'more' qo'shilmaydi, '-er' qo'shiladi: 'taller'.</div>
-    </div>
-    
-    <div class="error-card">
-      <div class="error-wrong">❌ Did you went to the cinema last night?</div>
-      <div class="error-correct">✅ Did you go to the cinema last night?</div>
-      <div class="error-expl">💡 <b>Qoida tushuntirishi:</b> 'Did' kelgan savolda fe'l V1 shakliga qaytadi: 'Did you go'?</div>
-    </div>
-    
-    <div class="error-card">
-      <div class="error-wrong">❌ There is many books on the desk.</div>
-      <div class="error-correct">✅ There are many books on the desk.</div>
-      <div class="error-expl">💡 <b>Qoida tushuntirishi:</b> 'many books' ko'plik, shuning uchun 'There are' bo'ladi.</div>
-    </div>
-    
-    <div class="error-card">
-      <div class="error-wrong">❌ I am agree with your opinion.</div>
-      <div class="error-correct">✅ I agree with your opinion.</div>
-      <div class="error-expl">💡 <b>Qoida tushuntirishi:</b> 'agree' fe'l (rozi bo'lmoq), u bilan 'am' ishlatilmaydi.</div>
-    </div>
-    
-    <div class="error-card">
-      <div class="error-wrong">❌ She walked home while it was rain.</div>
-      <div class="error-correct">✅ She walked home while it was raining.</div>
-      <div class="error-expl">💡 <b>Qoida tushuntirishi:</b> Past Continuous da 'was' dan keyin -ing bo'lishi shart: 'was raining'.</div>
-    </div>
-    
-
-    <!-- SECTION 4: READING (2 PASSAGES, 8 QUESTIONS) -->
-    <div class="section-header-banner">
-      <h2>📖 4-Bo'lim: Matn Tushunish Qobiliyati (Reading)</h2>
-      <p>Matnlarni diqqat bilan o'qing va savollarga javob bering.</p>
-    </div>
-
-    
-    <div class="reading-box">
-      <div class="reading-title">📖 1-Matn: Anna's Daily Routine (A0–A1 Level)</div>
-      <p>Anna is 22 years old and she lives in Tashkent. She is an English teacher at a language center. Every day, Anna gets up at 7:00 AM. She has a cup of green tea and eats toast with cheese for breakfast. At 8:15 AM, she takes the bus to work. She teaches four classes every day. In the evening, Anna cooks dinner with her mother and reads books. On weekends, she likes riding her bicycle in the park with her friends. She loves her job because she enjoys helping young learners.</p>
-    </div>
-
-    
-      <div class="card">
-        <div class="q-text">Savol #1: What does Anna do for a living?</div>
-        <div class="options-grid">
-          
-          <button class="opt-btn" onclick="checkReading(0, 'She is a doctor', 'She is an English teacher')">
-            She is a doctor
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(0, 'She is an English teacher', 'She is an English teacher')">
-            She is an English teacher
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(0, 'She is a student', 'She is an English teacher')">
-            She is a student
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(0, 'She is a driver', 'She is an English teacher')">
-            She is a driver
-          </button>
-          
-        </div>
-        <div id="r-fb-0" class="feedback-box"></div>
-      </div>
-      
-      <div class="card">
-        <div class="q-text">Savol #2: What does she eat for breakfast?</div>
-        <div class="options-grid">
-          
-          <button class="opt-btn" onclick="checkReading(1, 'Eggs and coffee', 'Toast with cheese and tea')">
-            Eggs and coffee
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(1, 'Toast with cheese and tea', 'Toast with cheese and tea')">
-            Toast with cheese and tea
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(1, 'Pizza and juice', 'Toast with cheese and tea')">
-            Pizza and juice
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(1, 'Cereal with milk', 'Toast with cheese and tea')">
-            Cereal with milk
-          </button>
-          
-        </div>
-        <div id="r-fb-1" class="feedback-box"></div>
-      </div>
-      
-      <div class="card">
-        <div class="q-text">Savol #3: How does she travel to work?</div>
-        <div class="options-grid">
-          
-          <button class="opt-btn" onclick="checkReading(2, 'By car', 'By bus')">
-            By car
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(2, 'On foot', 'By bus')">
-            On foot
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(2, 'By bus', 'By bus')">
-            By bus
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(2, 'By train', 'By bus')">
-            By train
-          </button>
-          
-        </div>
-        <div id="r-fb-2" class="feedback-box"></div>
-      </div>
-      
-      <div class="card">
-        <div class="q-text">Savol #4: What does she do on weekends?</div>
-        <div class="options-grid">
-          
-          <button class="opt-btn" onclick="checkReading(3, 'She works all day', 'She rides a bicycle with friends')">
-            She works all day
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(3, 'She rides a bicycle with friends', 'She rides a bicycle with friends')">
-            She rides a bicycle with friends
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(3, 'She travels abroad', 'She rides a bicycle with friends')">
-            She travels abroad
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(3, 'She sleeps all day', 'She rides a bicycle with friends')">
-            She sleeps all day
-          </button>
-          
-        </div>
-        <div id="r-fb-3" class="feedback-box"></div>
-      </div>
-      
-    
-    <div class="reading-box">
-      <div class="reading-title">📖 2-Matn: An Adventure in the Mountains (A1–A2 Bridge)</div>
-      <p>Last Saturday, Bobur and his friends decided to go hiking in the Chimgan mountains. The weather was sunny and warm when they left the city at 8:00 AM. While they were walking up the green hill, they saw beautiful wild birds and colorful flowers. At around 1:00 PM, they stopped near a river to eat lunch. Suddenly, dark clouds appeared in the sky and heavy rain started to fall. Luckily, Bobur had waterproof jackets in his backpack. They found a small shelter and waited there until the rain stopped. It was an exciting and unforgettable adventure for all of them.</p>
-    </div>
-
-    
-      <div class="card">
-        <div class="q-text">Savol #5: Where did Bobur and his friends go last Saturday?</div>
-        <div class="options-grid">
-          
-          <button class="opt-btn" onclick="checkReading(4, 'To Samarkand', 'To Chimgan mountains')">
-            To Samarkand
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(4, 'To Chimgan mountains', 'To Chimgan mountains')">
-            To Chimgan mountains
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(4, 'To Charvak lake', 'To Chimgan mountains')">
-            To Charvak lake
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(4, 'To a museum', 'To Chimgan mountains')">
-            To a museum
-          </button>
-          
-        </div>
-        <div id="r-fb-4" class="feedback-box"></div>
-      </div>
-      
-      <div class="card">
-        <div class="q-text">Savol #6: What were they doing when they saw wild birds?</div>
-        <div class="options-grid">
-          
-          <button class="opt-btn" onclick="checkReading(5, 'They were sleeping', 'They were walking up the hill')">
-            They were sleeping
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(5, 'They were walking up the hill', 'They were walking up the hill')">
-            They were walking up the hill
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(5, 'They were eating lunch', 'They were walking up the hill')">
-            They were eating lunch
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(5, 'They were driving home', 'They were walking up the hill')">
-            They were driving home
-          </button>
-          
-        </div>
-        <div id="r-fb-5" class="feedback-box"></div>
-      </div>
-      
-      <div class="card">
-        <div class="q-text">Savol #7: What happened while they were near the river?</div>
-        <div class="options-grid">
-          
-          <button class="opt-btn" onclick="checkReading(6, 'They lost their way', 'Heavy rain started to fall')">
-            They lost their way
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(6, 'Heavy rain started to fall', 'Heavy rain started to fall')">
-            Heavy rain started to fall
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(6, 'They lost their bags', 'Heavy rain started to fall')">
-            They lost their bags
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(6, 'They met a bear', 'Heavy rain started to fall')">
-            They met a bear
-          </button>
-          
-        </div>
-        <div id="r-fb-6" class="feedback-box"></div>
-      </div>
-      
-      <div class="card">
-        <div class="q-text">Savol #8: Why were they lucky when it rained?</div>
-        <div class="options-grid">
-          
-          <button class="opt-btn" onclick="checkReading(7, 'They had waterproof jackets', 'They had waterproof jackets')">
-            They had waterproof jackets
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(7, 'They had a car', 'They had waterproof jackets')">
-            They had a car
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(7, 'The rain stopped immediately', 'They had waterproof jackets')">
-            The rain stopped immediately
-          </button>
-          
-          <button class="opt-btn" onclick="checkReading(7, 'They stayed in a hotel', 'They had waterproof jackets')">
-            They stayed in a hotel
-          </button>
-          
-        </div>
-        <div id="r-fb-7" class="feedback-box"></div>
-      </div>
-      
-    
-
-    <!-- SECTION 5: PRODUCTION (TRANSLATION + ESSAY) -->
-    <div class="section-header-banner">
-      <h2>✍️ 5-Bo'lim: Yozma Qobiliyat & Tarjima (Production)</h2>
-      <p>O'zbekchadan inglizchaga tarjima qiling va o'zingiz haqingizda mini-insho yozing.</p>
-    </div>
-
-    <div style="margin-bottom:20px">
-      <h3 style="color:#67e8f9;margin-bottom:10px;font-size:1.05rem">🌐 5 ta Amaliy Tarjima Drilli:</h3>
-      
-      <div class="card">
-        <div style="font-size:0.8rem;color:#a5b4fc;font-weight:700">Gap #1</div>
-        <div class="q-text">Mening opam shifoxonada ishlaydi.</div>
-        <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:8px">Yordamchi: (my sister / work / hospital)</div>
-        <input type="text" id="diag-trans-1" placeholder="Inglizcha tarjimasini yozing..." oninput="saveDraft()">
-      </div>
-      
-      <div class="card">
-        <div style="font-size:0.8rem;color:#a5b4fc;font-weight:700">Gap #2</div>
-        <div class="q-text">Siz kecha soat 8:00 da nima qilayotgan edingiz?</div>
-        <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:8px">Yordamchi: (what / were you doing / yesterday at 8:00)</div>
-        <input type="text" id="diag-trans-2" placeholder="Inglizcha tarjimasini yozing..." oninput="saveDraft()">
-      </div>
-      
-      <div class="card">
-        <div style="font-size:0.8rem;color:#a5b4fc;font-weight:700">Gap #3</div>
-        <div class="q-text">Muzlatgichda ozgina sut va uchta tuxum bor.</div>
-        <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:8px">Yordamchi: (there is / some milk / three eggs)</div>
-        <input type="text" id="diag-trans-3" placeholder="Inglizcha tarjimasini yozing..." oninput="saveDraft()">
-      </div>
-      
-      <div class="card">
-        <div style="font-size:0.8rem;color:#a5b4fc;font-weight:700">Gap #4</div>
-        <div class="q-text">Biz o'tgan yakshanba kuni yangi mashina sotib oldik.</div>
-        <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:8px">Yordamchi: (we / bought / a new car / last Sunday)</div>
-        <input type="text" id="diag-trans-4" placeholder="Inglizcha tarjimasini yozing..." oninput="saveDraft()">
-      </div>
-      
-      <div class="card">
-        <div style="font-size:0.8rem;color:#a5b4fc;font-weight:700">Gap #5</div>
-        <div class="q-text">U (qiz) ingliz tilida juda yaxshi gapira oladi.</div>
-        <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:8px">Yordamchi: (she / can speak English / very well)</div>
-        <input type="text" id="diag-trans-5" placeholder="Inglizcha tarjimasini yozing..." oninput="saveDraft()">
-      </div>
-      
-    </div>
-
-    <div class="card">
-      <div class="q-text">✍️ O'zingiz Haqida Mini-Insho (Self-Introduction: 6-8 ta gap)</div>
-      <p style="color:#94a3b8;font-size:0.86rem;margin-bottom:12px">
-        Quyidagi savollarga javob berib, o'zingiz haqingizda inglizcha kichik matn yozing:<br>
-        • What is your name and how old are you?<br>
-        • Where do you live and what do you do (work / study)?<br>
-        • What do you like doing in your free time?<br>
-        • What did you do yesterday? (Kecha nima qildingiz?)
-      </p>
-      <textarea id="diagEssay" style="min-height:130px" placeholder="My name is... I am ... years old. I live in... In my free time, I like... Yesterday, I..." oninput="updateWordCount(); saveDraft();"></textarea>
-      <div id="wordCounter" style="margin-top:6px;font-size:0.82rem;color:#67e8f9">0 ta so'z yozildi</div>
-    </div>
-
-    <!-- SECTION 6: RESULTS & MATRIX -->
-    <div class="section-header-banner">
-      <h2>📊 6-Bo'lim: Natijalar Matritsasi & Yakuniy Tavsiya</h2>
-      <p>O'quvchining to'plagan baliga asosan darajasi avtomatik ko'rsatiladi.</p>
-    </div>
-
-    <div class="matrix-card">
-      <div class="matrix-title">🎯 Diagnostika Xulosasi</div>
-      <div class="matrix-row">
-        <span>A0 Asoslari (1-10 savollar):</span>
-        <b id="scoreTierA0" style="color:#38bdf8">0 / 10</b>
-      </div>
-      <div class="matrix-row">
-        <span>A1 Elementar Grammatika (11-20):</span>
-        <b id="scoreTierA1" style="color:#34d399">0 / 10</b>
-      </div>
-      <div class="matrix-row">
-        <span>A1+/A2 Murakkab Zamonlar (21-30):</span>
-        <b id="scoreTierA2" style="color:#fbbf24">0 / 10</b>
-      </div>
-      <div class="matrix-row">
-        <span>Lug'at Boyligi (Vocabulary):</span>
-        <b id="scoreVocab" style="color:#c7d2fe">0 / 25</b>
-      </div>
-      <div class="matrix-row">
-        <span>Matn Tushunish (Reading):</span>
-        <b id="scoreReading" style="color:#6ee7b7">0 / 8</b>
-      </div>
-      <div class="matrix-row" style="background:rgba(99,102,241,0.1);margin:10px -10px 0;padding:12px 10px;border-radius:10px">
-        <span style="font-weight:800;color:#fff">JAMI NATIJA:</span>
-        <b id="scoreTotalFinal" style="font-size:1.15rem;color:#67e8f9">0 / 63 (0%)</b>
-      </div>
-    </div>
-
-    <div id="roadmapBox" class="card" style="margin-top:16px;border-left:4px solid var(--primary)">
-      <h3 style="color:#fff;margin-bottom:6px">🗺️ Ustoz Tavsiyasi & Yo'l Xaritasi:</h3>
-      <p id="roadmapText" style="color:#cbd5e1;font-size:0.92rem">
-        Savollarni ishlab borganingiz sari bu yerda shaxsiy tavsiya avtomatik yangilanadi.
-      </p>
-    </div>
-
-    <!-- SUBMIT PANEL -->
-    <div class="submit-panel">
-      <div class="submit-title">🚀 Test Natijalarini Ustozga Yuborish</div>
-      <p class="submit-desc">Barcha savollarni yechib bo'lgach, pastdagi tugmani bosing. Sizning to'liq tahlilingiz va balingiz ustozingizga boradi.</p>
-      <button id="btnSubmitTelegram" class="btn-submit-telegram" onclick="submitLevelCheckToTelegram()">
-        <span>Diagnostika Natijasini Topshirish</span> 📨
-      </button>
-      <div id="submitStatus" class="submit-status"></div>
     </div>
   </div>
 
-  <script>
-    const BOT_TOKEN = '8828359607:AAFEpXaJusqaorQtIhd2sDMm4enaVWxnmuY';
-    const TEACHER_ID = '7957347033';
+  <!-- STICKY REALTIME SCORE & PROGRESS BAR -->
+  <div class="sticky-score-bar">
+    <div class="score-left">
+      <div class="score-badge" id="liveScoreBadge">0 / 50</div>
+      <div>
+        <div class="progress-info" id="progressInfoText">Javob berildi: 0 / 50</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span style="font-size:0.82rem; color:#94a3b8;">Draft avtomatik saqlanmoqda</span>
+    </div>
+  </div>
 
-    let grammarAnswers = {};
-    let vocabAnswers = {};
-    let readingAnswers = {};
+  <!-- SECTION 1: PRESENT SIMPLE DRILL -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>☀️ 1-Bo'lim: Present Simple — Odatlar va Qoidalar (10 ta Savol)</span>
+    </div>
+    <div class="sec-desc">Egalarga qarab to'g'ri fe'l shaklini tanlang (V1 yoki V-s/es, don't yoki doesn't, Do yoki Does).</div>
+    <div id="psContainer"></div>
+  </div>
 
-    function checkGrammar(idx, selected, correct, expl, tier) {
-      const card = event.currentTarget.closest('.card');
-      const btns = card.querySelectorAll('.opt-btn');
-      const fb = document.getElementById('g-fb-' + idx);
+  <!-- SECTION 2: PRESENT CONTINUOUS DRILL -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>⚡ 2-Bo'lim: Present Continuous — Ayni Damdagi Harakatlar (10 ta Savol)</span>
+    </div>
+    <div class="sec-desc">Hozir sodir bo'layotgan harakatlar uchun to'g'ri <i>am / is / are + V-ing</i> shaklini tanlang.</div>
+    <div id="pcContainer"></div>
+  </div>
 
-      btns.forEach(b => {
-        b.classList.remove('correct', 'wrong');
-        if (b.textContent.trim() === correct) b.classList.add('correct');
-        else if (b.textContent.trim() === selected) b.classList.add('wrong');
+  <!-- SECTION 3: STATIVE VERBS AUDIT -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>🧠 3-Bo'lim: Holat Fe'llari (Stative Verbs Qopqoni — 8 ta Savol)</span>
+    </div>
+    <div class="sec-desc"><b>Eslatma:</b> <i>like, love, want, need, know, understand</i> kabi fe'llar hissiyot va fikrni bildiradi. Ular hatto "now" kelsa ham <b>-ing</b> olmaydi!</div>
+    <div id="stativeContainer"></div>
+  </div>
+
+  <!-- SECTION 4: CONTRAST SPRINT -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>⚖️ 4-Bo'lim: Present Simple vs Present Continuous Qiyosi (10 ta Savol)</span>
+    </div>
+    <div class="sec-desc">Kalit so'zlarga e'tibor bering: <i>every day, usually</i> &rarr; Simple; <i>now, at the moment, Look!</i> &rarr; Continuous.</div>
+    <div id="contrastContainer"></div>
+  </div>
+
+  <!-- SECTION 5: MISTAKE HUNTER -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>🔍 5-Bo'lim: Mistake Hunter — Xatoni Qanday Tuzatamiz? (8 ta Qopqon)</span>
+    </div>
+    <div class="sec-desc">Har bir gapdagi xatoni toping va to'g'ri variantni tanlang.</div>
+    <div id="hunterContainer"></div>
+  </div>
+
+  <!-- SECTION 6: SENTENCE BUILDER -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>🧩 6-Bo'lim: Gap Tuzuvchi (Sentence Builder — 4 ta Mashq)</span>
+    </div>
+    <div class="sec-desc">So'zlarni to'g'ri tartibda bosib mukammal gap hosil qiling!</div>
+    <div id="scrambleContainer"></div>
+  </div>
+
+  <!-- SECTION 7: GUIDED TRANSLATION -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>✍️ 7-Bo'lim: Oddiy Tarjima (5 ta Gap)</span>
+    </div>
+    <div class="sec-desc">Berilgan yordamchi so'zlar bilan gaplarni ingliz tiliga tarjima qiling.</div>
+    <div id="transContainer"></div>
+  </div>
+
+  <!-- SUBMISSION -->
+  <div class="submit-card">
+    <h3 style="font-size:1.4rem; font-weight:800; margin-bottom:10px;">Diagnostik Natijani Ustozga Yuborish</h3>
+    <p style="color:#cbd5e1; font-size:0.92rem; margin-bottom:20px; max-width:600px; margin-left:auto; margin-right:auto;">Testni tugatgach, tugmani bosing. Ballaringiz, har bir bo'limdagi aniqlik foizi va tarjimalar to'g'ridan-to'g'ri ustozingizning Telegram botiga boradi.</p>
+    <button class="submit-btn" id="submitBtn" onclick="submitToTelegram()">🚀 Natijani Topshirish</button>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+</div>
+
+<script>
+  // TELEGRAM CONFIGURATION
+  const BOT_TOKEN = '8787909516:AAFpho1G-GYg1UW87lTIEjR1Ir0z6QjmN78';
+  const TEACHER_IDS = ['6315515792', '7957347033'];
+  const STORAGE_KEY = 'teacheros_hw_new_student_level_check';
+
+  // SECTION 1: 10 PRESENT SIMPLE ITEMS
+  const PS_ITEMS = [
+    { id: 1, prompt: "My father ______ to work by car every morning.", opts: ["drives", "drive", "is driving", "driving"], ans: "drives", expl: "'My father' = He (u). Present Simple da he/she/it uchun fe'lga -s qo'shiladi: 'drives'." },
+    { id: 2, prompt: "We ______ live in Samarkand. We live in Tashkent.", opts: ["don't", "doesn't", "aren't", "not"], ans: "don't", expl: "'We' olmoshi inkorida 'don't' ishlatiladi: 'We don't live'." },
+    { id: 3, prompt: "______ Dilnoza speak English fluently?", opts: ["Does", "Do", "Is", "Are"], ans: "Does", expl: "'Dilnoza' = She. Savol berish uchun 'Does' boshida keladi: 'Does Dilnoza speak...?'" },
+    { id: 4, prompt: "I usually ______ up at 7:00 AM.", opts: ["wake", "wakes", "am waking", "waking"], ans: "wake", expl: "'I' olmoshi bilan fe'l o'zgarmaydi (V1): 'I wake up'." },
+    { id: 5, prompt: "He ______ coffee. He prefers green tea.", opts: ["doesn't drink", "don't drink", "isn't drinking", "not drink"], ans: "doesn't drink", expl: "'He' uchun inkor 'doesn't + V1': 'He doesn't drink'." },
+    { id: 6, prompt: "The children ______ their teeth every night.", opts: ["brush", "brushes", "are brushing", "brushing"], ans: "brush", expl: "'The children' = They (bolalar - ko'plik), shuning uchun oddiy shakl: 'brush'." },
+    { id: 7, prompt: "______ they play football on Sundays?", opts: ["Do", "Does", "Are", "Is"], ans: "Do", expl: "'They' olmoshiga savol berish uchun 'Do' ishlatiladi: 'Do they play...?'" },
+    { id: 8, prompt: "My sister ______ English at school.", opts: ["teaches", "teach", "is teaching", "teaches to"], ans: "teaches", expl: "'teach' fe'liga -ch bilan tugagani uchun -es qo'shiladi: 'teaches'." },
+    { id: 9, prompt: "Anvar always ______ his homework on time.", opts: ["does", "do", "is doing", "doing"], ans: "does", expl: "Anvar = He. 'do' fe'lining he/she/it shakli: 'does'." },
+    { id: 10, prompt: "I and my brother ______ football every weekend.", opts: ["watch", "watches", "are watching", "watchs"], ans: "watch", expl: "'I and my brother' = We (biz - 2 kishi). Shuning uchun 'watch' (s qo'shilmaydi)." }
+  ];
+
+  // SECTION 2: 10 PRESENT CONTINUOUS ITEMS
+  const PC_ITEMS = [
+    { id: 1, prompt: "Look! The baby ______ in the crib.", opts: ["is sleeping", "sleeps", "are sleeping", "sleep"], ans: "is sleeping", expl: "'Look!' (Qarang!) — ish ayni paytda bo'lmoqda. 'The baby' (it/he/she) &rarr; 'is sleeping'." },
+    { id: 2, prompt: "I ______ an interesting book right now.", opts: ["am reading", "read", "reads", "is reading"], ans: "am reading", expl: "'I' bilan 'am + reading' bo'ladi: 'I am reading right now'." },
+    { id: 3, prompt: "Listen! Somebody ______ at the door.", opts: ["is knocking", "knocks", "are knocking", "knock"], ans: "is knocking", expl: "'Listen!' (Eshiting!) ayni vaqtdagi ish: 'Somebody' (bitta odam) &rarr; 'is knocking'." },
+    { id: 4, prompt: "They ______ football at the moment.", opts: ["aren't playing", "don't playing", "isn't playing", "not playing"], ans: "aren't playing", expl: "'They' uchun ayni paytdagi inkor: 'aren't playing'." },
+    { id: 5, prompt: "Where ______ you ______ right now?", opts: ["are / going", "do / go", "is / going", "are / go"], ans: "are / going", expl: "'right now' ayni damdagi savol: 'Where are you going?'" },
+    { id: 6, prompt: "Malika ______ dinner in the kitchen now.", opts: ["is cooking", "cooks", "are cooking", "cook"], ans: "is cooking", expl: "Malika (she) + ayni paytda (now) &rarr; 'is cooking'." },
+    { id: 7, prompt: "Why ______ the dog ______ so loudly?", opts: ["is / barking", "does / bark", "are / barking", "is / bark"], ans: "is / barking", expl: "'The dog' (it) bitta jonivor: 'Why is the dog barking?'" },
+    { id: 8, prompt: "We ______ for our bus at the station.", opts: ["are waiting", "is waiting", "wait", "waits"], ans: "are waiting", expl: "'We' olmoshiga 'are' keladi: 'We are waiting'." },
+    { id: 9, prompt: "Be quiet! My brother ______ for his exam.", opts: ["is studying", "studies", "are studying", "study"], ans: "is studying", expl: "'Be quiet!' (Tinchlaning!) &rarr; hozir dars qilyapti: 'is studying'." },
+    { id: 10, prompt: "It ______ heavily outside right now.", opts: ["is raining", "rains", "are raining", "rain"], ans: "is raining", expl: "Ob-havo ('It') + ayni paytda 'right now' &rarr; 'is raining'." }
+  ];
+
+  // SECTION 3: 8 STATIVE VERBS ITEMS
+  const STATIVE_ITEMS = [
+    { id: 1, prompt: "I ______ some water right now. I'm thirsty.", opts: ["want", "am wanting", "wants", "am want"], ans: "want", expl: "'want' holat fe'li bo'lib, 'right now' kelsa ham HECH QACHON -ing olmaydi! 'I want' to'g'ri." },
+    { id: 2, prompt: "She ______ this teacher very much.", opts: ["likes", "is liking", "like", "are liking"], ans: "likes", expl: "'like' fe'li -ing olmaydi. 'She' bo'lgani uchun oddiygina -s oladi: 'She likes'." },
+    { id: 3, prompt: "Do you ______ what the teacher said?", opts: ["understand", "understanding", "are understanding", "understands"], ans: "understand", expl: "'understand' (tushunmoq) aql faoliyati — har doim Simple da: 'Do you understand?'" },
+    { id: 4, prompt: "I ______ the answer to this question.", opts: ["know", "am knowing", "knows", "am know"], ans: "know", expl: "'know' (bilmoq) holat fe'li. 'I am knowing' deyilmaydi, faqat 'I know' deyiladi." },
+    { id: 5, prompt: "Aziz ______ a new pen at the moment.", opts: ["needs", "is needing", "need", "are needing"], ans: "needs", expl: "'need' (muhtoj bo'lmoq/kerak bo'lmoq) holat fe'li. Shuning uchun 'Aziz needs'." },
+    { id: 6, prompt: "We ______ ice cream. It's our favorite dessert.", opts: ["love", "are loving", "loves", "is loving"], ans: "love", expl: "'love' fe'li hissiyotni ifodalaydi — -ing olmaydi: 'We love'." },
+    { id: 7, prompt: "This soup ______ delicious!", opts: ["tastes", "is tasting", "taste", "are tasting"], ans: "tastes", expl: "Ta'mga ega bo'lish holati: 'This soup tastes delicious'." },
+    { id: 8, prompt: "I ______ you are an honest person.", opts: ["believe", "am believing", "believes", "is believing"], ans: "believe", expl: "'believe' (ishonmoq) har doim oddiy zamonda: 'I believe'." }
+  ];
+
+  // SECTION 4: 10 CONTRAST ITEMS
+  const CONTRAST_ITEMS = [
+    { id: 1, prompt: "Shaxzod usually ______ tea, but today he ______ coffee.", opts: ["drinks / is drinking", "is drinking / drinks", "drinks / drinks", "is drinking / is drinking"], ans: "drinks / is drinking", expl: "'usually' odat (drinks), 'today' bugungi istisno (is drinking)." },
+    { id: 2, prompt: "My mother ______ in a bank, but this week she ______ from home.", opts: ["works / is working", "is working / works", "works / works", "work / work"], ans: "works / is working", expl: "Doimiy ish (works), bu haftalik vaqtinchalik holat (is working)." },
+    { id: 3, prompt: "I ______ video games every evening, but right now I ______.", opts: ["play / am studying", "am playing / study", "play / study", "playing / studying"], ans: "play / am studying", expl: "'every evening' odat (play), 'right now' ayni payt (am studying)." },
+    { id: 4, prompt: "Where is Karim? — He ______ tennis on the court.", opts: ["is playing", "plays", "play", "are playing"], ans: "is playing", expl: "Hozir qayerda ekanligini so'ramoqda — demak ayni paytda o'ynayapti: 'is playing'." },
+    { id: 5, prompt: "Water ______ at 100 degrees Celsius.", opts: ["boils", "is boiling", "boil", "are boiling"], ans: "boils", expl: "Tabiiy ilmiy fakt har doim Present Simple da bo'ladi: 'boils'." },
+    { id: 6, prompt: "Don't make noise! The students ______ an exam.", opts: ["are taking", "take", "takes", "is taking"], ans: "are taking", expl: "'Don't make noise!' (Shovqin qilmang!) &rarr; hozir imtihon topshiryapti: 'are taking'." },
+    { id: 7, prompt: "How often ______ you ______ your grandparents?", opts: ["do / visit", "are / visiting", "does / visit", "do / visits"], ans: "do / visit", expl: "'How often' (qanchalik tez-tez) odatni so'raydi &rarr; Present Simple: 'do you visit'." },
+    { id: 8, prompt: "Look at Dilnoza! She ______ a beautiful traditional dress.", opts: ["is wearing", "wears", "wear", "are wearing"], ans: "is wearing", expl: "'Look at Dilnoza!' — hozir kiyib turibdi: 'is wearing'." },
+    { id: 9, prompt: "My brother never ______ meat. He is a vegetarian.", opts: ["eats", "is eating", "eat", "eated"], ans: "eats", expl: "'never' (hech qachon) doimiy odat &rarr; Present Simple: 'eats'." },
+    { id: 10, prompt: "Why ______ you ______ an umbrella today? It's not raining.", opts: ["are / carrying", "do / carry", "does / carry", "is / carrying"], ans: "are / carrying", expl: "Bugun ko'tarib ketayotgan ayni paytdagi holat: 'Why are you carrying...?'" }
+  ];
+
+  // SECTION 5: 8 MISTAKE HUNTER ITEMS
+  const HUNTER_ITEMS = [
+    {
+      id: 1,
+      bad: "❌ He go to school by bus every day.",
+      opts: [
+        "go o'rniga GOES qo'yish kerak",
+        "by o'rniga ON qo'yish kerak",
+        "every day o'rniga NOW qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ He GOES to school by bus every day.",
+      expl: "'He' uchinchi shaxs birlik — fe'lga -es qo'shiladi: 'goes'."
+    },
+    {
+      id: 2,
+      bad: "❌ She is wanting a cup of coffee right now.",
+      opts: [
+        "is wanting o'rniga WANTS qo'yish kerak",
+        "right now o'rniga YESTERDAY qo'yish kerak",
+        "coffee o'rniga TEA qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ She WANTS a cup of coffee right now.",
+      expl: "'want' holat fe'li — -ing olmaydi! 'She wants' to'g'ri."
+    },
+    {
+      id: 3,
+      bad: "❌ Look! The children is playing in the yard.",
+      opts: [
+        "is playing o'rniga ARE PLAYING qo'yish kerak",
+        "playing o'rniga PLAYED qo'yish kerak",
+        "in o'rniga AT qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ Look! The children ARE playing in the yard.",
+      expl: "'The children' — ko'plik (bolalar), shuning uchun 'are playing' bo'ladi."
+    },
+    {
+      id: 4,
+      bad: "❌ My brother doesn't likes watching horror movies.",
+      opts: [
+        "doesn't likes o'rniga DOESN'T LIKE qo'yish kerak",
+        "doesn't o'rniga DON'T qo'yish kerak",
+        "watching o'rniga WATCH qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ My brother DOESN'T LIKE watching horror movies.",
+      expl: "'doesn't' kelgandan keyin asosiy fe'ldagi -s tushib qoladi: 'doesn't like'."
+    },
+    {
+      id: 5,
+      bad: "❌ Do your sister live in London?",
+      opts: [
+        "Do o'rniga DOES qo'yish kerak",
+        "live o'rniga LIVES qo'yish kerak",
+        "in o'rniga AT qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ DOES your sister live in London?",
+      expl: "'Your sister' = She. Savolda 'Does' ishlatiladi: 'Does your sister live...?'"
+    },
+    {
+      id: 6,
+      bad: "❌ We are usually drinking green tea after dinner.",
+      opts: [
+        "are usually drinking o'rniga USUALLY DRINK qo'yish kerak",
+        "after o'rniga BEFORE qo'yish kerak",
+        "dinner o'rniga LUNCH qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ We USUALLY DRINK green tea after dinner.",
+      expl: "'usually' takrorlanuvchi odat — Continuous emas, Present Simple talab qiladi!"
+    },
+    {
+      id: 7,
+      bad: "❌ Listen! Somebody knock at our front door.",
+      opts: [
+        "knock o'rniga IS KNOCKING qo'yish kerak",
+        "Listen o'rniga LOOK qo'yish kerak",
+        "our o'rniga MY qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ Listen! Somebody IS KNOCKING at our front door.",
+      expl: "'Listen!' ayni damdagi ish &rarr; 'is knocking'."
+    },
+    {
+      id: 8,
+      bad: "❌ I am knowing the right answer.",
+      opts: [
+        "am knowing o'rniga KNOW qo'yish kerak",
+        "right o'rniga WRONG qo'yish kerak",
+        "answer o'rniga QUESTION qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ I KNOW the right answer.",
+      expl: "'know' fe'li doimo oddiy zamonda: 'I know'."
+    }
+  ];
+
+  // SECTION 6: 4 SCRAMBLE BUILDER ITEMS
+  const SCRAMBLE_ITEMS = [
+    {
+      id: 1,
+      words: ["My father", "drives", "to work", "every day"],
+      correct: "My father drives to work every day",
+      uz: "Otam har kuni ishga mashinada boradi."
+    },
+    {
+      id: 2,
+      words: ["Look!", "The cat", "is sleeping", "on the sofa"],
+      correct: "Look! The cat is sleeping on the sofa",
+      uz: "Qarang! Mushuk divanda uxlayapti."
+    },
+    {
+      id: 3,
+      words: ["She", "doesn't like", "waking up", "early"],
+      correct: "She doesn't like waking up early",
+      uz: "U erta turishni yoqtirmaydi."
+    },
+    {
+      id: 4,
+      words: ["What", "are you", "doing", "right now?"],
+      correct: "What are you doing right now?",
+      uz: "Hozir nima qilyapsiz?"
+    }
+  ];
+
+  // SECTION 7: 5 GUIDED TRANSLATIONS
+  const TRANS_ITEMS = [
+    { id: 1, uz: "1. Men har kuni ingliz tili darslarini qilaman.", hint: "Yordam: I do my English lessons / every day", placeholder: "I do my English lessons every day..." },
+    { id: 2, uz: "2. Qarang! Singlim kitob o'qiyapti.", hint: "Yordam: Look! My sister is reading a book", placeholder: "Look! My sister is reading..." },
+    { id: 3, uz: "3. Akam kofe ichmaydi.", hint: "Yordam: My brother doesn't drink coffee", placeholder: "My brother doesn't drink coffee..." },
+    { id: 4, uz: "4. Hozir nima yeyapsiz?", hint: "Yordam: What are you eating right now?", placeholder: "What are you eating right now?..." },
+    { id: 5, uz: "5. Biz yangi so'zlarni yaxshi tushunamiz.", hint: "Yordam: We understand the new words well (stative verb)", placeholder: "We understand the new words..." }
+  ];
+
+  // STATE TRACKING
+  let userResponses = {
+    ps: {},
+    pc: {},
+    stative: {},
+    contrast: {},
+    hunter: {},
+    scramble: {}
+  };
+
+  let scrambleCurrent = {};
+
+  // INITIALIZATION
+  function init() {
+    renderPS();
+    renderPC();
+    renderStative();
+    renderContrast();
+    renderHunter();
+    renderScramble();
+    renderTranslations();
+    loadDraft();
+    updateLiveScore();
+  }
+
+  function renderPS() {
+    const c = document.getElementById('psContainer');
+    c.innerHTML = PS_ITEMS.map((item, idx) => renderChoiceCard('ps', item, idx, 10)).join('');
+  }
+
+  function renderPC() {
+    const c = document.getElementById('pcContainer');
+    c.innerHTML = PC_ITEMS.map((item, idx) => renderChoiceCard('pc', item, idx, 10)).join('');
+  }
+
+  function renderStative() {
+    const c = document.getElementById('stativeContainer');
+    c.innerHTML = STATIVE_ITEMS.map((item, idx) => renderChoiceCard('stative', item, idx, 8)).join('');
+  }
+
+  function renderContrast() {
+    const c = document.getElementById('contrastContainer');
+    c.innerHTML = CONTRAST_ITEMS.map((item, idx) => renderChoiceCard('contrast', item, idx, 10)).join('');
+  }
+
+  function renderChoiceCard(cat, item, idx, total) {
+    return `
+      <div class="q-card" id="card_${cat}_${item.id}">
+        <div class="q-num">Savol #${idx + 1} / ${total}</div>
+        <div class="q-prompt">${item.prompt.replace('______', '<code>[ ? ]</code>')}</div>
+        <div class="btn-group">
+          ${item.opts.map(opt => `
+            <button class="choice-btn" id="btn_${cat}_${item.id}_${opt.replace(/[^a-zA-Z0-9]/g, '_')}" onclick="handleGenericChoice('${cat}', ${item.id}, '${opt}')">${opt}</button>
+          `).join('')}
+        </div>
+        <div class="expl-box" id="expl_${cat}_${item.id}"></div>
+      </div>
+    `;
+  }
+
+  function handleGenericChoice(cat, id, chosen) {
+    let dataset;
+    if (cat === 'ps') dataset = PS_ITEMS;
+    else if (cat === 'pc') dataset = PC_ITEMS;
+    else if (cat === 'stative') dataset = STATIVE_ITEMS;
+    else if (cat === 'contrast') dataset = CONTRAST_ITEMS;
+
+    const item = dataset.find(x => x.id === id);
+    const card = document.getElementById(`card_${cat}_${id}`);
+    const expl = document.getElementById(`expl_${cat}_${id}`);
+
+    const buttons = card.querySelectorAll('.choice-btn');
+    buttons.forEach(b => {
+      b.disabled = true;
+      if (b.innerText.trim() === item.ans) b.classList.add('selected-correct');
+    });
+
+    const isCorrect = chosen === item.ans;
+    userResponses[cat][id] = { chosen, isCorrect, correctAns: item.ans };
+
+    if (isCorrect) {
+      card.classList.add('correct');
+      expl.className = 'expl-box show correct';
+      expl.innerHTML = '✅ <b>To\'g\'ri!</b> ' + item.expl;
+    } else {
+      card.classList.add('wrong');
+      buttons.forEach(b => {
+        if (b.innerText.trim() === chosen) b.classList.add('selected-wrong');
       });
-
-      const isOk = (selected === correct);
-      grammarAnswers[idx] = { selected, correct, ok: isOk, tier };
-
-      fb.className = 'feedback-box show ' + (isOk ? 'correct' : 'wrong');
-      fb.innerHTML = (isOk ? '✅ <b>To\'g\'ri!</b> ' : '❌ <b>Noto\'g\'ri.</b> ') + expl;
-      updateLiveScore();
-      saveDraft();
+      expl.className = 'expl-box show wrong';
+      expl.innerHTML = '❌ <b>Xato.</b> To\'g\'ri javob: <b>' + item.ans + '</b>. ' + item.expl;
     }
 
-    function checkVocab(idx, selected, correct) {
-      const card = document.getElementById('vq-card-' + idx);
-      const btns = card.querySelectorAll('.vocab-opt-btn');
+    updateLiveScore();
+    saveDraft();
+  }
 
-      btns.forEach(b => {
-        b.classList.remove('correct', 'wrong');
-        if (b.textContent.trim() === correct) b.classList.add('correct');
-        else if (b.textContent.trim() === selected) b.classList.add('wrong');
+  function renderHunter() {
+    const c = document.getElementById('hunterContainer');
+    c.innerHTML = HUNTER_ITEMS.map((item, idx) => `
+      <div class="q-card" id="card_hunt_${item.id}">
+        <div class="q-num">Qopqon #${idx + 1} / 8</div>
+        <div class="sentence-box-hunter">${item.bad}</div>
+        <div class="q-prompt" style="font-size:0.92rem; color:#cbd5e1;">Qanday to'g'irlaymiz?</div>
+        <div class="btn-group" style="flex-direction:column; align-items:stretch;">
+          ${item.opts.map((opt, optIdx) => `
+            <button class="choice-btn" id="btn_hunt_${item.id}_${optIdx}" onclick="handleHunterChoice(${item.id}, ${optIdx})" style="text-align:left;">
+              ${String.fromCharCode(65 + optIdx)}) ${opt}
+            </button>
+          `).join('')}
+        </div>
+        <div class="expl-box" id="expl_hunt_${item.id}"></div>
+      </div>
+    `).join('');
+  }
+
+  function handleHunterChoice(id, chosenIdx) {
+    const item = HUNTER_ITEMS.find(x => x.id === id);
+    const card = document.getElementById('card_hunt_' + id);
+    const expl = document.getElementById('expl_hunt_' + id);
+
+    item.opts.forEach((_, i) => {
+      const b = document.getElementById('btn_hunt_' + id + '_' + i);
+      if (b) {
+        b.disabled = true;
+        if (i === item.ans) b.classList.add('selected-correct');
+      }
+    });
+
+    const isCorrect = chosenIdx === item.ans;
+    userResponses.hunter[id] = { chosen: chosenIdx, isCorrect, correctAns: item.ans };
+
+    if (isCorrect) {
+      card.classList.add('correct');
+      expl.className = 'expl-box show correct';
+      expl.innerHTML = '✅ <b>Ajoyib!</b> ' + item.fixed + '<br><span style="font-size:0.82rem; color:#cbd5e1;">' + item.expl + '</span>';
+    } else {
+      card.classList.add('wrong');
+      const badBtn = document.getElementById('btn_hunt_' + id + '_' + chosenIdx);
+      if (badBtn) badBtn.classList.add('selected-wrong');
+      expl.className = 'expl-box show wrong';
+      expl.innerHTML = '❌ <b>Xato.</b> To\'g\'ri variant: <b>' + item.fixed + '</b><br><span style="font-size:0.82rem; color:#cbd5e1;">' + item.expl + '</span>';
+    }
+
+    updateLiveScore();
+    saveDraft();
+  }
+
+  function renderScramble() {
+    const c = document.getElementById('scrambleContainer');
+    c.innerHTML = SCRAMBLE_ITEMS.map((item, idx) => {
+      scrambleCurrent[item.id] = [];
+      const shuffled = [...item.words].sort(() => Math.random() - 0.5);
+      return `
+        <div class="q-card" id="card_scram_${item.id}">
+          <div class="q-num">Mashq #${idx + 1} / 4</div>
+          <div class="q-prompt">Ma'nosi: <i>"${item.uz}"</i></div>
+          <div class="scramble-result-box" id="scram_res_${item.id}">
+            <span style="color:#64748b; font-size:0.85rem;" id="scram_ph_${item.id}">So'zlarni bosib tartiblang...</span>
+          </div>
+          <div class="scramble-pool" id="scram_pool_${item.id}">
+            ${shuffled.map((w, wIdx) => `
+              <button class="scramble-chip" id="chip_${item.id}_${wIdx}" onclick="addScrambleWord(${item.id}, '${w.replace(/'/g, "\\'")}', 'chip_${item.id}_${wIdx}')">${w}</button>
+            `).join('')}
+          </div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="choice-btn" onclick="checkScramble(${item.id})" style="background:#6366f1; color:#fff;">Tekshirish</button>
+            <button class="choice-btn" onclick="resetScramble(${item.id})" style="background:#1e293b; color:#94a3b8;">Qayta terish</button>
+          </div>
+          <div class="expl-box" id="expl_scram_${item.id}"></div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function addScrambleWord(id, word, chipId) {
+    if (!scrambleCurrent[id]) scrambleCurrent[id] = [];
+    scrambleCurrent[id].push({ word, chipId });
+    document.getElementById(chipId).classList.add('used');
+    renderScrambleResult(id);
+  }
+
+  function renderScrambleResult(id) {
+    const box = document.getElementById('scram_res_' + id);
+    const words = scrambleCurrent[id] || [];
+    if (words.length === 0) {
+      box.innerHTML = `<span style="color:#64748b; font-size:0.85rem;" id="scram_ph_${id}">So'zlarni bosib tartiblang...</span>`;
+      return;
+    }
+    box.innerHTML = words.map((item, idx) => `
+      <span class="scramble-item" onclick="removeScrambleWord(${id}, ${idx})">${item.word} ✕</span>
+    `).join(' ');
+  }
+
+  function removeScrambleWord(id, idx) {
+    const removed = scrambleCurrent[id].splice(idx, 1)[0];
+    if (removed && removed.chipId) {
+      const chip = document.getElementById(removed.chipId);
+      if (chip) chip.classList.remove('used');
+    }
+    renderScrambleResult(id);
+  }
+
+  function resetScramble(id) {
+    if (scrambleCurrent[id]) {
+      scrambleCurrent[id].forEach(item => {
+        const chip = document.getElementById(item.chipId);
+        if (chip) chip.classList.remove('used');
       });
+    }
+    scrambleCurrent[id] = [];
+    renderScrambleResult(id);
+    const expl = document.getElementById('expl_scram_' + id);
+    if (expl) expl.className = 'expl-box';
+    const card = document.getElementById('card_scram_' + id);
+    if (card) { card.classList.remove('correct'); card.classList.remove('wrong'); }
+  }
 
-      const isOk = (selected === correct);
-      vocabAnswers[idx] = { selected, correct, ok: isOk };
-      updateLiveScore();
-      saveDraft();
+  function checkScramble(id) {
+    const item = SCRAMBLE_ITEMS.find(x => x.id === id);
+    const card = document.getElementById('card_scram_' + id);
+    const expl = document.getElementById('expl_scram_' + id);
+    const formed = (scrambleCurrent[id] || []).map(x => x.word).join(' ').trim();
+
+    if (!formed) {
+      alert("Avval so'zlarni bosing!");
+      return;
     }
 
-    function checkReading(idx, selected, correct) {
-      const card = event.currentTarget.closest('.card');
-      const btns = card.querySelectorAll('.opt-btn');
-      const fb = document.getElementById('r-fb-' + idx);
+    const isCorrect = formed.toLowerCase() === item.correct.toLowerCase();
+    userResponses.scramble[id] = { formed, isCorrect, correctAns: item.correct };
 
-      btns.forEach(b => {
-        b.classList.remove('correct', 'wrong');
-        if (b.textContent.trim() === correct) b.classList.add('correct');
-        else if (b.textContent.trim() === selected) b.classList.add('wrong');
+    if (isCorrect) {
+      card.classList.add('correct');
+      card.classList.remove('wrong');
+      expl.className = 'expl-box show correct';
+      expl.innerHTML = '✅ <b>Mukammal!</b> "' + item.correct + '"';
+    } else {
+      card.classList.add('wrong');
+      card.classList.remove('correct');
+      expl.className = 'expl-box show wrong';
+      expl.innerHTML = '❌ <b>Xato tartib.</b> To\'g\'ri tartib: <b>"' + item.correct + '"</b>';
+    }
+
+    updateLiveScore();
+    saveDraft();
+  }
+
+  function renderTranslations() {
+    const c = document.getElementById('transContainer');
+    c.innerHTML = TRANS_ITEMS.map(t => `
+      <div class="trans-item">
+        <div class="trans-prompt">${t.uz}</div>
+        <div class="trans-hint">💡 ${t.hint}</div>
+        <input type="text" id="trans_${t.id}" placeholder="${t.placeholder}" oninput="saveDraft()">
+      </div>
+    `).join('');
+  }
+
+  function updateLiveScore() {
+    let score = 0;
+    let answered = 0;
+    const total = PS_ITEMS.length + PC_ITEMS.length + STATIVE_ITEMS.length + CONTRAST_ITEMS.length + HUNTER_ITEMS.length + SCRAMBLE_ITEMS.length;
+
+    ['ps', 'pc', 'stative', 'contrast', 'hunter', 'scramble'].forEach(cat => {
+      Object.values(userResponses[cat]).forEach(r => {
+        answered++;
+        if (r.isCorrect) score++;
       });
+    });
 
-      const isOk = (selected === correct);
-      readingAnswers[idx] = { selected, correct, ok: isOk };
+    document.getElementById('liveScoreBadge').innerText = score + ' / ' + total;
+    document.getElementById('progressInfoText').innerText = 'Javob berildi: ' + answered + ' / ' + total + ' (' + Math.round((answered/total)*100) + '%)';
+    document.getElementById('progressBarFill').style.width = Math.round((answered/total)*100) + '%';
 
-      fb.className = 'feedback-box show ' + (isOk ? 'correct' : 'wrong');
-      fb.innerHTML = isOk ? '✅ <b>To\'g\'ri!</b>' : '❌ <b>Noto\'g\'ri. To\'g\'ri javob:</b> ' + correct;
-      updateLiveScore();
-      saveDraft();
+    if (answered === total && score >= total * 0.8) {
+      confetti({ particleCount: 70, spread: 60, origin: { y: 0.8 } });
+    }
+  }
+
+  function saveDraft() {
+    const data = {
+      studentName: document.getElementById('studentName').value,
+      studentTelegram: document.getElementById('studentTelegram').value,
+      userResponses,
+      trans: {}
+    };
+    TRANS_ITEMS.forEach(t => {
+      const el = document.getElementById('trans_' + t.id);
+      if (el) data.trans[t.id] = el.value;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function loadDraft() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (data.studentName) document.getElementById('studentName').value = data.studentName;
+      if (data.studentTelegram) document.getElementById('studentTelegram').value = data.studentTelegram;
+      if (data.trans) {
+        Object.keys(data.trans).forEach(k => {
+          const el = document.getElementById('trans_' + k);
+          if (el) el.value = data.trans[k];
+        });
+      }
+    } catch(e) {}
+  }
+
+  async function submitToTelegram() {
+    const name = document.getElementById('studentName').value.trim();
+    const username = document.getElementById('studentTelegram').value.trim();
+    const btn = document.getElementById('submitBtn');
+    const status = document.getElementById('statusMsg');
+
+    if (!name) {
+      alert("Iltimos, ism va familiyangizni kiriting!");
+      document.getElementById('studentName').focus();
+      return;
     }
 
-    function updateLiveScore() {
-      let gCorrect = 0;
-      let a0Correct = 0;
-      let a1Correct = 0;
-      let a2Correct = 0;
+    btn.disabled = true;
+    btn.innerText = "⏳ Yuborilmoqda...";
+    status.style.color = "#c7d2fe";
+    status.innerText = "Telegram botga hisobot uzatilmoqda...";
 
-      for (let k in grammarAnswers) {
-        if (grammarAnswers[k].ok) {
-          gCorrect++;
-          if (grammarAnswers[k].tier === 'A0') a0Correct++;
-          else if (grammarAnswers[k].tier === 'A1') a1Correct++;
-          else if (grammarAnswers[k].tier === 'A1+/A2') a2Correct++;
-        }
-      }
+    let score = 0;
+    const total = PS_ITEMS.length + PC_ITEMS.length + STATIVE_ITEMS.length + CONTRAST_ITEMS.length + HUNTER_ITEMS.length + SCRAMBLE_ITEMS.length;
 
-      let vCorrect = 0;
-      for (let k in vocabAnswers) { if (vocabAnswers[k].ok) vCorrect++; }
+    ['ps', 'pc', 'stative', 'contrast', 'hunter', 'scramble'].forEach(cat => {
+      Object.values(userResponses[cat]).forEach(r => { if (r.isCorrect) score++; });
+    });
 
-      let rCorrect = 0;
-      for (let k in readingAnswers) { if (readingAnswers[k].ok) rCorrect++; }
+    const pct = Math.round((score / total) * 100);
 
-      const totalCorrect = gCorrect + vCorrect + rCorrect;
-      const totalPossible = 63;
-      const percent = Math.round((totalCorrect / totalPossible) * 100);
+    let msg = "🌟 *YANGI O'QUVCHI: 2 DARSLIK LEVEL CHECK HISOBOTI*\n";
+    msg += "━━━━━━━━━━━━━━━━━━━━\n";
+    msg += "👤 *O'quvchi:* " + name + " (" + (username || "username yo'q") + ")\n";
+    msg += "🎯 *Umumiy Ball:* " + score + " / " + total + " (" + pct + "%)\n";
+    msg += "⏰ *Sana:* " + new Date().toLocaleString('uz-UZ') + "\n\n";
 
-      document.getElementById('liveScore').textContent = totalCorrect + ' / ' + totalPossible;
-      document.getElementById('scoreTierA0').textContent = a0Correct + ' / 10';
-      document.getElementById('scoreTierA1').textContent = a1Correct + ' / 10';
-      document.getElementById('scoreTierA2').textContent = a2Correct + ' / 10';
-      document.getElementById('scoreVocab').textContent = vCorrect + ' / 25';
-      document.getElementById('scoreReading').textContent = rCorrect + ' / 8';
-      document.getElementById('scoreTotalFinal').textContent = totalCorrect + ' / ' + totalPossible + ' (' + percent + '%)';
+    msg += "📊 *BO'LIMLAR NATIJALARI:*\n";
+    msg += "• 1. Present Simple: " + Object.values(userResponses.ps).filter(r=>r.isCorrect).length + " / " + PS_ITEMS.length + "\n";
+    msg += "• 2. Present Continuous: " + Object.values(userResponses.pc).filter(r=>r.isCorrect).length + " / " + PC_ITEMS.length + "\n";
+    msg += "• 3. Stative Verbs: " + Object.values(userResponses.stative).filter(r=>r.isCorrect).length + " / " + STATIVE_ITEMS.length + "\n";
+    msg += "• 4. Simple vs Continuous: " + Object.values(userResponses.contrast).filter(r=>r.isCorrect).length + " / " + CONTRAST_ITEMS.length + "\n";
+    msg += "• 5. Mistake Hunter: " + Object.values(userResponses.hunter).filter(r=>r.isCorrect).length + " / " + HUNTER_ITEMS.length + "\n";
+    msg += "• 6. Sentence Builder: " + Object.values(userResponses.scramble).filter(r=>r.isCorrect).length + " / " + SCRAMBLE_ITEMS.length + "\n\n";
 
-      let levelText = "";
-      let roadmap = "";
+    msg += "✍️ *TARJIMALAR (O'quvchi yozgan):*\n";
+    TRANS_ITEMS.forEach(t => {
+      const val = document.getElementById('trans_' + t.id)?.value.trim() || "—";
+      msg += t.id + ". " + val + "\n";
+    });
 
-      if (totalCorrect < 22) {
-        levelText = "A0 Starter (Mutlaq Boshlang'ich)";
-        roadmap = "Sizda ingliz tili asoslarini (harflar, to be, shaxs olmoshlari, oddiy so'zlar) noldan tizimli o'rganish zarurati bor. Darslarni 'A0 Starter' bosqichidan boshlash tavsiya etiladi.";
-      } else if (totalCorrect < 42) {
-        levelText = "A1 Elementary (Boshlang'ich)";
-        roadmap = "Siz asosiy so'zlar va to be zamonini bilasiz. Lekin Present Simple, savol va inkor tuzish, noto'g'ri fe'llar va prepositions ustida ko'proq ishlash kerak. Dastur: 'A1 Intensive Foundation'.";
-      } else if (totalCorrect < 54) {
-        levelText = "A1+ Strong Elementary (Mustahkam Boshlang'ich)";
-        roadmap = "A1 darajasi mustahkam shakllangan. Present Simple va asosiy tuzilmalar yaxshi. Endi Past Simple (o'tgan zamon) va Past Continuous kabi mavzular orqali tezda A2 darajasiga sakrash mumkin!";
-      } else {
-        levelText = "A2 Pre-Intermediate (O'rta-Quyi Daraja)";
-        roadmap = "Ajoyib natija! Siz A1 darajasidan to'liq o'tgansiz. O'tgan zamonlar, so'z boyligi va matn tushunish a'lo darajada. Siz to'g'ridan-to'g'ri A2 / Pre-Intermediate dasturiga tayyorsiz!";
-      }
-
-      document.getElementById('levelEstimate').textContent = levelText;
-      document.getElementById('roadmapText').textContent = roadmap;
-    }
-
-    function updateWordCount() {
-      const text = document.getElementById('diagEssay').value.trim();
-      const count = text ? text.split(/\s+/).length : 0;
-      document.getElementById('wordCounter').textContent = count + " ta so'z yozildi";
-    }
-
-    function saveDraft() {
-      const draft = {
-        name: document.getElementById('studentName').value,
-        grammar: grammarAnswers,
-        vocab: vocabAnswers,
-        reading: readingAnswers,
-        essay: document.getElementById('diagEssay').value,
-        translations: {}
-      };
-      for (let i = 1; i <= 5; i++) {
-        const el = document.getElementById('diag-trans-' + i);
-        if (el) draft.translations[i] = el.value;
-      }
-      localStorage.setItem('new_student_diag_draft', JSON.stringify(draft));
-    }
-
-    function loadDraft() {
-      const raw = localStorage.getItem('new_student_diag_draft');
-      if (!raw) return;
-      try {
-        const draft = JSON.parse(raw);
-        if (draft.name) document.getElementById('studentName').value = draft.name;
-        if (draft.essay) {
-          document.getElementById('diagEssay').value = draft.essay;
-          updateWordCount();
-        }
-        if (draft.translations) {
-          for (let i = 1; i <= 5; i++) {
-            const el = document.getElementById('diag-trans-' + i);
-            if (el && draft.translations[i]) el.value = draft.translations[i];
-          }
-        }
-      } catch(e) {}
-    }
-
-    async function submitLevelCheckToTelegram() {
-      const name = (document.getElementById('studentName').value || '').trim();
-      const status = document.getElementById('submitStatus');
-      const btn = document.getElementById('btnSubmitTelegram');
-
-      if (!name) {
-        alert("Iltimos, avval ism va familiyangizni kiriting!");
-        document.getElementById('studentName').focus();
-        return;
-      }
-
-      let a0Correct = 0, a1Correct = 0, a2Correct = 0;
-      for (let k in grammarAnswers) {
-        if (grammarAnswers[k].ok) {
-          if (grammarAnswers[k].tier === 'A0') a0Correct++;
-          else if (grammarAnswers[k].tier === 'A1') a1Correct++;
-          else if (grammarAnswers[k].tier === 'A1+/A2') a2Correct++;
-        }
-      }
-
-      let vCorrect = 0;
-      for (let k in vocabAnswers) { if (vocabAnswers[k].ok) vCorrect++; }
-
-      let rCorrect = 0;
-      for (let k in readingAnswers) { if (readingAnswers[k].ok) rCorrect++; }
-
-      const totalCorrect = a0Correct + a1Correct + a2Correct + vCorrect + rCorrect;
-      const totalPossible = 63;
-      const percent = Math.round((totalCorrect / totalPossible) * 100);
-      const level = document.getElementById('levelEstimate').textContent;
-
-      const essay = (document.getElementById('diagEssay').value || '').trim();
-      const essayWords = essay ? essay.split(/\s+/).length : 0;
-
-      let transFilled = 0;
-      let transSummary = "";
-      for (let i = 1; i <= 5; i++) {
-        const val = (document.getElementById('diag-trans-' + i).value || '').trim();
-        if (val) {
-          transFilled++;
-          transSummary += "• #" + i + ": " + val + "\n";
-        }
-      }
-
-      btn.disabled = true;
-      btn.textContent = "Yuborilmoqda... ⏳";
-      status.style.color = "#38bdf8";
-      status.textContent = "Ustoz botiga yuborilmoqda...";
-
-      const msg = "📊 <b>YANGI O'QUVCHI LEVEL CHECK NATIJASI</b>\n" +
-        "━━━━━━━━━━━━━━━━━━━━\n" +
-        "👤 <b>O'quvchi:</b> " + name + "\n" +
-        "📅 <b>Sana:</b> 14-Oktyabr, 2026\n" +
-        "🎯 <b>ANIQLANGAN DARAJA:</b> <b>" + level + "</b> (" + percent + "%)\n\n" +
-        "📈 <b>MODULLAR BO'YICHA BAL:</b>\n" +
-        "• <b>1. A0 Starter Asoslari:</b> " + a0Correct + " / 10\n" +
-        "• <b>2. A1 Elementar Grammatika:</b> " + a1Correct + " / 10\n" +
-        "• <b>3. A1+/A2 Zamonlar & Tuzilmalar:</b> " + a2Correct + " / 10\n" +
-        "• <b>4. Lug'at Boyligi (Vocab):</b> " + vCorrect + " / 25\n" +
-        "• <b>5. Matn Tushunish (Reading):</b> " + rCorrect + " / 8\n" +
-        "• <b>6. Bajarilgan Tarjimalar:</b> " + transFilled + " / 5\n" +
-        "• <b>7. Insho hajmi:</b> " + essayWords + " ta so'z\n\n" +
-        "🌐 <b>O'QUVCHINING TARJIMALARI:</b>\n" + (transSummary || "Tarjima kiritilmadi\n") + "\n" +
-        "✍️ <b>O'QUVCHINING INSHOSI:</b>\n" + (essay ? ("<i>" + essay.substring(0, 1500) + "</i>") : "Insho yozilmadi");
-
-      try {
-        const res = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+    try {
+      for (const chatId of TEACHER_IDS) {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: TEACHER_ID, text: msg, parse_mode: 'HTML' })
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: msg,
+            parse_mode: 'Markdown'
+          })
         });
-        const d = await res.json();
-        if (d.ok) {
-          status.style.color = "#34d399";
-          status.innerHTML = "🎉 <b>Ajoyib! Natijangiz ustozingizga muvaffaqiyatli yetkazildi!</b>";
-          btn.textContent = "Topshirildi ✓";
-          if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
-        } else {
-          status.style.color = "#34d399";
-          status.innerHTML = "🎉 <b>Natijangiz topshirildi!</b>";
-          btn.textContent = "Topshirildi ✓";
-        }
-      } catch(e) {
-        status.style.color = "#f87171";
-        status.innerHTML = "⚠️ Xatolik yuz berdi. Internetni tekshirib qayta urinib ko'ring.";
-        btn.disabled = false;
-        btn.textContent = "Qayta yuborish 🔄";
       }
-    }
 
-    window.addEventListener('DOMContentLoaded', loadDraft);
-  </script>
+      btn.disabled = false;
+      btn.innerText = "✅ Topshirildi!";
+      btn.style.background = "#10b981";
+      status.style.color = "#6ee7b7";
+      status.innerText = "Level Check hisobotingiz muvaffaqiyatli topshirildi va ustozga yetkazildi!";
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+    } catch(err) {
+      btn.disabled = false;
+      btn.innerText = "Qayta yuborish";
+      status.style.color = "#fca5a5";
+      status.innerText = "Xatolik yuz berdi. Internetni tekshirib qaytadan urinib ko'ring.";
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', init);
+</script>
+
 </body>
 </html>

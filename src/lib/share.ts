@@ -1,7 +1,7 @@
 import LZString from "lz-string";
 import { Curriculum } from "./types";
 
-export const DEFAULT_TELEGRAM_BOT_TOKEN = "8787909516:AAFpho1G-GYg1UW87lTIEjR1Ir0z6QjmN78";
+export const DEFAULT_TELEGRAM_BOT_TOKEN = "8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA";
 export const DEFAULT_TEACHER_CHAT_ID = "6315515792"; // Ulugbek's Telegram ID
 
 /**

@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A1 Darajasi Yakuniy Diagnostik Imtihoni (Level Check) | Ulugbek's English</title>
+  <title>A1 Darajasi To'liq Diagnostik Level Check | TeacherOS</title>
   
-  <!-- Google Fonts & Confetti -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -13,2027 +12,897 @@
 
   <style>
     :root {
-      --bg: #0b0c16;
-      --card-bg: #121324;
-      --card-border: rgba(232, 222, 255, 0.12);
-      --primary: #5B3DF5;
-      --primary-hover: #4C2FE0;
-      --primary-glow: rgba(91, 61, 245, 0.35);
-      --soft-lilac: #E8DEFF;
-      --emerald: #10B981;
-      --amber: #F59E0B;
-      --rose: #EF4444;
-      --sky: #0EA5E9;
-      --text: #F8FAFC;
-      --text-muted: #94A3B8;
-      --radius-sm: 10px;
-      --radius-md: 16px;
-      --radius-lg: 24px;
+      --bg: #070d18;
+      --card-bg: #0f172a;
+      --card-hover: #1e293b;
+      --border: #1e293b;
+      --border-focus: #6366f1;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.35);
+      --accent: #8b5cf6;
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --amber: #f59e0b;
+      --rose: #ef4444;
+      --sky: #0ea5e9;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
     body {
-      background-color: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 24px 16px 80px;
-      background-image: 
-        radial-gradient(circle at 10% 10%, rgba(91, 61, 245, 0.16) 0%, transparent 45%),
-        radial-gradient(circle at 90% 90%, rgba(232, 222, 255, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(91, 61, 245, 0.04) 0%, transparent 60%);
+      background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; padding-bottom: 90px;
+      background-image: radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.16) 0%, transparent 45%),
+                        radial-gradient(circle at 90% 85%, rgba(16, 185, 129, 0.12) 0%, transparent 45%);
       background-attachment: fixed;
     }
+    .container { max-width: 940px; margin: 0 auto; padding: 20px 16px; }
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
+    header {
+      background: linear-gradient(135deg, #0e172a 0%, #1e1b4b 50%, #0f172a 100%);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: var(--radius-lg); padding: 26px 24px; margin-bottom: 20px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 30px var(--primary-glow);
     }
-
-    /* Header Bar */
-    .header-card {
-      background: linear-gradient(135deg, rgba(20, 18, 45, 0.95), rgba(14, 13, 30, 0.95));
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
-      padding: 32px 28px;
-      margin-bottom: 24px;
-      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-      position: relative;
-      overflow: hidden;
+    .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .badge {
+      font-size: 0.74rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
+    .badge-level { background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+    .badge-scope { background: rgba(99, 102, 241, 0.18); color: #a5b4fc; border: 1px solid rgba(165, 180, 252, 0.35); }
+    .badge-count { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; border: 1px solid rgba(110, 231, 183, 0.35); }
 
-    .header-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--primary), var(--soft-lilac), var(--emerald));
+    h1 {
+      font-size: 1.85rem; font-weight: 900; margin-bottom: 8px; line-height: 1.25;
+      background: linear-gradient(135deg, #ffffff 40%, #c7d2fe 80%, #818cf8 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
+    .subtitle { color: #cbd5e1; font-size: 0.95rem; max-width: 840px; }
 
-    .pill-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      background: var(--soft-lilac);
-      color: var(--primary);
-      border-radius: 9999px;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      margin-bottom: 12px;
+    /* SUMMARY CHEAT CARDS */
+    .cheat-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 18px;
     }
-
-    .title {
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: -0.5px;
-      color: #FFFFFF;
-      line-height: 1.25;
+    .cheat-card {
+      background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md);
+      padding: 14px 16px; font-size: 0.88rem;
     }
+    .cheat-title { font-weight: 800; color: #67e8f9; margin-bottom: 6px; }
+    .cheat-rule { color: #e2e8f0; font-weight: 600; margin-bottom: 4px; }
+    .cheat-ex { color: #94a3b8; font-size: 0.82rem; font-style: italic; }
 
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 14px;
-      margin-top: 8px;
-      line-height: 1.6;
+    /* STUDENT INFO */
+    .student-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 16px 20px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 14px;
     }
-
-    /* Student Name Card */
-    .student-box {
-      background: rgba(18, 19, 36, 0.85);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-md);
-      padding: 20px;
-      margin-bottom: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .student-inputs { display: flex; flex-wrap: wrap; gap: 14px; flex: 1; }
+    .input-group { display: flex; flex-direction: column; gap: 4px; min-width: 220px; flex: 1; }
+    .input-group label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    input[type="text"], textarea {
+      background: #090f1e; border: 1.5px solid var(--border); color: #fff;
+      font-family: inherit; font-size: 0.92rem; padding: 10px 14px; border-radius: 10px; width: 100%;
+      transition: all 0.2s ease;
     }
+    input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 12px var(--primary-glow); }
 
-    .student-box label {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--soft-lilac);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    /* STICKY REALTIME SCORE */
+    .sticky-score-bar {
+      position: sticky; top: 12px; z-index: 50;
+      background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(14px);
+      border: 1px solid rgba(99, 102, 241, 0.35); border-radius: var(--radius-md);
+      padding: 12px 18px; margin-bottom: 24px;
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
+    .score-left { display: flex; align-items: center; gap: 12px; }
+    .score-badge { background: var(--primary); color: #fff; font-size: 1.15rem; font-weight: 900; padding: 4px 14px; border-radius: 8px; }
+    .progress-info { font-size: 0.88rem; font-weight: 700; color: #a5b4fc; }
+    .progress-bar-wrap { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin-top: 6px; }
+    .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #6366f1, #10b981); transition: width 0.3s ease; }
 
-    .student-box input {
-      width: 100%;
-      padding: 14px 18px;
-      background: #090814;
-      border: 2px solid rgba(232, 222, 255, 0.15);
-      border-radius: 12px;
-      color: white;
-      font-size: 15px;
-      font-weight: 600;
-      outline: none;
+    /* SECTION BOX */
+    .section-box {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 24px 20px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .sec-title { font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+    .sec-desc { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
+
+    /* QUESTION CARD */
+    .q-card {
+      background: #090f1e; border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 16px 18px; margin-bottom: 14px; transition: all 0.2s;
+    }
+    .q-card.correct { border-color: var(--emerald); background: rgba(16, 185, 129, 0.05); }
+    .q-card.wrong { border-color: var(--rose); background: rgba(239, 68, 68, 0.05); }
+    .q-num { font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; }
+    .q-prompt { font-size: 0.98rem; font-weight: 600; color: #fff; margin-bottom: 12px; }
+    .q-prompt code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #67e8f9; font-family: 'JetBrains Mono', monospace; }
+
+    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    .choice-btn {
+      background: #131d33; border: 1px solid var(--border); color: #e2e8f0;
+      padding: 9px 18px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer;
       transition: all 0.2s;
     }
+    .choice-btn:hover:not(:disabled) { background: #1c2742; border-color: var(--primary); color: #fff; transform: translateY(-1px); }
+    .choice-btn.selected-correct { background: var(--emerald) !important; border-color: var(--emerald) !important; color: #fff !important; }
+    .choice-btn.selected-wrong { background: var(--rose) !important; border-color: var(--rose) !important; color: #fff !important; }
 
-    .student-box input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-glow);
+    .sentence-box-hunter {
+      background: #131d33; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;
+      padding: 10px 14px; margin-bottom: 12px; font-size: 1.02rem; font-weight: 700; color: #fca5a5;
     }
 
-    /* Modules Stepper Navigation */
-    .stepper {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      margin-bottom: 24px;
-      scrollbar-width: none;
+    .scramble-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .scramble-chip {
+      background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 6px 14px; border-radius: 8px;
+      font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
     }
-    .stepper::-webkit-scrollbar { display: none; }
-
-    .step-btn {
-      flex: 1;
-      min-width: 140px;
-      padding: 12px 14px;
-      background: rgba(18, 19, 36, 0.7);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      color: var(--text-muted);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-      white-space: nowrap;
+    .scramble-chip:hover:not(:disabled) { background: #334155; border-color: var(--primary); }
+    .scramble-chip.used { opacity: 0.3; pointer-events: none; }
+    .scramble-result-box {
+      background: #090f1e; border: 1.5px dashed #334155; border-radius: 8px; min-height: 44px;
+      padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px;
+    }
+    .scramble-item {
+      background: rgba(99, 102, 241, 0.25); border: 1px solid #6366f1; color: #c7d2fe;
+      padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer;
     }
 
-    .step-btn.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-      box-shadow: 0 8px 20px -5px var(--primary-glow);
-    }
-
-    .step-btn.completed {
-      border-color: rgba(16, 185, 129, 0.4);
-      color: #34D399;
-    }
-
-    /* Section Cards */
-    .module-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
-      padding: 28px;
-      margin-bottom: 24px;
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .module-card.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .module-header {
-      border-bottom: 1px solid var(--card-border);
-      padding-bottom: 16px;
-      margin-bottom: 24px;
-    }
-
-    .module-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #FFFFFF;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .module-desc {
-      color: var(--text-muted);
-      font-size: 13px;
-      margin-top: 6px;
-      line-height: 1.5;
-    }
-
-    /* Question Item */
-    .question-block {
-      background: rgba(9, 8, 20, 0.6);
-      border: 1px solid rgba(232, 222, 255, 0.08);
-      border-radius: var(--radius-md);
-      padding: 20px;
-      margin-bottom: 20px;
-      transition: all 0.2s;
-    }
-
-    .question-block:hover {
-      border-color: rgba(91, 61, 245, 0.3);
-    }
-
-    .q-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .topic-pill {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 9999px;
-      background: rgba(91, 61, 245, 0.15);
-      color: var(--soft-lilac);
-      border: 1px solid rgba(91, 61, 245, 0.3);
-    }
-
-    .q-text {
-      font-size: 16px;
-      font-weight: 700;
-      color: #FFFFFF;
-      line-height: 1.5;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    /* Speaker Button */
-    .speaker-btn {
-      background: rgba(91, 61, 245, 0.15);
-      border: 1px solid rgba(91, 61, 245, 0.3);
-      color: var(--soft-lilac);
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
-      transition: all 0.2s;
-    }
-
-    .speaker-btn:hover {
-      background: var(--primary);
-      color: white;
-      transform: scale(1.05);
-    }
-
-    /* Options Grid */
-    .options-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-
-    @media (min-width: 600px) {
-      .options-grid.two-col {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
-    .opt-btn {
-      padding: 13px 16px;
-      background: rgba(22, 24, 46, 0.8);
-      border: 1.5px solid rgba(232, 222, 255, 0.1);
-      border-radius: 12px;
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 600;
-      text-align: left;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .opt-btn:hover {
-      background: rgba(30, 32, 60, 0.9);
-      border-color: rgba(91, 61, 245, 0.4);
-      transform: translateY(-1px);
-    }
-
-    .opt-btn.selected {
-      background: rgba(91, 61, 245, 0.2);
-      border-color: var(--primary);
-      color: #FFFFFF;
-      box-shadow: 0 0 15px -3px var(--primary-glow);
-    }
-
-    .opt-circle {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 2px solid rgba(232, 222, 255, 0.25);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 800;
-      flex-shrink: 0;
-      color: var(--text-muted);
-    }
-
-    .opt-btn.selected .opt-circle {
-      border-color: var(--primary);
-      background: var(--primary);
-      color: white;
-    }
-
-    .opt-btn.correct {
-      background: rgba(16, 185, 129, 0.18) !important;
-      border-color: var(--emerald) !important;
-      color: #34D399 !important;
-    }
-
-    .opt-btn.incorrect {
-      background: rgba(239, 68, 68, 0.18) !important;
-      border-color: var(--rose) !important;
-      color: #F87171 !important;
-    }
-
-    /* Explanation Box */
     .expl-box {
-      margin-top: 12px;
-      padding: 12px 14px;
-      border-radius: 10px;
-      background: rgba(91, 61, 245, 0.08);
-      border-left: 3px solid var(--primary);
-      font-size: 13px;
-      color: var(--soft-lilac);
-      line-height: 1.5;
-      display: none;
+      font-size: 0.86rem; padding: 10px 14px; border-radius: 8px; margin-top: 10px; display: none; line-height: 1.5;
     }
+    .expl-box.show { display: block; }
+    .expl-box.correct { background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border-left: 3px solid var(--emerald); }
+    .expl-box.wrong { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border-left: 3px solid var(--rose); }
 
-    /* Text Input Boxes */
-    .text-input {
-      width: 100%;
-      padding: 12px 16px;
-      background: #090814;
-      border: 1.5px solid rgba(232, 222, 255, 0.15);
-      border-radius: 12px;
-      color: white;
-      font-size: 14px;
-      font-weight: 600;
-      outline: none;
-      transition: all 0.2s;
-    }
+    .trans-item { margin-bottom: 16px; background: #090f1e; border: 1px solid var(--border); padding: 14px; border-radius: var(--radius-md); }
+    .trans-prompt { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+    .trans-hint { font-size: 0.8rem; color: #67e8f9; margin-bottom: 8px; }
 
-    .text-input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-glow);
+    .submit-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      border: 1px solid rgba(99, 102, 241, 0.4); border-radius: var(--radius-lg);
+      padding: 26px; text-align: center; margin-top: 30px;
     }
-
-    /* Verb Matrix Diagnostic Table */
-    .verb-table-wrap {
-      overflow-x: auto;
-      border-radius: 14px;
-      border: 1px solid var(--card-border);
-      background: #090814;
-      margin-bottom: 20px;
-      max-height: 380px;
+    .submit-btn {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: #fff; border: none; font-size: 1.1rem; font-weight: 800;
+      padding: 14px 38px; border-radius: 12px; cursor: pointer; transition: all 0.25s ease;
+      box-shadow: 0 8px 24px var(--primary-glow);
     }
-
-    .verb-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      text-align: left;
-    }
-
-    .verb-table th {
-      background: rgba(20, 18, 45, 0.95);
-      padding: 12px 16px;
-      color: var(--soft-lilac);
-      font-weight: 700;
-      font-size: 12px;
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--card-border);
-      position: sticky;
-      top: 0;
-      z-index: 2;
-    }
-
-    .verb-table td {
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(232, 222, 255, 0.06);
-    }
-
-    .verb-table tr:hover td {
-      background: rgba(91, 61, 245, 0.08);
-    }
-
-    .v1-cell { color: #818CF8; font-weight: 700; }
-    .v2-cell { color: #38BDF8; font-weight: 700; }
-    .v3-cell { color: #34D399; font-weight: 700; }
-
-    /* Bottom Navigation / Submit Actions */
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-top: 32px;
-      padding-top: 20px;
-      border-top: 1px solid var(--card-border);
-    }
-
-    .btn {
-      padding: 14px 28px;
-      border-radius: 14px;
-      font-size: 14px;
-      font-weight: 800;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border: none;
-      transition: all 0.2s;
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text);
-    }
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-      box-shadow: 0 10px 25px -5px var(--primary-glow);
-    }
-    .btn-primary:hover {
-      background: var(--primary-hover);
-      transform: translateY(-1px);
-    }
-
-    .btn-submit {
-      background: linear-gradient(135deg, #10B981, #059669);
-      color: white;
-      box-shadow: 0 12px 30px -5px rgba(16, 185, 129, 0.4);
-      width: 100%;
-      justify-content: center;
-      font-size: 16px;
-      padding: 18px;
-    }
-    .btn-submit:hover {
-      opacity: 0.95;
-      transform: translateY(-2px);
-    }
-
-    /* Diagnostic Results Card */
-    .results-card {
-      background: linear-gradient(135deg, #131429, #090814);
-      border: 2px solid var(--primary);
-      border-radius: var(--radius-lg);
-      padding: 36px 28px;
-      text-align: center;
-      display: none;
-      box-shadow: 0 25px 50px -12px var(--primary-glow);
-    }
-
-    .score-circle {
-      width: 130px;
-      height: 130px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(91, 61, 245, 0.25) 0%, transparent 70%);
-      border: 4px solid var(--primary);
-      margin: 0 auto 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .score-number {
-      font-size: 38px;
-      font-weight: 900;
-      color: #FFFFFF;
-      line-height: 1;
-    }
-
-    .score-total {
-      font-size: 13px;
-      color: var(--text-muted);
-      font-weight: 700;
-    }
-
-    .topic-breakdown {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-      margin: 28px 0;
-      text-align: left;
-    }
-
-    @media (min-width: 600px) {
-      .topic-breakdown {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
-    .topic-score-card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 14px 16px;
-      border-radius: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .topic-name {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--soft-lilac);
-    }
-
-    .topic-points {
-      font-size: 14px;
-      font-weight: 800;
-      font-family: 'JetBrains Mono', monospace;
-    }
-  
-    /* DETAILED DIAGNOSTIC REPORT STYLES */
-    .report-tabs {
-      display: flex;
-      gap: 8px;
-      margin: 24px 0 16px;
-      border-bottom: 1px solid var(--card-border);
-      padding-bottom: 10px;
-      overflow-x: auto;
-    }
-    .report-tab-btn {
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 700;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-    .report-tab-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-    .report-tab-btn.active {
-      background: var(--primary);
-      border-color: var(--primary);
-      color: #fff;
-      box-shadow: 0 4px 12px var(--primary-glow);
-    }
-    .report-tab-content {
-      display: none;
-      text-align: left;
-      animation: fadeIn 0.3s ease;
-    }
-    .report-tab-content.active {
-      display: block;
-    }
-    .diag-item-card {
-      background: rgba(10, 11, 22, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 14px;
-    }
-    .diag-item-card.is-wrong {
-      border-left: 4px solid var(--rose);
-      background: rgba(239, 68, 68, 0.05);
-    }
-    .diag-item-card.is-correct {
-      border-left: 4px solid var(--emerald);
-      background: rgba(16, 185, 129, 0.04);
-    }
-    .diag-badge {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 6px;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .diag-badge.wrong {
-      background: rgba(239, 68, 68, 0.2);
-      color: #FCA5A5;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-    .diag-badge.correct {
-      background: rgba(16, 185, 129, 0.2);
-      color: #6EE7B7;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-    .diag-q {
-      font-size: 14px;
-      font-weight: 700;
-      color: #F8FAFC;
-      margin-bottom: 8px;
-    }
-    .diag-ans-row {
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-    .diag-expl {
-      font-size: 12px;
-      color: var(--soft-lilac);
-      background: rgba(91, 61, 245, 0.1);
-      padding: 8px 12px;
-      border-radius: 8px;
-      margin-top: 8px;
-      border-left: 2px solid var(--primary);
-      line-height: 1.5;
-    }
-    .prescrip-card {
-      background: linear-gradient(135deg, rgba(30, 27, 75, 0.6), rgba(15, 23, 42, 0.8));
-      border: 1px solid rgba(91, 61, 245, 0.3);
-      border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 14px;
-    }
-    .prescrip-topic {
-      font-size: 15px;
-      font-weight: 800;
-      color: #fff;
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    .prescrip-action {
-      font-size: 13px;
-      color: #E2E8F0;
-      line-height: 1.6;
-      margin-bottom: 8px;
-    }
-    .prescrip-hw {
-      font-size: 12px;
-      color: #A5B4FC;
-      background: rgba(91, 61, 245, 0.15);
-      padding: 6px 10px;
-      border-radius: 6px;
-      display: inline-block;
-    }
-  
+    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px var(--primary-glow); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-msg { margin-top: 14px; font-size: 0.95rem; font-weight: 700; }
   </style>
 </head>
 <body>
 
-  <div class="container">
-
-    <!-- Top Header -->
-    <div class="header-card">
-      <div class="pill-badge">
-        <span>🏆</span>
-        <span>A1 → A2 Diagnostic Assessment</span>
-      </div>
-      <h1 class="title">A1 Ingliz Tili Yakuniy Diagnostik Imtihoni</h1>
-      <p class="subtitle">
-        Ushbu imtihon siz bilan o'tgan barcha <b>6 ta asosiy darsni</b> (Present Simple, Continuous, Kelajak rejalari, Jadvallar, Stative fe'llar va Past Simple noto'g'ri fe'llari) to'liq qamrab oladi. Har bir savolni diqqat bilan bajaring!
-      </p>
-    </div>
-
-    <!-- Student Name Registration -->
-    <div class="student-box" id="studentBox">
-      <label for="studentNameInput">👤 O'quvchi Ismi va Familiyasi:</label>
-      <input type="text" id="studentNameInput" placeholder="Masalan: Shaxzoda Olimova" autocomplete="name">
-      <p style="font-size: 12px; color: var(--text-muted);">Imtihonni topshirganingizdan so'ng to'liq diagnostik hisobot ustozingizga boradi.</p>
-    </div>
-
-    <!-- Stepper Navigation -->
-    <div class="stepper" id="stepperNav">
-      <button class="step-btn active" onclick="switchModule(0)">
-        <span>1️⃣</span>
-        <span>Grammatika Testi (30)</span>
-      </button>
-      <button class="step-btn" onclick="switchModule(1)">
-        <span>2️⃣</span>
-        <span>Noto'g'ri Fe'llar (10)</span>
-      </button>
-      <button class="step-btn" onclick="switchModule(2)">
-        <span>3️⃣</span>
-        <span>Xatolarni Topish (10)</span>
-      </button>
-      <button class="step-btn" onclick="switchModule(3)">
-        <span>4️⃣</span>
-        <span>Tarjima Drilli (8)</span>
-      </button>
-      <button class="step-btn" onclick="switchModule(4)">
-        <span>5️⃣</span>
-        <span>Topshirish & Hisobot</span>
-      </button>
-    </div>
-
-    <!-- ======================================================== -->
-    <!-- MODULE 1: COMPREHENSIVE GRAMMAR MCQ (30 Questions - 5 per topic) -->
-    <!-- ======================================================== -->
-    <div class="module-card active" id="module-0">
-      <div class="module-header">
-        <h2 class="module-title">
-          <span>🎯 1-Modul:</span>
-          <span>Grammatika Diagnostikasi (30 ta Savol)</span>
-        </h2>
-        <p class="module-desc">
-          Har bir mavzudan 5 tadan savol. Variantlar diqqat bilan aralashtirilgan. Savolni audio eshitish uchun karnay tugmasini bosing.
-        </p>
-      </div>
-
-      <div id="mcqQuestionsContainer"></div>
-
-      <div class="nav-actions">
-        <div></div>
-        <button class="btn btn-primary" onclick="switchModule(1)">
-          <span>Keyingi: Noto'g'ri Fe'llar →</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- ======================================================== -->
-    <!-- MODULE 2: IRREGULAR VERBS DIAGNOSTIC (30 Verbs Reference + 10 Quiz) -->
-    <!-- ======================================================== -->
-    <div class="module-card" id="module-1">
-      <div class="module-header">
-        <h2 class="module-title">
-          <span>📚 2-Modul:</span>
-          <span>30 ta Noto'g'ri Fe'l & V2 O'tgan Zamon Shakli</span>
-        </h2>
-        <p class="module-desc">
-          O'rgangan 30 ta noto'g'ri fe'llaringiz jadvali va ularning V2 shakllarini xotiradan topish testi.
-        </p>
-      </div>
-
-      <!-- Quick Reference Table with Audio -->
-      <h3 style="font-size: 14px; font-weight: 800; color: var(--soft-lilac); margin-bottom: 8px;">
-        💡 30 ta Noto'g'ri Fe'llar Ma'lumotnomasi (Tinglash uchun karnayni bosing):
-      </h3>
-      <div class="verb-table-wrap">
-        <table class="verb-table">
-          <thead>
-            <tr>
-              <th>V1 (Infinitive)</th>
-              <th>V2 (Past Simple)</th>
-              <th>V3 (Participle)</th>
-              <th>O'zbekcha</th>
-              <th style="text-align: right;">Ovoz</th>
-            </tr>
-          </thead>
-          <tbody id="verbTableBody"></tbody>
-        </table>
-      </div>
-
-      <h3 style="font-size: 15px; font-weight: 800; color: #FFFFFF; margin: 24px 0 12px;">
-        ✍️ Noto'g'ri Fe'llarning V2 Shaklini Tanlang (10 ta savol):
-      </h3>
-      <div id="verbQuizContainer"></div>
-
-      <div class="nav-actions">
-        <button class="btn btn-secondary" onclick="switchModule(0)">
-          <span>← Oldingi</span>
-        </button>
-        <button class="btn btn-primary" onclick="switchModule(2)">
-          <span>Keyingi: Xatolarni Tuzatish →</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- ======================================================== -->
-    <!-- MODULE 3: ERROR CORRECTION & UZBEK TRAPS (10 Questions) -->
-    <!-- ======================================================== -->
-    <div class="module-card" id="module-2">
-      <div class="module-header">
-        <h2 class="module-title">
-          <span>⚠️ 3-Modul:</span>
-          <span>Tuzoqlar va Xatolarni Tuzatish (10 ta Gap)</span>
-        </h2>
-        <p class="module-desc">
-          O'zbek o'quvchilari eng ko'p qiladigan 10 ta xato berilgan. To'g'ri tuzatilgan variantni toping.
-        </p>
-      </div>
-
-      <div id="errorCorrectionContainer"></div>
-
-      <div class="nav-actions">
-        <button class="btn btn-secondary" onclick="switchModule(1)">
-          <span>← Oldingi</span>
-        </button>
-        <button class="btn btn-primary" onclick="switchModule(3)">
-          <span>Keyingi: Tarjima Drilli →</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- ======================================================== -->
-    <!-- MODULE 4: UZBEK TO ENGLISH TRANSLATION DRILL (8 Questions) -->
-    <!-- ======================================================== -->
-    <div class="module-card" id="module-3">
-      <div class="module-header">
-        <h2 class="module-title">
-          <span>📝 4-Modul:</span>
-          <span>O'zbekchadan Inglizchaga Amaliy Tarjima (8 ta Gap)</span>
-        </h2>
-        <p class="module-desc">
-          O'tilgan qoidalar asosida gaplarni ingliz tiliga tarjima qiling va yozing.
-        </p>
-      </div>
-
-      <div id="translationContainer"></div>
-
-      <div class="nav-actions">
-        <button class="btn btn-secondary" onclick="switchModule(2)">
-          <span>← Oldingi</span>
-        </button>
-        <button class="btn btn-primary" onclick="switchModule(4)">
-          <span>Yakuniy Topshirishga O'tish →</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- ======================================================== -->
-    <!-- MODULE 5: FINAL SUBMISSION & TELEGRAM DISPATCH -->
-    <!-- ======================================================== -->
-    <div class="module-card" id="module-4">
-      <div class="module-header">
-        <h2 class="module-title">
-          <span>🚀 5-Modul:</span>
-          <span>Imtihonni Yakunlash & Natijani Ustozga Yuborish</span>
-        </h2>
-        <p class="module-desc">
-          Barcha topshiriqlarni tekshirib chiqing va yakuniy topshirish tugmasini bosing.
-        </p>
-      </div>
-
-      <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 20px; border-radius: 16px; margin-bottom: 24px;">
-        <h4 style="font-size: 15px; font-weight: 800; color: #FFFFFF; margin-bottom: 12px;">📊 Bajarilgan ishlar sarhisobi:</h4>
-        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--text-muted);">1-Modul (Grammatika):</span>
-            <b id="summaryM1" style="color: var(--soft-lilac);">0 / 30 belgilandi</b>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--text-muted);">2-Modul (Noto'g'ri fe'llar):</span>
-            <b id="summaryM2" style="color: var(--soft-lilac);">0 / 10 belgilandi</b>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--text-muted);">3-Modul (Xatolar tahlili):</span>
-            <b id="summaryM3" style="color: var(--soft-lilac);">0 / 10 belgilandi</b>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--text-muted);">4-Modul (Yozma tarjima):</span>
-            <b id="summaryM4" style="color: var(--soft-lilac);">0 / 8 yozildi</b>
-          </div>
-        </div>
-      </div>
-
-      <button class="btn btn-submit" id="btnFinalSubmit" onclick="submitLevelCheck()">
-        <span>🚀 Imtihonni Yakunlash & Ustozga Yuborish</span>
-      </button>
-
-      <div id="submitStatusMsg" style="margin-top: 16px; font-size: 14px; text-align: center; font-weight: 700;"></div>
-    </div>
-
-    <!-- ======================================================== -->
-    <!-- FINAL REPORT (Shown after successful submission) -->
-    <!-- ======================================================== -->
-    
-    <!-- ======================================================== -->
-    <!-- FINAL DETAILED DIAGNOSTIC REPORT (Shown after submission) -->
-    <!-- ======================================================== -->
-    <div class="results-card" id="resultsCard">
-      <div style="font-size: 40px; margin-bottom: 12px;">🏆</div>
-      <h2 style="font-size: 26px; font-weight: 900; color: #FFFFFF; margin-bottom: 6px;">
-        Tabriklaymiz, <span id="resStudentName">O'quvchi</span>!
-      </h2>
-      <p style="color: var(--soft-lilac); font-size: 14px; margin-bottom: 20px;">
-        Sizning A1 Level Check imtihon natijangiz muvaffaqiyatli topshirildi va ustozingizga batafsil tahlil bilan yetkazildi.
-      </p>
-
-      <div class="score-circle">
-        <div class="score-number" id="resPercent">0%</div>
-        <div class="score-total" id="resFraction">0 / 50 ball</div>
-      </div>
-
-      <h4 style="font-size: 15px; font-weight: 800; color: #FFFFFF; text-align: left; margin-bottom: 12px;">
-        📈 6 ta Mavzu Bo'yicha O'zlashtirish Darajangiz:
-      </h4>
-      <div class="topic-breakdown" id="topicBreakdownContainer"></div>
-
-      <!-- INTERACTIVE REPORT TABS -->
-      <div class="report-tabs">
-        <button class="report-tab-btn active" onclick="switchReportTab('tab-recs')">🎯 Ustoz Tavsiyasi & Yo'l Xaritasi</button>
-        <button class="report-tab-btn" onclick="switchReportTab('tab-mistakes')">🔍 Xatolar Tahlili & Qoidalar (<span id="tabMistakeCount">0</span>)</button>
-        <button class="report-tab-btn" onclick="switchReportTab('tab-all')">📋 Barcha 50 ta Savol Javoblari</button>
-      </div>
-
-      <!-- TAB 1: TEACHER'S PRESCRIPTION / ROADMAP -->
-      <div class="report-tab-content active" id="tab-recs">
-        <div style="text-align: left; margin-bottom: 16px;">
-          <h4 style="color: var(--soft-lilac); font-size: 16px; margin-bottom: 6px;">🎯 Zaif Nuqtalarni Tuzatish Rejasi:</h4>
-          <p style="font-size: 13px; color: var(--text-muted);">
-            O'quvchining har bir mavzudagi xatolariga asoslanib tuzilgan individual dars rejasi va uyga vazifalar:
-          </p>
-        </div>
-        <div id="prescriptionListContainer"></div>
-      </div>
-
-      <!-- TAB 2: DETAILED MISTAKES BREAKDOWN WITH EXPLANATIONS -->
-      <div class="report-tab-content" id="tab-mistakes">
-        <div style="text-align: left; margin-bottom: 16px;">
-          <h4 style="color: #F87171; font-size: 16px; margin-bottom: 6px;">🔍 Yo'l Qo'yilgan Xatolar va Tushuntirishlar:</h4>
-          <p style="font-size: 13px; color: var(--text-muted);">
-            Quyida xato qilingan savollar, o'quvchi tanlagan javob, to'g'ri variant va qoidaning o'zbekcha izohi keltirilgan:
-          </p>
-        </div>
-        <div id="mistakesDetailContainer"></div>
-      </div>
-
-      <!-- TAB 3: ALL QUESTIONS & STUDENT'S ANSWERS -->
-      <div class="report-tab-content" id="tab-all">
-        <div style="text-align: left; margin-bottom: 16px;">
-          <h4 style="color: var(--soft-lilac); font-size: 16px; margin-bottom: 6px;">📋 To'liq Imtihon Protokoli:</h4>
-          <p style="font-size: 13px; color: var(--text-muted);">
-            Barcha modullar bo'yicha berilgan to'liq savol-javoblar ro'yxati:
-          </p>
-        </div>
-        <div id="allQuestionsContainer"></div>
-      </div>
-
-      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--card-border); text-align: center;">
-        <button class="btn btn-primary" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">⬆️ Yuqoriga Qaytish</button>
-      </div>
-    </div>
+<div class="container">
   
+  <header>
+    <div class="badge-row">
+      <span class="badge badge-level">A1 Elementary</span>
+      <span class="badge badge-scope">6 Darslik Katta Qamrov: Barcha Asosiy Zamonlar</span>
+      <span class="badge badge-count">55 Interactive Items</span>
+    </div>
+    <h1>A1 Darajasi Katta Diagnostik Level Check</h1>
+    <p class="subtitle">Bu imtihon A1 darajasida o'tilgan barcha asosiy 6 ta mavzuni (Present Simple & Continuous, Past Simple & Continuous, Present Perfect va Future plans) har tomonlama va chuqur baholaydi.</p>
+
+    <div class="cheat-grid">
+      <div class="cheat-card">
+        <div class="cheat-title">1️⃣ Present & Past Tenses</div>
+        <div class="cheat-rule">Present: <code>play / is playing</code></div>
+        <div class="cheat-rule">Past: <code>played / was playing</code></div>
+        <div class="cheat-ex">"I watched TV while she was cooking"</div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-title">2️⃣ Present Perfect (Tajriba & Muddat)</div>
+        <div class="cheat-rule"><b>have / has + V3</b></div>
+        <div class="cheat-rule"><code>FOR 3 years</code> vs <code>SINCE 2021</code></div>
+        <div class="cheat-ex">"I have lived here for two years"</div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-title">3️⃣ Future Plans (Kelajak)</div>
+        <div class="cheat-rule">Reja / Dalil: <code>am/is/are going to</code></div>
+        <div class="cheat-rule">Spontan / Fikr: <code>will + V1</code></div>
+        <div class="cheat-ex">"I'm going to travel" vs "I will help you"</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- STUDENT INFO -->
+  <div class="student-card">
+    <div class="student-inputs">
+      <div class="input-group">
+        <label>Ism va Familiya</label>
+        <input type="text" id="studentName" placeholder="Masalan: Dilnoza Karimova" oninput="saveDraft()">
+      </div>
+      <div class="input-group">
+        <label>Telegram Username (ixtiyoriy)</label>
+        <input type="text" id="studentTelegram" placeholder="@username" oninput="saveDraft()">
+      </div>
+    </div>
   </div>
 
-  <script>
-    // ==========================================================
-    // 30 ESSENTIAL IRREGULAR VERBS DATA
-    // ==========================================================
-    const IRREGULAR_VERBS_30 = [
-      { v1: "be", v2: "was / were", v3: "been", uz: "bo'lmoq" },
-      { v1: "become", v2: "became", v3: "become", uz: "bo'lmoq (o'zgarmoq)" },
-      { v1: "begin", v2: "began", v3: "begun", uz: "boshlamoq" },
-      { v1: "break", v2: "broke", v3: "broken", uz: "sindirmoq" },
-      { v1: "bring", v2: "brought", v3: "brought", uz: "olib kelmoq" },
-      { v1: "buy", v2: "bought", v3: "bought", uz: "sotib olmoq" },
-      { v1: "catch", v2: "caught", v3: "caught", uz: "tutmoq, ushlamoq" },
-      { v1: "choose", v2: "chose", v3: "chosen", uz: "tanlamoq" },
-      { v1: "come", v2: "came", v3: "come", uz: "kelmoq" },
-      { v1: "do", v2: "did", v3: "done", uz: "qilmoq, bajarmoq" },
-      { v1: "drink", v2: "drank", v3: "drunk", uz: "ichmoq" },
-      { v1: "drive", v2: "drove", v3: "driven", uz: "haydamoq" },
-      { v1: "eat", v2: "ate", v3: "eaten", uz: "yemoq" },
-      { v1: "fall", v2: "fell", v3: "fallen", uz: "yiqilmoq" },
-      { v1: "feel", v2: "felt", v3: "felt", uz: "his qilmoq" },
-      { v1: "find", v2: "found", v3: "found", uz: "topmoq" },
-      { v1: "fly", v2: "flew", v3: "flown", uz: "uchmoq" },
-      { v1: "forget", v2: "forgot", v3: "forgotten", uz: "unutmoq" },
-      { v1: "get", v2: "got", v3: "got / gotten", uz: "olmoq, yetib bormoq" },
-      { v1: "give", v2: "gave", v3: "given", uz: "bermoq" },
-      { v1: "go", v2: "went", v3: "gone", uz: "bormoq" },
-      { v1: "have", v2: "had", v3: "had", uz: "ega bo'lmoq" },
-      { v1: "hear", v2: "heard", v3: "heard", uz: "eshitmoq" },
-      { v1: "know", v2: "knew", v3: "known", uz: "bilmoq" },
-      { v1: "leave", v2: "left", v3: "left", uz: "tark etmoq, jo'namoq" },
-      { v1: "lose", v2: "lost", v3: "lost", uz: "yo'qotmoq" },
-      { v1: "make", v2: "made", v3: "made", uz: "yasamoq, qilmoq" },
-      { v1: "meet", v2: "met", v3: "met", uz: "uchrashmoq" },
-      { v1: "pay", v2: "paid", v3: "paid", uz: "to'lamoq" },
-      { v1: "read", v2: "read", v3: "read", uz: "o'qimoq" }
-    ];
+  <!-- STICKY REALTIME SCORE & PROGRESS BAR -->
+  <div class="sticky-score-bar">
+    <div class="score-left">
+      <div class="score-badge" id="liveScoreBadge">0 / 50</div>
+      <div>
+        <div class="progress-info" id="progressInfoText">Javob berildi: 0 / 50</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span style="font-size:0.82rem; color:#94a3b8;">Avtomatik saqlanmoqda</span>
+    </div>
+  </div>
 
-    // ==========================================================
-    // MODULE 1: 30 MCQ QUESTIONS (5 per topic, shuffled options)
-    // ==========================================================
-    const GRAMMAR_MCQ_QUESTIONS = [
-      // TOPIC 1: Present Simple (5 questions)
-      {
-        topicId: "t1",
-        topicName: "Present Simple",
-        q: "My sister ______ English every day after school.",
-        opts: ["studies", "study", "is studying", "studied"],
-        ans: "studies",
-        expl: "Uchinchi shaxs birlikda (my sister = she) fe'lga -s/-es qo'shiladi: study -> studies."
-      },
-      {
-        topicId: "t1",
-        topicName: "Present Simple",
-        q: "______ your father drive a car to work?",
-        opts: ["Do", "Does", "Is", "Are"],
-        ans: "Does",
-        expl: "'your father' = he bo'lgani uchun so'roq gapda yordamchi fe'l 'Does' ishlatiladi."
-      },
-      {
-        topicId: "t1",
-        topicName: "Present Simple",
-        q: "We ______ coffee in the evening. We prefer green tea.",
-        opts: ["don't drink", "doesn't drink", "aren't drink", "not drink"],
-        ans: "don't drink",
-        expl: "'We' olmoshi uchun inkor shakli: don't + V1 (drink)."
-      },
-      {
-        topicId: "t1",
-        topicName: "Present Simple",
-        q: "Water ______ at 100 degrees Celsius.",
-        opts: ["boils", "boil", "is boiling", "boiled"],
-        ans: "boils",
-        expl: "Ilmiy faktlar va doimiy haqiqatlar har doim Present Simple zamonida aytiladi."
-      },
-      {
-        topicId: "t1",
-        topicName: "Present Simple",
-        q: "Anvar never ______ late for his English classes.",
-        opts: ["is", "are", "be", "does"],
-        ans: "is",
-        expl: "To be fe'lining he uchun shakli 'is'. 'Anvar is never late'."
-      },
+  <!-- SECTION 1: PRESENT TENSES CONTRAST -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>☀️ 1-Bo'lim: Present Simple vs Present Continuous (10 ta Savol)</span>
+    </div>
+    <div class="sec-desc">Odatlar va faktlar (Simple) hamda ayni damdagi harakatlar va holat fe'llari (Continuous).</div>
+    <div id="presentContainer"></div>
+  </div>
 
-      // TOPIC 2: Present Continuous (5 questions)
-      {
-        topicId: "t2",
-        topicName: "Present Continuous",
-        q: "Look! The children ______ in the yard right now.",
-        opts: ["play", "plays", "are playing", "were playing"],
-        ans: "are playing",
-        expl: "'Look!' va 'right now' ayni paytda sodir bo'layotgan jarayonni bildiradi: are playing."
-      },
-      {
-        topicId: "t2",
-        topicName: "Present Continuous",
-        q: "Please be quiet! My little brother ______ in his bedroom.",
-        opts: ["sleeps", "is sleeping", "sleep", "are sleeping"],
-        ans: "is sleeping",
-        expl: "Hozir uxlab yotganligi uchun Present Continuous: is sleeping."
-      },
-      {
-        topicId: "t2",
-        topicName: "Present Continuous",
-        q: "Why ______ you ______ a warm jacket today? It is not cold.",
-        opts: ["do / wear", "are / wearing", "are / wear", "did / wear"],
-        ans: "are / wearing",
-        expl: "Aynan bugun kiyib turgan kiyim uchun: are you wearing."
-      },
-      {
-        topicId: "t2",
-        topicName: "Present Continuous",
-        q: "I ______ any computer games at the moment. I am reading a book.",
-        opts: ["am not playing", "don't play", "not playing", "isn't playing"],
-        ans: "am not playing",
-        expl: "'at the moment' inkor shakli: I am not playing."
-      },
-      {
-        topicId: "t2",
-        topicName: "Present Continuous",
-        q: "Listen! Somebody ______ at the front door.",
-        opts: ["knocks", "is knocking", "are knocking", "knocked"],
-        ans: "is knocking",
-        expl: "'Listen!' diqqatni ayni damda eshitilayotgan ishga qaratadi: is knocking."
-      },
+  <!-- SECTION 2: PAST SIMPLE & CONTINUOUS -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>🕰️ 2-Bo'lim: Past Simple va Past Continuous (When & While — 10 ta Savol)</span>
+    </div>
+    <div class="sec-desc">O'tgan zamondagi qisqa harakat (V2/did) va davom etgan jarayon (was/were + V-ing).</div>
+    <div id="pastContainer"></div>
+  </div>
 
-      // TOPIC 3: Future Plans & Arrangements (be going to vs pres cont) (5 questions)
-      {
-        topicId: "t3",
-        topicName: "Future Plans & Arrangements",
-        q: "I have saved money. I ______ buy a new laptop next month.",
-        opts: ["am going to", "will to", "go to", "am"],
-        ans: "am going to",
-        expl: "Oldindan rejalashtirilgan niyat uchun 'be going to + V1' ishlatiladi."
-      },
-      {
-        topicId: "t3",
-        topicName: "Future Plans & Arrangements",
-        q: "We ______ lunch with Malika tomorrow at 1:00 PM. We booked the table.",
-        opts: ["have", "are having", "will to have", "had"],
-        ans: "are having",
-        expl: "Boshqa odam bilan aniq vaqti va joyi kelishilgan reja (arrangement) uchun Present Continuous keladi."
-      },
-      {
-        topicId: "t3",
-        topicName: "Future Plans & Arrangements",
-        q: "Look at those dark clouds in the sky! It ______ rain soon.",
-        opts: ["is going to", "is raining", "rains", "will to"],
-        ans: "is going to",
-        expl: "Ko'z oldimizda aniq dalil (dark clouds) bor bo'lsa, 'is going to' ishlatiladi."
-      },
-      {
-        topicId: "t3",
-        topicName: "Future Plans & Arrangements",
-        q: "What ______ you ______ to do this Sunday? (rejang nima?)",
-        opts: ["are / going", "do / go", "are / go", "will / going"],
-        ans: "are / going",
-        expl: "Kelajak rejasini so'rash: What are you going to do?"
-      },
-      {
-        topicId: "t3",
-        topicName: "Future Plans & Arrangements",
-        q: "She ______ to Istanbul on Friday. She already has the flight tickets.",
-        opts: ["flies", "is flying", "is fly", "going fly"],
-        ans: "is flying",
-        expl: "Chipta olingan va aniq kelishilgan safar uchun Present Continuous: is flying."
-      },
+  <!-- SECTION 3: PRESENT PERFECT -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>⚡ 3-Bo'lim: Present Perfect (Have/Has + V3, For vs Since — 10 ta Savol)</span>
+    </div>
+    <div class="sec-desc">Hayotiy tajribalar va o'tmishdan hozirgacha davom etayotgan hodisalar.</div>
+    <div id="perfContainer"></div>
+  </div>
 
-      // TOPIC 4: Present Simple for Future (Timetables) (5 questions)
-      {
-        topicId: "t4",
-        topicName: "Present Simple (Timetables)",
-        q: "The train to Samarkand ______ at 08:00 tomorrow morning.",
-        opts: ["leaves", "is leaving", "going to leave", "left"],
-        ans: "leaves",
-        expl: "Poyezd va transportning rasmiy jadvallari (timetables) doim Present Simple bilan aytiladi: leaves."
-      },
-      {
-        topicId: "t4",
-        topicName: "Present Simple (Timetables)",
-        q: "What time ______ the film ______ tonight?",
-        opts: ["does / start", "is / start", "do / starts", "is / starting"],
-        ans: "does / start",
-        expl: "Kino seansi jadval bo'yicha boshlanishi sababli: does the film start?"
-      },
-      {
-        topicId: "t4",
-        topicName: "Present Simple (Timetables)",
-        q: "Our English lesson ______ at 10:00 AM on Monday.",
-        opts: ["begins", "is beginning", "began", "beginning"],
-        ans: "begins",
-        expl: "Dars jadvali doimiy va rasmiy bo'lgani uchun Present Simple: begins."
-      },
-      {
-        topicId: "t4",
-        topicName: "Present Simple (Timetables)",
-        q: "The bank ______ at 09:00 AM and closes at 18:00 PM tomorrow.",
-        opts: ["opens", "is opening", "open", "will to open"],
-        ans: "opens",
-        expl: "Tashkilot va do'konlarning ish vaqti jadvali uchun Present Simple: opens."
-      },
-      {
-        topicId: "t4",
-        topicName: "Present Simple (Timetables)",
-        q: "The plane ______ at Tashkent Airport at 14:30 this afternoon.",
-        opts: ["arrives", "is arriving", "arrive", "arrived"],
-        ans: "arrives",
-        expl: "Parvoz jadvali: arrives at 14:30."
-      },
+  <!-- SECTION 4: FUTURE FORMS -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>🚀 4-Bo'lim: Kelajak Zamon: Will vs Be Going To (8 ta Savol)</span>
+    </div>
+    <div class="sec-desc">Oldindan reja va dalil (be going to) hamda shu lahzada qaror va va'dalar (will).</div>
+    <div id="futureContainer"></div>
+  </div>
 
-      // TOPIC 5: Stative Verbs & "Need" Rule (5 questions)
-      {
-        topicId: "t5",
-        topicName: "Stative Verbs & Need",
-        q: "I am so thirsty! I ______ a glass of cold water.",
-        opts: ["need", "am needing", "needs", "need to"],
-        ans: "need",
-        expl: "Need fe'lidan keyin to'g'ridan-to'g'ri narsa (ot) kelsa, 'to' qo'yilmaydi va -ing olmaydi: I need water."
-      },
-      {
-        topicId: "t5",
-        topicName: "Stative Verbs & Need",
-        q: "He is exhausted. He ______ to sleep right now.",
-        opts: ["needs", "is needing", "need", "needing"],
-        ans: "needs",
-        expl: "He uchun 'needs' + fe'l (sleep) oldidan 'to' keladi: He needs to sleep."
-      },
-      {
-        topicId: "t5",
-        topicName: "Stative Verbs & Need",
-        q: "Do you ______ this difficult English grammar rule?",
-        opts: ["understand", "understanding", "are understanding", "understands"],
-        ans: "understand",
-        expl: "'understand' aqliy holat fe'li bo'lib, -ing olmaydi. So'roq: Do you understand?"
-      },
-      {
-        topicId: "t5",
-        topicName: "Stative Verbs & Need",
-        q: "She ______ delicious Italian pizza very much.",
-        opts: ["likes", "is liking", "like", "liking"],
-        ans: "likes",
-        expl: "'like' his-tuyg'u fe'li bo'lgani uchun Continuous bo'lmaydi: She likes."
-      },
-      {
-        topicId: "t5",
-        topicName: "Stative Verbs & Need",
-        q: "We ______ buy some bread for breakfast tomorrow.",
-        opts: ["need to", "need", "are needing", "needs to"],
-        ans: "need to",
-        expl: "'buy' bu fe'l (harakat), shuning uchun 'need TO buy' bo'ladi."
-      },
+  <!-- SECTION 5: MISTAKE HUNTER -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>🔍 5-Bo'lim: Katta Mistake Hunter (8 ta Umumiy Qopqon)</span>
+    </div>
+    <div class="sec-desc">Barcha zamonlar bo'yicha eng ko'p uchraydigan 8 ta xatoni tuzating.</div>
+    <div id="hunterContainer"></div>
+  </div>
 
-      // TOPIC 6: Past Simple & Irregular Verbs (5 questions)
-      {
-        topicId: "t6",
-        topicName: "Past Simple",
-        q: "Yesterday my mother ______ a very delicious cake for my birthday.",
-        opts: ["made", "maked", "make", "makes"],
-        ans: "made",
-        expl: "make fe'lining o'tgan zamon (V2) shakli 'made' bo'ladi (noto'g'ri fe'l)."
-      },
-      {
-        topicId: "t6",
-        topicName: "Past Simple",
-        q: "I ______ to the gym yesterday because I was tired.",
-        opts: ["didn't go", "didn't went", "not went", "wasn't go"],
-        ans: "didn't go",
-        expl: "Eng katta tuzoq: didn't dan keyin fe'l har doim V1 (go) shaklida bo'ladi!"
-      },
-      {
-        topicId: "t6",
-        topicName: "Past Simple",
-        q: "Where ______ you ______ your summer holidays last year?",
-        opts: ["did / spend", "did / spent", "were / spend", "have / spent"],
-        ans: "did / spend",
-        expl: "Past Simple so'rog'ida did + V1: Where did you spend...?"
-      },
-      {
-        topicId: "t6",
-        topicName: "Past Simple",
-        q: "He ______ his keys in the taxi two days ago.",
-        opts: ["lost", "losed", "lose", "is losing"],
-        ans: "lost",
-        expl: "lose fe'lining V2 shakli 'lost' bo'ladi."
-      },
-      {
-        topicId: "t6",
-        topicName: "Past Simple",
-        q: "We ______ an interesting movie on television last night.",
-        opts: ["saw", "seed", "see", "have seen"],
-        ans: "saw",
-        expl: "see fe'lining V2 shakli 'saw' bo'ladi."
-      }
-    ];
+  <!-- SECTION 6: SENTENCE BUILDER -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>🧩 6-Bo'lim: Gap Tuzuvchi (Sentence Builder — 4 ta Mashq)</span>
+    </div>
+    <div class="sec-desc">So'zlarni to'g'ri tartibda bosib mukammal gap hosil qiling!</div>
+    <div id="scrambleContainer"></div>
+  </div>
 
-    // ==========================================================
-    // MODULE 2: 10 IRREGULAR VERBS RECALL QUESTIONS
-    // ==========================================================
-    const VERB_RECALL_QUESTIONS = [
-      { v1: "buy", q: "'buy' (sotib olmoq) fe'lining Past Simple (V2) shakli qaysi?", opts: ["bought", "buyed", "bote", "boughten"], ans: "bought" },
-      { v1: "drink", q: "'drink' (ichmoq) fe'lining Past Simple (V2) shakli qaysi?", opts: ["drank", "drunk", "drinked", "dronk"], ans: "drank" },
-      { v1: "eat", q: "'eat' (yemoq) fe'lining Past Simple (V2) shakli qaysi?", opts: ["ate", "eated", "eaten", "aite"], ans: "ate" },
-      { v1: "give", q: "'give' (bermoq) fe'lining Past Simple (V2) shakli qaysi?", opts: ["gave", "gived", "given", "gaven"], ans: "gave" },
-      { v1: "find", q: "'find' (topmoq) fe'lining Past Simple (V2) shakli qaysi?", opts: ["found", "finded", "fond", "founden"], ans: "found" },
-      { v1: "leave", q: "'leave' (jo'namoq) fe'lining Past Simple (V2) shakli qaysi?", opts: ["left", "leaved", "lefted", "lave"], ans: "left" },
-      { v1: "meet", q: "'meet' (uchrashmoq) fe'lining Past Simple (V2) shakli qaysi?", opts: ["met", "meeted", "mate", "metted"], ans: "met" },
-      { v1: "write", q: "'write' (yozmoq) fe'lining Past Simple (V2) shakli qaysi?", opts: ["wrote", "writed", "written", "wroten"], ans: "wrote" },
-      { v1: "break", q: "'break' (sindirmoq) fe'lining Past Simple (V2) shakli qaysi?", opts: ["broke", "breaked", "broken", "braked"], ans: "broke" },
-      { v1: "catch", q: "'catch' (tutmoq) fe'lining Past Simple (V2) shakli qaysi?", opts: ["caught", "catched", "cought", "caughted"], ans: "caught" }
-    ];
+  <!-- SECTION 7: GUIDED TRANSLATION -->
+  <div class="section-box">
+    <div class="sec-title">
+      <span>✍️ 7-Bo'lim: Kontekstual Tarjima (5 ta Gap)</span>
+    </div>
+    <div class="sec-desc">O'zbekcha gaplarni o'tilgan qoidalar asosida ingliz tiliga tarjima qiling.</div>
+    <div id="transContainer"></div>
+  </div>
 
-    // ==========================================================
-    // MODULE 3: 10 ERROR CORRECTION QUESTIONS (Uzbek Traps)
-    // ==========================================================
-    const ERROR_CORRECTION_QUESTIONS = [
-      {
-        wrong: "❌ 'She don't like drinking cold milk.'",
-        q: "Ushbu gapdagi xatoni tuzating:",
-        opts: [
-          "She doesn't like drinking cold milk.",
-          "She not like drinking cold milk.",
-          "She isn't liking drinking cold milk.",
-          "She don't likes drinking cold milk."
-        ],
-        ans: "She doesn't like drinking cold milk.",
-        expl: "She uchun inkor 'doesn't' bo'ladi."
-      },
-      {
-        wrong: "❌ 'I am needing a new pen right now.'",
-        q: "Ushbu gapdagi xatoni tuzating:",
-        opts: [
-          "I need a new pen right now.",
-          "I need to a new pen right now.",
-          "I am need a new pen right now.",
-          "I needs a new pen right now."
-        ],
-        ans: "I need a new pen right now.",
-        expl: "'need' holat fe'li, Continuous (-ing) shaklida ishlatilmaydi."
-      },
-      {
-        wrong: "❌ 'I didn't saw Anvar at school yesterday.'",
-        q: "Ushbu gapdagi xatoni tuzating:",
-        opts: [
-          "I didn't see Anvar at school yesterday.",
-          "I didn't seen Anvar at school yesterday.",
-          "I not saw Anvar at school yesterday.",
-          "I wasn't see Anvar at school yesterday."
-        ],
-        ans: "I didn't see Anvar at school yesterday.",
-        expl: "didn't kelganda fe'l V1 ga qaytadi: didn't see."
-      },
-      {
-        wrong: "❌ 'We need buy some food for the cat.'",
-        q: "Ushbu gapdagi xatoni tuzating:",
-        opts: [
-          "We need to buy some food for the cat.",
-          "We are needing buy some food for the cat.",
-          "We need to buying some food for the cat.",
-          "We needs buy some food for the cat."
-        ],
-        ans: "We need to buy some food for the cat.",
-        expl: "Fe'l (buy) bilan 'need to buy' bo'ladi."
-      },
-      {
-        wrong: "❌ 'The bus is leaving at 07:00 every morning.'",
-        q: "Ushbu gapdagi xatoni tuzating:",
-        opts: [
-          "The bus leaves at 07:00 every morning.",
-          "The bus leave at 07:00 every morning.",
-          "The bus is leave at 07:00 every morning.",
-          "The bus going to leave at 07:00 every morning."
-        ],
-        ans: "The bus leaves at 07:00 every morning.",
-        expl: "Har tongdagi rasmiy jadval uchun Present Simple (leaves) kerak."
-      },
-      {
-        wrong: "❌ 'He buyed a new smartphone last Saturday.'",
-        q: "Ushbu gapdagi xatoni tuzating:",
-        opts: [
-          "He bought a new smartphone last Saturday.",
-          "He did buyed a new smartphone last Saturday.",
-          "He buy a new smartphone last Saturday.",
-          "He was buy a new smartphone last Saturday."
-        ],
-        ans: "He bought a new smartphone last Saturday.",
-        expl: "buy noto'g'ri fe'l, V2 shakli 'bought' bo'ladi."
-      },
-      {
-        wrong: "❌ 'Are you know his phone number?'",
-        q: "Ushbu gapdagi xatoni tuzating:",
-        opts: [
-          "Do you know his phone number?",
-          "Are you knowing his phone number?",
-          "Do you knowing his phone number?",
-          "Is you know his phone number?"
-        ],
-        ans: "Do you know his phone number?",
-        expl: "'know' holat fe'li, so'rog'i 'Do you know?' bo'ladi."
-      },
-      {
-        wrong: "❌ 'I will go to visit my aunt this Sunday — I already planned it.'",
-        q: "Ushbu gapdagi xatoni tuzating:",
-        opts: [
-          "I am going to visit my aunt this Sunday — I already planned it.",
-          "I am visit my aunt this Sunday — I already planned it.",
-          "I will to visit my aunt this Sunday — I already planned it.",
-          "I go visit my aunt this Sunday — I already planned it."
-        ],
-        ans: "I am going to visit my aunt this Sunday — I already planned it.",
-        expl: "Oldindan tuzilgan reja uchun 'be going to' ishlatiladi."
-      },
-      {
-        wrong: "❌ 'Where did you went on Sunday?'",
-        q: "Ushbu gapdagi xatoni tuzating:",
-        opts: [
-          "Where did you go on Sunday?",
-          "Where were you go on Sunday?",
-          "Where did you going on Sunday?",
-          "Where did you gone on Sunday?"
-        ],
-        ans: "Where did you go on Sunday?",
-        expl: "did bor joyda 'went' emas, 'go' bo'ladi."
-      },
-      {
-        wrong: "❌ 'She is tired and needs sleep.'",
-        q: "Ushbu gapdagi xatoni tuzating:",
-        opts: [
-          "She is tired and needs to sleep.",
-          "She is tired and need sleep.",
-          "She is tired and is needing sleep.",
-          "She is tired and needs to sleeping."
-        ],
-        ans: "She is tired and needs to sleep.",
-        expl: "sleep fe'l bo'lgani sababli 'needs TO sleep' bo'ladi."
-      }
-    ];
+  <!-- SUBMISSION -->
+  <div class="submit-card">
+    <h3 style="font-size:1.4rem; font-weight:800; margin-bottom:10px;">A1 Diagnostik Natijani Topshirish</h3>
+    <p style="color:#cbd5e1; font-size:0.92rem; margin-bottom:20px; max-width:600px; margin-left:auto; margin-right:auto;">Testni tugatgach, tugmani bosing. Har bir bo'lim bo'yicha to'liq hisobot ustozingizning Telegram botiga yuboriladi.</p>
+    <button class="submit-btn" id="submitBtn" onclick="submitToTelegram()">🚀 Natijani Topshirish</button>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
 
-    // ==========================================================
-    // MODULE 4: 8 TRANSLATION DRILL QUESTIONS
-    // ==========================================================
-    const TRANSLATION_QUESTIONS = [
-      { id: 1, uz: "Mening singlim har kuni soat 7 da uyg'onadi.", hint: "Present Simple (wake up at 7)" },
-      { id: 2, uz: "Qarang! Bolalar hozir bog'da futbol o'ynashmoqda.", hint: "Present Continuous (Look! are playing)" },
-      { id: 3, uz: "Biz yakshanba kuni yangi mashina sotib olmoqchimiz (reja).", hint: "Future plan (are going to buy)" },
-      { id: 4, uz: "Poyezd ertaga ertalab soat 8:30 da jo'naydi (jadval).", hint: "Timetable (leaves at 8:30)" },
-      { id: 5, uz: "Menga biroz sovuq suv kerak (narsa kerak).", hint: "need + noun (need cold water)" },
-      { id: 6, uz: "U juda charchagan, u uxlashi kerak (ish qilish kerak).", hint: "need + to + verb (needs to sleep)" },
-      { id: 7, uz: "Men kecha bozorga bormadim, uyda qoldim.", hint: "Past Simple (didn't go, stayed at home)" },
-      { id: 8, uz: "Siz kecha yangi kitob sotib oldingizmi?", hint: "Past Simple question (Did you buy...?)" }
-    ];
+</div>
 
-    // State Variables
-    let userM1Answers = {}; // key: idx, val: opt
-    let userM2Answers = {}; // key: idx, val: opt
-    let userM3Answers = {}; // key: idx, val: opt
-    let userM4Translations = {}; // key: idx, val: text
+<script>
+  // TELEGRAM CONFIGURATION
+  const BOT_TOKEN = '8787909516:AAFpho1G-GYg1UW87lTIEjR1Ir0z6QjmN78';
+  const TEACHER_IDS = ['6315515792', '7957347033'];
+  const STORAGE_KEY = 'teacheros_hw_a1_comprehensive_level_check';
 
-    // Web Speech API
-    function speak(text) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'en-US';
-        u.rate = 0.86;
-        window.speechSynthesis.speak(u);
-      }
+  // SECTION 1: 10 PRESENT ITEMS
+  const PRESENT_ITEMS = [
+    { id: 1, prompt: "My brother usually ______ by subway, but today he ______ by taxi.", opts: ["goes / is going", "is going / goes", "goes / goes", "is going / is going"], ans: "goes / is going", expl: "'usually' odat (goes), 'today' bugungi istisno (is going)." },
+    { id: 2, prompt: "Listen! Somebody ______ the piano next door.", opts: ["is playing", "plays", "are playing", "play"], ans: "is playing", expl: "'Listen!' ayni damdagi harakat: 'is playing'." },
+    { id: 3, prompt: "Dilnoza ______ coffee. She ______ green tea right now.", opts: ["doesn't like / is drinking", "isn't liking / drinks", "doesn't like / drinks", "isn't liking / is drinking"], ans: "doesn't like / is drinking", expl: "'like' holat fe'li (-ing olmaydi), 'right now' ayni damdagi harakat (is drinking)." },
+    { id: 4, prompt: "______ your parents live in Samarkand?", opts: ["Do", "Does", "Are", "Is"], ans: "Do", expl: "'Your parents' = They (ota-onangiz). Savolda 'Do' bo'ladi." },
+    { id: 5, prompt: "Where is Aziz? — He ______ in the library at the moment.", opts: ["is studying", "studies", "study", "are studying"], ans: "is studying", expl: "'at the moment' (ayni paytda) &rarr; 'is studying'." },
+    { id: 6, prompt: "Water ______ at 0 degrees Celsius.", opts: ["freezes", "is freezing", "freeze", "are freezing"], ans: "freezes", expl: "Tabiiy ilmiy fakt har doim Present Simple: 'freezes'." },
+    { id: 7, prompt: "I ______ the right answer now. (know)", opts: ["know", "am knowing", "knows", "are knowing"], ans: "know", expl: "'know' holat fe'li bo'lib, 'now' kelsa ham -ing olmaydi: 'I know'." },
+    { id: 8, prompt: "Look! That man ______ to open your car door!", opts: ["is trying", "tries", "try", "are trying"], ans: "is trying", expl: "'Look!' ayni paytdagi xavfli harakat: 'is trying'." },
+    { id: 9, prompt: "She ______ up at 6:30 AM on weekdays.", opts: ["always wakes", "is always waking", "wakes always", "is waking always"], ans: "always wakes", expl: "Chastota ravishlari (always) asosiy fe'ldan oldin keladi: 'always wakes'." },
+    { id: 10, prompt: "Why ______ you ______ sunglasses today? It's cloudy.", opts: ["are / wearing", "do / wear", "does / wear", "is / wearing"], ans: "are / wearing", expl: "Bugungi ayni damdagi holat: 'Why are you wearing...?'" }
+  ];
+
+  // SECTION 2: 10 PAST ITEMS
+  const PAST_ITEMS = [
+    { id: 1, prompt: "I ______ a great movie on television last night.", opts: ["watched", "watch", "was watching", "watches"], ans: "watched", expl: "'last night' (kecha kechqurun) aniq o'tgan vaqt: Past Simple 'watched'." },
+    { id: 2, prompt: "While I ______ my homework, my friend ______ me.", opts: ["was doing / called", "did / was calling", "was doing / was calling", "did / called"], ans: "was doing / called", expl: "Davom etayotgan ish (was doing) + uni bo'lib qo'ygan qisqa harakat (called)." },
+    { id: 3, prompt: "We ______ to Istanbul two years ago.", opts: ["went", "go", "have gone", "were going"], ans: "went", expl: "'two years ago' aniq o'tgan vaqt: go &rarr; went." },
+    { id: 4, prompt: "What ______ you ______ at 8:00 PM yesterday?", opts: ["were / doing", "did / do", "are / doing", "do / do"], ans: "were / doing", expl: "Kecha soat 8:00 da aniq jarayon haqida so'ralmoqda: Past Continuous 'were you doing'." },
+    { id: 5, prompt: "She ______ the key because she ______ in a hurry.", opts: ["lost / was", "losed / were", "was losing / was", "lost / were"], ans: "lost / was", expl: "lose &rarr; lost (V2). 'She was in a hurry'." },
+    { id: 6, prompt: "When the phone rang, Malika ______ dinner.", opts: ["was cooking", "cooked", "cooks", "is cooking"], ans: "was cooking", expl: "Telefon jiringlagan paytda u taom pishirayotgan edi: 'was cooking'." },
+    { id: 7, prompt: "I ______ see you at the party yesterday. Where were you?", opts: ["didn't", "wasn't", "don't", "haven't"], ans: "didn't", expl: "Fe'lli o'tgan zamon inkori: 'didn't see'." },
+    { id: 8, prompt: "The children ______ in the garden when it started to rain.", opts: ["were playing", "played", "are playing", "was playing"], ans: "were playing", expl: "'The children' (ular - ko'plik) o'ynayotgan edi: 'were playing'." },
+    { id: 9, prompt: "Yesterday morning, I woke up, ______ breakfast, and left for work.", opts: ["ate", "was eating", "have eaten", "eat"], ans: "ate", expl: "Ketma-ket sodir bo'lgan o'tgan ishlar: woke up, ate, left." },
+    { id: 10, prompt: "He ______ drive a car when he was sixteen.", opts: ["couldn't", "can't", "didn't could", "wasn't"], ans: "couldn't", expl: "O'tmishdagi qobiliyat (can ning o'tgan shakli): 'couldn't'." }
+  ];
+
+  // SECTION 3: 10 PRESENT PERFECT ITEMS
+  const PERF_ITEMS = [
+    { id: 1, prompt: "I have lived in this city ______ three years.", opts: ["for", "since", "from", "during"], ans: "for", expl: "'three years' vaqt davomiyligi (muddat) &rarr; 'for'." },
+    { id: 2, prompt: "She has been a teacher here ______ 2021.", opts: ["since", "for", "from", "at"], ans: "since", expl: "'2021' boshlangan yil &rarr; 'since'." },
+    { id: 3, prompt: "______ you ever ______ sushi?", opts: ["Have / eaten", "Did / eat", "Have / ate", "Do / eat"], ans: "Have / eaten", expl: "'ever' bilan hayotiy tajriba: 'Have you ever eaten...?'" },
+    { id: 4, prompt: "My brother ______ his homework yet.", opts: ["hasn't finished", "didn't finish", "haven't finished", "not finished"], ans: "hasn't finished", expl: "'yet' inkor gap oxirida kelganda: 'hasn't finished yet'." },
+    { id: 5, prompt: "We ______ best friends since childhood.", opts: ["have been", "are", "were", "has been"], ans: "have been", expl: "Bolalikdan beri davom etayotgan do'stlik: 'have been friends since childhood'." },
+    { id: 6, prompt: "I haven't seen Aziz ______ last Monday.", opts: ["since", "for", "from", "before"], ans: "since", expl: "'last Monday' (o'tgan dushanba) aniq vaqt nuqtasi &rarr; 'since'." },
+    { id: 7, prompt: "Look! Somebody ______ their bag on the bench.", opts: ["has left", "have left", "left", "is leaving"], ans: "has left", expl: "'Somebody' (bitta odam) sumkasini qoldirib ketgan (natijasi hozir turibdi): 'has left'." },
+    { id: 8, prompt: "How long ______ you ______ each other?", opts: ["have / known", "do / know", "did / know", "are / knowing"], ans: "have / known", expl: "'How long' bilan davomiylik savoli: 'have you known'." },
+    { id: 9, prompt: "They have waited for the bus ______ forty minutes.", opts: ["for", "since", "from", "during"], ans: "for", expl: "'forty minutes' (40 daqiqa) davomida: 'for forty minutes'." },
+    { id: 10, prompt: "Dilnoza has already ______ her new car.", opts: ["washed", "wash", "washing", "washes"], ans: "washed", expl: "has already + V3 (yuvib bo'ldi): 'washed'." }
+  ];
+
+  // SECTION 4: 8 FUTURE ITEMS
+  const FUTURE_ITEMS = [
+    { id: 1, prompt: "Look at those dark clouds! It ______ rain.", opts: ["is going to", "will", "is", "shall"], ans: "is going to", expl: "Dalil ko'rinib turibdi (qora bulutlar) &rarr; 'is going to rain'." },
+    { id: 2, prompt: "The bag looks very heavy. I ______ help you!", opts: ["will", "am going to", "help", "shall to"], ans: "will", expl: "Shu lahzada yordam berish qarori (spontan): 'I will help you'." },
+    { id: 3, prompt: "We have bought the tickets. We ______ to Dubai next week.", opts: ["are going to fly", "will fly", "fly", "flying"], ans: "are going to fly", expl: "Chiptalar olingan (oldindan reja) &rarr; 'are going to fly'." },
+    { id: 4, prompt: "I think it ______ be sunny tomorrow.", opts: ["will", "is going to", "is", "shall"], ans: "will", expl: "'I think' (menimcha) shaxsiy fikr/bashorat &rarr; 'will'." },
+    { id: 5, prompt: "Don't worry, I promise I ______ tell anyone your secret.", opts: ["won't", "am not going to", "don't", "not will"], ans: "won't", expl: "Va'da berishda 'will / won't': 'I won't tell anyone'." },
+    { id: 6, prompt: "What ______ you ______ after class today?", opts: ["are / going to do", "will / do", "do / do", "are / do"], ans: "are / going to do", expl: "Oldindan rejalashtirilgan niyatni so'rash: 'are you going to do'." },
+    { id: 7, prompt: "'The phone is ringing.' — 'OK, I ______ answer it.'", opts: ["will", "am going to", "am answering", "answer"], ans: "will", expl: "Shu paytda qilingan tezkor qaror: 'I will answer it'." },
+    { id: 8, prompt: "She is pregnant. She ______ have a baby in May.", opts: ["is going to", "will", "is", "shall"], ans: "is going to", expl: "Aniq tibbiy dalilga asoslangan kelajak: 'is going to have a baby'." }
+  ];
+
+  // SECTION 5: 8 MISTAKE HUNTER ITEMS
+  const HUNTER_ITEMS = [
+    {
+      id: 1,
+      bad: "❌ She have lived in this city since three years.",
+      opts: [
+        "have o'rniga HAS va since o'rniga FOR qo'yish kerak",
+        "lived o'rniga LIVE qo'yish kerak",
+        "this o'rniga THAT qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ She HAS lived in this city FOR three years.",
+      expl: "She ga 'has' keladi va 3 yillik muddat uchun 'for' ishlatiladi."
+    },
+    {
+      id: 2,
+      bad: "❌ While I walked home, it was starting to rain.",
+      opts: [
+        "was walking home, it started qo'yish kerak",
+        "walked o'rniga WALKS qo'yish kerak",
+        "starting o'rniga STARTED TO RAINING qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ While I WAS WALKING home, it STARTED to rain.",
+      expl: "While bilan jarayon (was walking), unga to'satdan yomg'ir yog'ishi (started)."
+    },
+    {
+      id: 3,
+      bad: "❌ Look! The boy is fall from his bicycle!",
+      opts: [
+        "is fall o'rniga IS FALLING qo'yish kerak",
+        "fall o'rniga FELL qo'yish kerak",
+        "Look o'rniga LISTEN qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ Look! The boy IS FALLING / IS GOING TO FALL from his bicycle!",
+      expl: "Look! ayni damdagi harakat: is + V-ing."
+    },
+    {
+      id: 4,
+      bad: "❌ Did you went to school yesterday?",
+      opts: [
+        "went o'rniga GO qo'yish kerak",
+        "Did o'rniga DO qo'yish kerak",
+        "yesterday o'rniga TODAY qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ Did you GO to school yesterday?",
+      expl: "'Did' yordamchi fe'li o'tgan zamonni olgani uchun asosiy fe'l V1 (go) bo'ladi."
+    },
+    {
+      id: 5,
+      bad: "❌ I am knowing him for a long time.",
+      opts: [
+        "am knowing o'rniga HAVE KNOWN qo'yish kerak",
+        "knowing o'rniga KNEW qo'yish kerak",
+        "for o'rniga SINCE qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ I HAVE KNOWN him for a long time.",
+      expl: "'know' holat fe'li (-ing olmaydi) va 'for a long time' bilan Present Perfect keladi."
+    },
+    {
+      id: 6,
+      bad: "❌ Look at those black clouds! It will rain soon.",
+      opts: [
+        "will o'rniga IS GOING TO qo'yish kerak",
+        "rain o'rniga RAINING qo'yish kerak",
+        "soon o'rniga YESTERDAY qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ Look at those black clouds! It IS GOING TO rain soon.",
+      expl: "Ko'rinib turgan dalil (bulutlar) bilan har doim 'is going to' keladi."
+    },
+    {
+      id: 7,
+      bad: "❌ Where did you was at 8 PM yesterday?",
+      opts: [
+        "did you was o'rniga WERE YOU qo'yish kerak",
+        "was o'rniga BEEN qo'yish kerak",
+        "did o'rniga DO qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ Where WERE YOU at 8 PM yesterday?",
+      expl: "'to be' fe'li savolda did talab qilmaydi: 'Where were you?'"
+    },
+    {
+      id: 8,
+      bad: "❌ He doesn't likes coffee.",
+      opts: [
+        "likes o'rniga LIKE qo'yish kerak",
+        "doesn't o'rniga DON'T qo'yish kerak",
+        "coffee o'rniga TEA qo'yish kerak"
+      ],
+      ans: 0,
+      fixed: "✅ He DOESN'T LIKE coffee.",
+      expl: "'doesn't' dan keyin fe'lning -s qo'shimchasi tushib qoladi."
     }
+  ];
 
-    // Switch Modules
-    function switchModule(modIdx) {
-      document.querySelectorAll('.module-card').forEach((c, i) => {
-        c.classList.toggle('active', i === modIdx);
+  // SECTION 6: 4 SCRAMBLE BUILDER ITEMS
+  const SCRAMBLE_ITEMS = [
+    {
+      id: 1,
+      words: ["I", "have lived", "in this city", "for", "five years"],
+      correct: "I have lived in this city for five years",
+      uz: "Men bu shaharda 5 yildan beri yashayman."
+    },
+    {
+      id: 2,
+      words: ["While", "she was cooking", "the lights", "went out"],
+      correct: "While she was cooking the lights went out",
+      uz: "U ovqat pishirayotganda chiroq o'chib qoldi."
+    },
+    {
+      id: 3,
+      words: ["Look!", "It is", "going to", "snow"],
+      correct: "Look! It is going to snow",
+      uz: "Qarang! Qor yog'moqchi."
+    },
+    {
+      id: 4,
+      words: ["Have you", "ever", "visited", "Samarkand?"],
+      correct: "Have you ever visited Samarkand?",
+      uz: "Hech Samarqandga borganmisiz?"
+    }
+  ];
+
+  // SECTION 7: 5 GUIDED TRANSLATIONS
+  const TRANS_ITEMS = [
+    { id: 1, uz: "1. Men bu maktabda 2 yildan beri o'qiyman.", hint: "Yordam: I have studied at this school / for two years", placeholder: "I have studied at this school..." },
+    { id: 2, uz: "2. Kecha soat 8 da nima qilayotgan edingiz?", hint: "Yordam: What were you doing / at 8 PM yesterday?", placeholder: "What were you doing..." },
+    { id: 3, uz: "3. Biz kelasi hafta Toshkentga bormoqchimiz (reja).", hint: "Yordam: We are going to go to Tashkent / next week", placeholder: "We are going to go to Tashkent..." },
+    { id: 4, uz: "4. U hech qachon samolyotda uchmagan.", hint: "Yordam: He has never flown / by plane", placeholder: "He has never flown..." },
+    { id: 5, uz: "5. Singlim dars qilayotganda, men kitob o'qiyotgan edim.", hint: "Yordam: While my sister was studying, I was reading a book", placeholder: "While my sister was studying..." }
+  ];
+
+  // STATE TRACKING
+  let userResponses = {
+    present: {},
+    past: {},
+    perf: {},
+    future: {},
+    hunter: {},
+    scramble: {}
+  };
+
+  let scrambleCurrent = {};
+
+  // INITIALIZATION
+  function init() {
+    renderPresent();
+    renderPast();
+    renderPerf();
+    renderFuture();
+    renderHunter();
+    renderScramble();
+    renderTranslations();
+    loadDraft();
+    updateLiveScore();
+  }
+
+  function renderPresent() {
+    const c = document.getElementById('presentContainer');
+    c.innerHTML = PRESENT_ITEMS.map((item, idx) => renderChoiceCard('present', item, idx, 10)).join('');
+  }
+
+  function renderPast() {
+    const c = document.getElementById('pastContainer');
+    c.innerHTML = PAST_ITEMS.map((item, idx) => renderChoiceCard('past', item, idx, 10)).join('');
+  }
+
+  function renderPerf() {
+    const c = document.getElementById('perfContainer');
+    c.innerHTML = PERF_ITEMS.map((item, idx) => renderChoiceCard('perf', item, idx, 10)).join('');
+  }
+
+  function renderFuture() {
+    const c = document.getElementById('futureContainer');
+    c.innerHTML = FUTURE_ITEMS.map((item, idx) => renderChoiceCard('future', item, idx, 8)).join('');
+  }
+
+  function renderChoiceCard(cat, item, idx, total) {
+    return `
+      <div class="q-card" id="card_${cat}_${item.id}">
+        <div class="q-num">Savol #${idx + 1} / ${total}</div>
+        <div class="q-prompt">${item.prompt.replace('______', '<code>[ ? ]</code>')}</div>
+        <div class="btn-group">
+          ${item.opts.map(opt => `
+            <button class="choice-btn" id="btn_${cat}_${item.id}_${opt.replace(/[^a-zA-Z0-9]/g, '_')}" onclick="handleGenericChoice('${cat}', ${item.id}, '${opt}')">${opt}</button>
+          `).join('')}
+        </div>
+        <div class="expl-box" id="expl_${cat}_${item.id}"></div>
+      </div>
+    `;
+  }
+
+  function handleGenericChoice(cat, id, chosen) {
+    let dataset;
+    if (cat === 'present') dataset = PRESENT_ITEMS;
+    else if (cat === 'past') dataset = PAST_ITEMS;
+    else if (cat === 'perf') dataset = PERF_ITEMS;
+    else if (cat === 'future') dataset = FUTURE_ITEMS;
+
+    const item = dataset.find(x => x.id === id);
+    const card = document.getElementById(`card_${cat}_${id}`);
+    const expl = document.getElementById(`expl_${cat}_${id}`);
+
+    const buttons = card.querySelectorAll('.choice-btn');
+    buttons.forEach(b => {
+      b.disabled = true;
+      if (b.innerText.trim() === item.ans) b.classList.add('selected-correct');
+    });
+
+    const isCorrect = chosen === item.ans;
+    userResponses[cat][id] = { chosen, isCorrect, correctAns: item.ans };
+
+    if (isCorrect) {
+      card.classList.add('correct');
+      expl.className = 'expl-box show correct';
+      expl.innerHTML = '✅ <b>To\'g\'ri!</b> ' + item.expl;
+    } else {
+      card.classList.add('wrong');
+      buttons.forEach(b => {
+        if (b.innerText.trim() === chosen) b.classList.add('selected-wrong');
       });
-      document.querySelectorAll('.step-btn').forEach((b, i) => {
-        b.classList.toggle('active', i === modIdx);
-      });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      updateSummaries();
+      expl.className = 'expl-box show wrong';
+      expl.innerHTML = '❌ <b>Xato.</b> To\'g\'ri javob: <b>' + item.ans + '</b>. ' + item.expl;
     }
 
-    // Update Summary Counters
-    function updateSummaries() {
-      document.getElementById('summaryM1').innerText = `${Object.keys(userM1Answers).length} / 30 belgilandi`;
-      document.getElementById('summaryM2').innerText = `${Object.keys(userM2Answers).length} / 10 belgilandi`;
-      document.getElementById('summaryM3').innerText = `${Object.keys(userM3Answers).length} / 10 belgilandi`;
-      
-      let typedM4Count = 0;
-      Object.values(userM4Translations).forEach(v => { if (v && v.trim().length > 2) typedM4Count++; });
-      document.getElementById('summaryM4').innerText = `${typedM4Count} / 8 yozildi`;
-    }
+    updateLiveScore();
+    saveDraft();
+  }
 
-    // Render Module 1 (Grammar MCQs)
-    function renderModule1() {
-      const container = document.getElementById('mcqQuestionsContainer');
-      container.innerHTML = '';
-
-      GRAMMAR_MCQ_QUESTIONS.forEach((q, idx) => {
-        const block = document.createElement('div');
-        block.className = 'question-block';
-
-        let optsHtml = '';
-        const letters = ['A', 'B', 'C', 'D'];
-        q.opts.forEach((opt, oIdx) => {
-          optsHtml += `
-            <button class="opt-btn" id="m1_q${idx}_opt${oIdx}" onclick="selectM1(${idx}, '${opt.replace(/'/g, "\\'")}', ${oIdx})">
-              <span class="opt-circle">${letters[oIdx]}</span>
-              <span>${opt}</span>
+  function renderHunter() {
+    const c = document.getElementById('hunterContainer');
+    c.innerHTML = HUNTER_ITEMS.map((item, idx) => `
+      <div class="q-card" id="card_hunt_${item.id}">
+        <div class="q-num">Qopqon #${idx + 1} / 8</div>
+        <div class="sentence-box-hunter">${item.bad}</div>
+        <div class="q-prompt" style="font-size:0.92rem; color:#cbd5e1;">Qanday to'g'irlaymiz?</div>
+        <div class="btn-group" style="flex-direction:column; align-items:stretch;">
+          ${item.opts.map((opt, optIdx) => `
+            <button class="choice-btn" id="btn_hunt_${item.id}_${optIdx}" onclick="handleHunterChoice(${item.id}, ${optIdx})" style="text-align:left;">
+              ${String.fromCharCode(65 + optIdx)}) ${opt}
             </button>
-          `;
-        });
+          `).join('')}
+        </div>
+        <div class="expl-box" id="expl_hunt_${item.id}"></div>
+      </div>
+    `).join('');
+  }
 
-        block.innerHTML = `
-          <div class="q-meta">
-            <span class="topic-pill">${q.topicName}</span>
-            <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); font-family: monospace;">Savol ${idx + 1}/30</span>
-          </div>
-          <div class="q-text">
-            <span>${idx + 1}. ${q.q}</span>
-            <button class="speaker-btn" onclick="speak('${q.q.replace(/'/g, "\\'")}')" title="Savolni tinglash">🔊</button>
-          </div>
-          <div class="options-grid two-col">${optsHtml}</div>
-        `;
-        container.appendChild(block);
-      });
-    }
+  function handleHunterChoice(id, chosenIdx) {
+    const item = HUNTER_ITEMS.find(x => x.id === id);
+    const card = document.getElementById('card_hunt_' + id);
+    const expl = document.getElementById('expl_hunt_' + id);
 
-    function selectM1(qIdx, opt, optIdx) {
-      userM1Answers[qIdx] = opt;
-      const q = GRAMMAR_MCQ_QUESTIONS[qIdx];
-      q.opts.forEach((_, i) => {
-        const btn = document.getElementById(`m1_q${qIdx}_opt${i}`);
-        btn.classList.toggle('selected', i === optIdx);
-      });
-      updateSummaries();
-    }
-
-    // Render Module 2 (Verbs Reference & Quiz)
-    function renderModule2() {
-      // Table
-      const tBody = document.getElementById('verbTableBody');
-      tBody.innerHTML = '';
-      IRREGULAR_VERBS_30.forEach((vb) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="v1-cell">${vb.v1}</td>
-          <td class="v2-cell">${vb.v2}</td>
-          <td class="v3-cell">${vb.v3}</td>
-          <td style="color: #E2E8F0; font-family: sans-serif;">${vb.uz}</td>
-          <td style="text-align: right;">
-            <button class="speaker-btn" style="display: inline-flex;" onclick="speak('${vb.v1}, ${vb.v2}, ${vb.v3}')" title="Tinglash">🔊</button>
-          </td>
-        `;
-        tBody.appendChild(tr);
-      });
-
-      // 10 Verbs Quiz
-      const quizContainer = document.getElementById('verbQuizContainer');
-      quizContainer.innerHTML = '';
-      VERB_RECALL_QUESTIONS.forEach((q, idx) => {
-        const block = document.createElement('div');
-        block.className = 'question-block';
-
-        let optsHtml = '';
-        const letters = ['A', 'B', 'C', 'D'];
-        q.opts.forEach((opt, oIdx) => {
-          optsHtml += `
-            <button class="opt-btn" id="m2_q${idx}_opt${oIdx}" onclick="selectM2(${idx}, '${opt.replace(/'/g, "\\'")}', ${oIdx})">
-              <span class="opt-circle">${letters[oIdx]}</span>
-              <span>${opt}</span>
-            </button>
-          `;
-        });
-
-        block.innerHTML = `
-          <div class="q-meta">
-            <span class="topic-pill">Past Simple V2</span>
-            <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); font-family: monospace;">${idx + 1}/10</span>
-          </div>
-          <div class="q-text">
-            <span>${idx + 1}. ${q.q}</span>
-            <button class="speaker-btn" onclick="speak('${q.v1}')" title="Fe'lni tinglash">🔊</button>
-          </div>
-          <div class="options-grid two-col">${optsHtml}</div>
-        `;
-        quizContainer.appendChild(block);
-      });
-    }
-
-    function selectM2(qIdx, opt, optIdx) {
-      userM2Answers[qIdx] = opt;
-      const q = VERB_RECALL_QUESTIONS[qIdx];
-      q.opts.forEach((_, i) => {
-        const btn = document.getElementById(`m2_q${qIdx}_opt${i}`);
-        btn.classList.toggle('selected', i === optIdx);
-      });
-      updateSummaries();
-    }
-
-    // Render Module 3 (Error Correction)
-    function renderModule3() {
-      const container = document.getElementById('errorCorrectionContainer');
-      container.innerHTML = '';
-
-      ERROR_CORRECTION_QUESTIONS.forEach((q, idx) => {
-        const block = document.createElement('div');
-        block.className = 'question-block';
-
-        let optsHtml = '';
-        const letters = ['A', 'B', 'C', 'D'];
-        q.opts.forEach((opt, oIdx) => {
-          optsHtml += `
-            <button class="opt-btn" id="m3_q${idx}_opt${oIdx}" onclick="selectM3(${idx}, '${opt.replace(/'/g, "\\'")}', ${oIdx})">
-              <span class="opt-circle">${letters[oIdx]}</span>
-              <span>${opt}</span>
-            </button>
-          `;
-        });
-
-        block.innerHTML = `
-          <div class="q-meta">
-            <span class="topic-pill" style="background: rgba(239, 68, 68, 0.15); color: #FCA5A5; border-color: rgba(239, 68, 68, 0.3);">Xatoni To'g'irlash</span>
-            <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); font-family: monospace;">${idx + 1}/10</span>
-          </div>
-          <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #FCA5A5; background: rgba(239, 68, 68, 0.1); padding: 10px 14px; border-radius: 8px; margin-bottom: 12px;">
-            ${q.wrong}
-          </div>
-          <div class="q-text">
-            <span>${idx + 1}. ${q.q}</span>
-          </div>
-          <div class="options-grid">${optsHtml}</div>
-        `;
-        container.appendChild(block);
-      });
-    }
-
-    function selectM3(qIdx, opt, optIdx) {
-      userM3Answers[qIdx] = opt;
-      const q = ERROR_CORRECTION_QUESTIONS[qIdx];
-      q.opts.forEach((_, i) => {
-        const btn = document.getElementById(`m3_q${qIdx}_opt${i}`);
-        btn.classList.toggle('selected', i === optIdx);
-      });
-      updateSummaries();
-    }
-
-    // Render Module 4 (Translations)
-    function renderModule4() {
-      const container = document.getElementById('translationContainer');
-      container.innerHTML = '';
-
-      TRANSLATION_QUESTIONS.forEach((item, idx) => {
-        const block = document.createElement('div');
-        block.className = 'question-block';
-
-        block.innerHTML = `
-          <div class="q-meta">
-            <span class="topic-pill">Tarjima Drilli</span>
-            <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); font-family: monospace;">${idx + 1}/8</span>
-          </div>
-          <div class="q-text">
-            <span>${idx + 1}. ${item.uz}</span>
-          </div>
-          <p style="font-size: 12px; color: var(--soft-lilac); margin-bottom: 8px;">💡 Yordamchi kalit: <i>${item.hint}</i></p>
-          <input type="text" class="text-input" placeholder="Inglizcha tarjimasini yozing..." 
-            oninput="userM4Translations[${idx}] = this.value; updateSummaries();"
-            value="${userM4Translations[idx] || ''}">
-        `;
-        container.appendChild(block);
-      });
-    }
-
-    // FINAL SUBMISSION TO TELEGRAM & LOCAL REPORT
-    
-    function switchReportTab(tabId) {
-      document.querySelectorAll('.report-tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.report-tab-content').forEach(c => c.classList.remove('active'));
-      
-      const targetContent = document.getElementById(tabId);
-      if (targetContent) targetContent.classList.add('active');
-
-      const btns = document.querySelectorAll('.report-tab-btn');
-      if (tabId === 'tab-recs' && btns[0]) btns[0].classList.add('active');
-      if (tabId === 'tab-mistakes' && btns[1]) btns[1].classList.add('active');
-      if (tabId === 'tab-all' && btns[2]) btns[2].classList.add('active');
-    }
-
-    // Pedagogical Roadmap Data for A1
-    const A1_TOPIC_RECS = {
-      t1: {
-        name: "Present Simple (Routines & Facts)",
-        weakMsg: "Uchinchi shaxs (-s/-es) qo'shimchasi va do/does inkorida xatoliklar kuzatildi.",
-        action: "Darsda he/she/it uchun fe'llarga -s qo'shish va 'doesn't + V1' formulasini qayta mustahkamlash.",
-        hw: "Topshiriq: Har kungi kun tartibi haqida he/she/it bilan 10 ta gap tuzish."
-      },
-      t2: {
-        name: "Present Continuous (Now & Temporary)",
-        weakMsg: "Ayni paytda sodir bo'layotgan ishda to be (am/is/are) yoki -ing tushib qolmoqda.",
-        action: "'am/is/are + fe'l-ing' formulasini vaqt signallari (now, right now, look!, listen!) bilan drill qilish.",
-        hw: "Topshiriq: Ayni damda xonada kim nima qilayotgani haqida 8 ta gap yozish."
-      },
-      t3: {
-        name: "Future Plans (be going to vs pres cont)",
-        weakMsg: "Shaxsiy niyat (going to) va aniq uchrashuv (Continuous) farqida chalkashish bor.",
-        action: "O'quvchiga 'will' o'rniga faqat 'be going to' va 'Present Continuous' ni vaziyatlar bilan solishtirish.",
-        hw: "Topshiriq: Ertangi 5 ta reja (going to) va 3 ta aniq vaqtli uchrashuv (Continuous) yozish."
-      },
-      t4: {
-        name: "Present Simple for Future (Timetables)",
-        weakMsg: "Kelajakdagi transport yoki dars jadvallarida 'will' ishlatish tuzog'iga tushilgan.",
-        action: "Poyezd, reys, kino va bank jadvallari kelajak bo'lsa ham Present Simple bo'lishini mashq qilish.",
-        hw: "Topshiriq: Samarqand poyezdi va kino jadvali bo'yicha 5 ta gap tuzish."
-      },
-      t5: {
-        name: "Stative Verbs & 'Need' Rule",
-        weakMsg: "Holat fe'llarini (know, like, want, need) -ing bilan ishlatish yoki 'need to + verb' da xatolik.",
-        action: "15 ta asosiy holat fe'llarini va 'need + noun' vs 'need + to + verb' qoidasini takrorlash.",
-        hw: "Topshiriq: need va need to ishtirokida 6 ta gap yozish."
-      },
-      t6: {
-        name: "Past Simple & 30 Irregular Verbs",
-        weakMsg: "Noto'g'ri fe'llarning V2 shakllarida yoki 'didn't + V1' tuzilishida chalkashlik.",
-        action: "30 ta eng muhim noto'g'ri fe'llar 3 ustunini yod olish va didn't kelganda fe'l V1 ga qaytishini mustahkamlash.",
-        hw: "Topshiriq: Kechagi kun haqida 10 ta noto'g'ri fe'ldan foydalanib hikoya yozish."
+    item.opts.forEach((_, i) => {
+      const b = document.getElementById('btn_hunt_' + id + '_' + i);
+      if (b) {
+        b.disabled = true;
+        if (i === item.ans) b.classList.add('selected-correct');
       }
+    });
+
+    const isCorrect = chosenIdx === item.ans;
+    userResponses.hunter[id] = { chosen: chosenIdx, isCorrect, correctAns: item.ans };
+
+    if (isCorrect) {
+      card.classList.add('correct');
+      expl.className = 'expl-box show correct';
+      expl.innerHTML = '✅ <b>Ajoyib!</b> ' + item.fixed + '<br><span style="font-size:0.82rem; color:#cbd5e1;">' + item.expl + '</span>';
+    } else {
+      card.classList.add('wrong');
+      const badBtn = document.getElementById('btn_hunt_' + id + '_' + chosenIdx);
+      if (badBtn) badBtn.classList.add('selected-wrong');
+      expl.className = 'expl-box show wrong';
+      expl.innerHTML = '❌ <b>Xato.</b> To\'g\'ri variant: <b>' + item.fixed + '</b><br><span style="font-size:0.82rem; color:#cbd5e1;">' + item.expl + '</span>';
+    }
+
+    updateLiveScore();
+    saveDraft();
+  }
+
+  function renderScramble() {
+    const c = document.getElementById('scrambleContainer');
+    c.innerHTML = SCRAMBLE_ITEMS.map((item, idx) => {
+      scrambleCurrent[item.id] = [];
+      const shuffled = [...item.words].sort(() => Math.random() - 0.5);
+      return `
+        <div class="q-card" id="card_scram_${item.id}">
+          <div class="q-num">Mashq #${idx + 1} / 4</div>
+          <div class="q-prompt">Ma'nosi: <i>"${item.uz}"</i></div>
+          <div class="scramble-result-box" id="scram_res_${item.id}">
+            <span style="color:#64748b; font-size:0.85rem;" id="scram_ph_${item.id}">So'zlarni bosib tartiblang...</span>
+          </div>
+          <div class="scramble-pool" id="scram_pool_${item.id}">
+            ${shuffled.map((w, wIdx) => `
+              <button class="scramble-chip" id="chip_${item.id}_${wIdx}" onclick="addScrambleWord(${item.id}, '${w.replace(/'/g, "\\'")}', 'chip_${item.id}_${wIdx}')">${w}</button>
+            `).join('')}
+          </div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="choice-btn" onclick="checkScramble(${item.id})" style="background:#6366f1; color:#fff;">Tekshirish</button>
+            <button class="choice-btn" onclick="resetScramble(${item.id})" style="background:#1e293b; color:#94a3b8;">Qayta terish</button>
+          </div>
+          <div class="expl-box" id="expl_scram_${item.id}"></div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function addScrambleWord(id, word, chipId) {
+    if (!scrambleCurrent[id]) scrambleCurrent[id] = [];
+    scrambleCurrent[id].push({ word, chipId });
+    document.getElementById(chipId).classList.add('used');
+    renderScrambleResult(id);
+  }
+
+  function renderScrambleResult(id) {
+    const box = document.getElementById('scram_res_' + id);
+    const words = scrambleCurrent[id] || [];
+    if (words.length === 0) {
+      box.innerHTML = `<span style="color:#64748b; font-size:0.85rem;" id="scram_ph_${id}">So'zlarni bosib tartiblang...</span>`;
+      return;
+    }
+    box.innerHTML = words.map((item, idx) => `
+      <span class="scramble-item" onclick="removeScrambleWord(${id}, ${idx})">${item.word} ✕</span>
+    `).join(' ');
+  }
+
+  function removeScrambleWord(id, idx) {
+    const removed = scrambleCurrent[id].splice(idx, 1)[0];
+    if (removed && removed.chipId) {
+      const chip = document.getElementById(removed.chipId);
+      if (chip) chip.classList.remove('used');
+    }
+    renderScrambleResult(id);
+  }
+
+  function resetScramble(id) {
+    if (scrambleCurrent[id]) {
+      scrambleCurrent[id].forEach(item => {
+        const chip = document.getElementById(item.chipId);
+        if (chip) chip.classList.remove('used');
+      });
+    }
+    scrambleCurrent[id] = [];
+    renderScrambleResult(id);
+    const expl = document.getElementById('expl_scram_' + id);
+    if (expl) expl.className = 'expl-box';
+    const card = document.getElementById('card_scram_' + id);
+    if (card) { card.classList.remove('correct'); card.classList.remove('wrong'); }
+  }
+
+  function checkScramble(id) {
+    const item = SCRAMBLE_ITEMS.find(x => x.id === id);
+    const card = document.getElementById('card_scram_' + id);
+    const expl = document.getElementById('expl_scram_' + id);
+    const formed = (scrambleCurrent[id] || []).map(x => x.word).join(' ').trim();
+
+    if (!formed) {
+      alert("Avval so'zlarni bosing!");
+      return;
+    }
+
+    const isCorrect = formed.toLowerCase() === item.correct.toLowerCase();
+    userResponses.scramble[id] = { formed, isCorrect, correctAns: item.correct };
+
+    if (isCorrect) {
+      card.classList.add('correct');
+      card.classList.remove('wrong');
+      expl.className = 'expl-box show correct';
+      expl.innerHTML = '✅ <b>Mukammal!</b> "' + item.correct + '"';
+    } else {
+      card.classList.add('wrong');
+      card.classList.remove('correct');
+      expl.className = 'expl-box show wrong';
+      expl.innerHTML = '❌ <b>Xato tartib.</b> To\'g\'ri tartib: <b>"' + item.correct + '"</b>';
+    }
+
+    updateLiveScore();
+    saveDraft();
+  }
+
+  function renderTranslations() {
+    const c = document.getElementById('transContainer');
+    c.innerHTML = TRANS_ITEMS.map(t => `
+      <div class="trans-item">
+        <div class="trans-prompt">${t.uz}</div>
+        <div class="trans-hint">💡 ${t.hint}</div>
+        <input type="text" id="trans_${t.id}" placeholder="${t.placeholder}" oninput="saveDraft()">
+      </div>
+    `).join('');
+  }
+
+  function updateLiveScore() {
+    let score = 0;
+    let answered = 0;
+    const total = PRESENT_ITEMS.length + PAST_ITEMS.length + PERF_ITEMS.length + FUTURE_ITEMS.length + HUNTER_ITEMS.length + SCRAMBLE_ITEMS.length;
+
+    ['present', 'past', 'perf', 'future', 'hunter', 'scramble'].forEach(cat => {
+      Object.values(userResponses[cat]).forEach(r => {
+        answered++;
+        if (r.isCorrect) score++;
+      });
+    });
+
+    document.getElementById('liveScoreBadge').innerText = score + ' / ' + total;
+    document.getElementById('progressInfoText').innerText = 'Javob berildi: ' + answered + ' / ' + total + ' (' + Math.round((answered/total)*100) + '%)';
+    document.getElementById('progressBarFill').style.width = Math.round((answered/total)*100) + '%';
+
+    if (answered === total && score >= total * 0.8) {
+      confetti({ particleCount: 70, spread: 60, origin: { y: 0.8 } });
+    }
+  }
+
+  function saveDraft() {
+    const data = {
+      studentName: document.getElementById('studentName').value,
+      studentTelegram: document.getElementById('studentTelegram').value,
+      userResponses,
+      trans: {}
     };
+    TRANS_ITEMS.forEach(t => {
+      const el = document.getElementById('trans_' + t.id);
+      if (el) data.trans[t.id] = el.value;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
 
-    // FINAL SUBMISSION TO TELEGRAM & LOCAL REPORT
-    async function submitLevelCheck() {
-      const name = document.getElementById('studentNameInput').value.trim();
-      if (!name) {
-        alert("Iltimos, avval ism va familiyangizni kiriting!");
-        document.getElementById('studentNameInput').focus();
-        return;
-      }
-
-      const m1Count = Object.keys(userM1Answers).length;
-      if (m1Count < 20) {
-        if (!confirm(`Siz 1-moduldan faqat ${m1Count}/30 ta savolga javob berdingiz. Shunday bo'lsa ham topshirasizmi?`)) {
-          switchModule(0);
-          return;
-        }
-      }
-
-      const btn = document.getElementById('btnFinalSubmit');
-      btn.disabled = true;
-      btn.innerText = "⏳ Hisobot hisoblanmoqda va ustozga yuborilmoqda...";
-
-      // Scoring M1 (30 questions)
-      let m1Score = 0;
-      let topicScores = {
-        t1: { name: "Present Simple (Routine & Facts)", correct: 0, total: 5 },
-        t2: { name: "Present Continuous (Now)", correct: 0, total: 5 },
-        t3: { name: "Future Plans (going to / cont)", correct: 0, total: 5 },
-        t4: { name: "Present Simple (Timetables)", correct: 0, total: 5 },
-        t5: { name: "Stative Verbs & 'Need'", correct: 0, total: 5 },
-        t6: { name: "Past Simple & Irregular Verbs", correct: 0, total: 5 }
-      };
-
-      let m1MistakesList = [];
-      let m1AllList = [];
-      let tgMistakesSummary = "";
-
-      GRAMMAR_MCQ_QUESTIONS.forEach((q, idx) => {
-        const userAns = userM1Answers[idx] || "Javob berilmadi";
-        const isRight = userAns === q.ans;
-        if (isRight) {
-          m1Score++;
-          topicScores[q.topicId].correct++;
-          m1AllList.push({
-            mod: "1-Modul (Grammatika)",
-            qNum: idx + 1,
-            qText: q.q,
-            userAns: userAns,
-            correctAns: q.ans,
-            isRight: true,
-            expl: q.expl,
-            topicName: q.topicName
-          });
-        } else {
-          const itemData = {
-            mod: "1-Modul (Grammatika)",
-            qNum: idx + 1,
-            qText: q.q,
-            userAns: userAns,
-            correctAns: q.ans,
-            isRight: false,
-            expl: q.expl,
-            topicName: q.topicName,
-            topicId: q.topicId
-          };
-          m1MistakesList.push(itemData);
-          m1AllList.push(itemData);
-          tgMistakesSummary += `• Savol ${idx + 1} (${q.topicName}):\n  ❌ Tanlangan: "${userAns}"\n  ✅ To'g'ri: "${q.ans}"\n  💡 Qoida: ${q.expl}\n\n`;
-        }
-      });
-
-      // Scoring M2 (10 Verbs)
-      let m2Score = 0;
-      let m2MistakesList = [];
-      let tgM2Mistakes = "";
-
-      VERB_RECALL_QUESTIONS.forEach((q, idx) => {
-        const userAns = userM2Answers[idx] || "Javob berilmadi";
-        const isRight = userAns === q.ans;
-        const itemData = {
-          mod: "2-Modul (Noto'g'ri Fe'l)",
-          qNum: idx + 1,
-          qText: q.q,
-          userAns: userAns,
-          correctAns: q.ans,
-          isRight: isRight,
-          expl: `"${q.v1}" fe'lining V2 shakli "${q.ans}" bo'ladi.`,
-          topicName: "Past Simple V2 Fe'llar"
-        };
-        m1AllList.push(itemData);
-        if (isRight) {
-          m2Score++;
-        } else {
-          m2MistakesList.push(itemData);
-          tgM2Mistakes += `• ${q.v1} (V2): ❌ "${userAns}" ➔ ✅ "${q.ans}"\n`;
-        }
-      });
-
-      // Scoring M3 (10 Error Corrections)
-      let m3Score = 0;
-      let m3MistakesList = [];
-      let tgM3Mistakes = "";
-
-      ERROR_CORRECTION_QUESTIONS.forEach((q, idx) => {
-        const userAns = userM3Answers[idx] || "Javob berilmadi";
-        const isRight = userAns === q.ans;
-        const itemData = {
-          mod: "3-Modul (Tuzoqlar)",
-          qNum: idx + 1,
-          qText: `Xato gap: ${q.wrong}`,
-          userAns: userAns,
-          correctAns: q.ans,
-          isRight: isRight,
-          expl: q.expl,
-          topicName: "O'zbek O'quvchilari Tuzoqlari"
-        };
-        m1AllList.push(itemData);
-        if (isRight) {
-          m3Score++;
-        } else {
-          m3MistakesList.push(itemData);
-          tgM3Mistakes += `• Tuzoq ${idx + 1}: ❌ "${userAns}"\n  ✅ To'g'ri: "${q.ans}"\n  💡 ${q.expl}\n\n`;
-        }
-      });
-
-      // M4 Translations Text
-      let m4ReportText = "";
-      TRANSLATION_QUESTIONS.forEach((item, idx) => {
-        const typed = userM4Translations[idx] || "Yozilmadi";
-        m4ReportText += `${idx + 1}. [${item.uz}]\n✍️ "${typed}" (💡 ${item.hint})\n\n`;
-      });
-
-      const totalScore = m1Score + m2Score + m3Score;
-      const totalPossible = 50; // 30 + 10 + 10
-      const percent = Math.round((totalScore / totalPossible) * 100);
-
-      // Generate Teacher's Action Plan based on Weakest Topics
-      let weakTopics = [];
-      Object.entries(topicScores).forEach(([tid, data]) => {
-        if (data.correct <= 3) {
-          weakTopics.push({ tid, ...data, rec: A1_TOPIC_RECS[tid] });
-        }
-      });
-
-      let tgActionPlan = "";
-      if (weakTopics.length > 0) {
-        tgActionPlan = "🎯 <b>USTOZ UCHUN TAVSIYA ETILADIGAN PEDAGOGIK REJA:</b>\n";
-        weakTopics.forEach(wt => {
-          tgActionPlan += `⚠️ <b>${wt.name} (${wt.correct}/${wt.total}):</b>\n• <i>Tashxis:</i> ${wt.rec.weakMsg}\n• <i>Darsdagi vazifa:</i> ${wt.rec.action}\n• <i>Uyga qo'shimcha:</i> ${wt.rec.hw}\n\n`;
+  function loadDraft() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (data.studentName) document.getElementById('studentName').value = data.studentName;
+      if (data.studentTelegram) document.getElementById('studentTelegram').value = data.studentTelegram;
+      if (data.trans) {
+        Object.keys(data.trans).forEach(k => {
+          const el = document.getElementById('trans_' + k);
+          if (el) el.value = data.trans[k];
         });
-      } else {
-        tgActionPlan = "🌟 <b>BARCHA MAVZULAR A'LO O'ZLASHTIRILGAN!</b>\nO'quvchi A2 darajaga o'tishga to'liq tayyor.\n\n";
       }
+    } catch(e) {}
+  }
 
-      // Telegram Message Formatting
-      const botToken = "8787909516:AAFpho1G-GYg1UW87lTIEjR1Ir0z6QjmN78";
-      const teacherChatId = "6315515792"; // Ulugbek
+  async function submitToTelegram() {
+    const name = document.getElementById('studentName').value.trim();
+    const username = document.getElementById('studentTelegram').value.trim();
+    const btn = document.getElementById('submitBtn');
+    const status = document.getElementById('statusMsg');
 
-      const tgMessage = `
-🏆 <b>A1 YAKUNIY LEVEL CHECK KENGAYTIRILGAN HISOBOTI</b>
-━━━━━━━━━━━━━━━━━━━━
-👤 <b>O'quvchi:</b> ${name}
-🎯 <b>Umumiy Natija:</b> ${totalScore} / ${totalPossible} (${percent}%)
-⏰ <b>Vaqt:</b> ${new Date().toLocaleString("uz-UZ")}
+    if (!name) {
+      alert("Iltimos, ism va familiyangizni kiriting!");
+      document.getElementById('studentName').focus();
+      return;
+    }
 
-📊 <b>MAVZULAR BO'YICHA DIAGNOSTIKA:</b>
-1️⃣ <b>Present Simple:</b> ${topicScores.t1.correct} / 5
-2️⃣ <b>Present Continuous:</b> ${topicScores.t2.correct} / 5
-3️⃣ <b>Future Plans (going to / cont):</b> ${topicScores.t3.correct} / 5
-4️⃣ <b>Present Simple (Timetables):</b> ${topicScores.t4.correct} / 5
-5️⃣ <b>Stative Verbs & "Need":</b> ${topicScores.t5.correct} / 5
-6️⃣ <b>Past Simple (Irregular):</b> ${topicScores.t6.correct} / 5
+    btn.disabled = true;
+    btn.innerText = "⏳ Yuborilmoqda...";
+    status.style.color = "#c7d2fe";
+    status.innerText = "Telegram botga hisobot uzatilmoqda...";
 
-📚 <b>Noto'g'ri fe'llar V2:</b> ${m2Score} / 10
-⚠️ <b>Xatolarni tuzatish:</b> ${m3Score} / 10
+    let score = 0;
+    const total = PRESENT_ITEMS.length + PAST_ITEMS.length + PERF_ITEMS.length + FUTURE_ITEMS.length + HUNTER_ITEMS.length + SCRAMBLE_ITEMS.length;
 
-━━━━━━━━━━━━━━━━━━━━
-${tgActionPlan}
-━━━━━━━━━━━━━━━━━━━━
-🔍 <b>YO'L QO'YILGAN ANIQ XATOLAR VA TUSHUNTIRISHLAR:</b>
-${tgMistakesSummary ? tgMistakesSummary : "Grammatika testida 100% to'g'ri!\n\n"}
-${tgM2Mistakes ? "📚 <b>Noto'g'ri fe'llardagi xatolar:</b>\n" + tgM2Mistakes + "\n" : ""}
-${tgM3Mistakes ? "⚠️ <b>Tuzoqlardagi xatolar:</b>\n" + tgM3Mistakes + "\n" : ""}
-✍️ <b>O'QUVCHINING YOZMA TARJIMALARI (Tekshirish uchun):</b>
-${m4ReportText}
-━━━━━━━━━━━━━━━━━━━━
-<i>TeacherOS Pedagogical Intelligence Engine</i>
-`.trim();
+    ['present', 'past', 'perf', 'future', 'hunter', 'scramble'].forEach(cat => {
+      Object.values(userResponses[cat]).forEach(r => { if (r.isCorrect) score++; });
+    });
 
-      const allMistakesCombined = [...m1MistakesList, ...m2MistakesList, ...m3MistakesList];
+    const pct = Math.round((score / total) * 100);
 
-      try {
-        const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+    let msg = "🌟 *A1 O'QUVCHI: 6 DARSLIK KATTA LEVEL CHECK HISOBOTI*\n";
+    msg += "━━━━━━━━━━━━━━━━━━━━\n";
+    msg += "👤 *O'quvchi:* " + name + " (" + (username || "username yo'q") + ")\n";
+    msg += "🎯 *Umumiy Natija:* " + score + " / " + total + " (" + pct + "%)\n";
+    msg += "⏰ *Sana:* " + new Date().toLocaleString('uz-UZ') + "\n\n";
+
+    msg += "📊 *BO'LIMLAR BO'YICHA:*\n";
+    msg += "• 1. Present Simple & Continuous: " + Object.values(userResponses.present).filter(r=>r.isCorrect).length + " / " + PRESENT_ITEMS.length + "\n";
+    msg += "• 2. Past Simple & Continuous: " + Object.values(userResponses.past).filter(r=>r.isCorrect).length + " / " + PAST_ITEMS.length + "\n";
+    msg += "• 3. Present Perfect (For/Since): " + Object.values(userResponses.perf).filter(r=>r.isCorrect).length + " / " + PERF_ITEMS.length + "\n";
+    msg += "• 4. Future (Will vs Going to): " + Object.values(userResponses.future).filter(r=>r.isCorrect).length + " / " + FUTURE_ITEMS.length + "\n";
+    msg += "• 5. Mistake Hunter: " + Object.values(userResponses.hunter).filter(r=>r.isCorrect).length + " / " + HUNTER_ITEMS.length + "\n";
+    msg += "• 6. Sentence Builder: " + Object.values(userResponses.scramble).filter(r=>r.isCorrect).length + " / " + SCRAMBLE_ITEMS.length + "\n\n";
+
+    msg += "✍️ *TARJIMALAR (O'quvchi yozgan):*\n";
+    TRANS_ITEMS.forEach(t => {
+      const val = document.getElementById('trans_' + t.id)?.value.trim() || "—";
+      msg += t.id + ". " + val + "\n";
+    });
+
+    try {
+      for (const chatId of TEACHER_IDS) {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id: teacherChatId,
-            text: tgMessage,
-            parse_mode: "HTML"
+            chat_id: chatId,
+            text: msg,
+            parse_mode: 'Markdown'
           })
         });
-
-        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-        showResultsUI(name, totalScore, totalPossible, percent, topicScores, allMistakesCombined, m1AllList, weakTopics);
-      } catch (err) {
-        console.error(err);
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-        showResultsUI(name, totalScore, totalPossible, percent, topicScores, allMistakesCombined, m1AllList, weakTopics);
-        document.getElementById('submitStatusMsg').innerHTML = '<span style="color:var(--amber);">⚠️ Natijangiz hisoblandi, lekin Telegramga yuborishda internet xatoligi bo\'ldi. Sahifadagi to\'liq tahlilni ko\'rishingiz mumkin.</span>';
       }
+
+      btn.disabled = false;
+      btn.innerText = "✅ Topshirildi!";
+      btn.style.background = "#10b981";
+      status.style.color = "#6ee7b7";
+      status.innerText = "A1 Level Check hisobotingiz muvaffaqiyatli topshirildi va ustozga yetkazildi!";
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+    } catch(err) {
+      btn.disabled = false;
+      btn.innerText = "Qayta yuborish";
+      status.style.color = "#fca5a5";
+      status.innerText = "Xatolik yuz berdi. Internetni tekshirib qaytadan urinib ko'ring.";
     }
+  }
 
-    function showResultsUI(name, score, total, percent, topicScores, mistakes, allQuestions, weakTopics) {
-      document.querySelectorAll('.module-card').forEach(c => c.style.display = 'none');
-      document.getElementById('stepperNav').style.display = 'none';
-      document.getElementById('studentBox').style.display = 'none';
+  window.addEventListener('DOMContentLoaded', init);
+</script>
 
-      const resultsCard = document.getElementById('resultsCard');
-      resultsCard.style.display = 'block';
-
-      document.getElementById('resStudentName').innerText = name;
-      document.getElementById('resPercent').innerText = `${percent}%`;
-      document.getElementById('resFraction').innerText = `${score} / ${total} ball`;
-      document.getElementById('tabMistakeCount').innerText = mistakes.length;
-
-      // 1. Topic Breakdown Grid
-      const breakdown = document.getElementById('topicBreakdownContainer');
-      breakdown.innerHTML = '';
-      Object.values(topicScores).forEach(ts => {
-        const card = document.createElement('div');
-        card.className = 'topic-score-card';
-        const color = ts.correct >= 4 ? '#34D399' : ts.correct >= 3 ? '#FBBF24' : '#F87171';
-        card.innerHTML = `
-          <span class="topic-name">${ts.name}</span>
-          <span class="topic-points" style="color: ${color};">${ts.correct} / ${ts.total}</span>
-        `;
-        breakdown.appendChild(card);
-      });
-
-      // 2. Tab 1: Teacher Roadmap & Prescriptions
-      const prescripContainer = document.getElementById('prescriptionListContainer');
-      prescripContainer.innerHTML = '';
-      if (weakTopics && weakTopics.length > 0) {
-        weakTopics.forEach(wt => {
-          const div = document.createElement('div');
-          div.className = 'prescrip-card';
-          div.innerHTML = `
-            <div class="prescrip-topic">
-              <span>⚠️ ${wt.name}</span>
-              <span style="color: #F87171; font-family: monospace;">${wt.correct} / ${wt.total}</span>
-            </div>
-            <div class="prescrip-action"><b>🔍 Tashxis:</b> ${wt.rec.weakMsg}</div>
-            <div class="prescrip-action"><b>👨‍🏫 Darsda bajariladigan ish:</b> ${wt.rec.action}</div>
-            <div class="prescrip-hw"><b>📝 Tavsiya etilgan vazifa:</b> ${wt.rec.hw}</div>
-          `;
-          prescripContainer.appendChild(div);
-        });
-      } else {
-        prescripContainer.innerHTML = `
-          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--emerald); border-radius: 12px; padding: 20px; text-align: center; color: #6EE7B7;">
-            🎉 <b>Ajoyib Natija! Barcha mavzular 80%+ darajada o'zlashtirilgan.</b><br>
-            O'quvchi A2 bosqichidagi yangi mavzularga o'tishga to'liq tayyor!
-          </div>
-        `;
-      }
-
-      // 3. Tab 2: Mistakes Breakdown with Explanations
-      const mistakesContainer = document.getElementById('mistakesDetailContainer');
-      mistakesContainer.innerHTML = '';
-      if (mistakes.length === 0) {
-        mistakesContainer.innerHTML = `
-          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--emerald); border-radius: 12px; padding: 20px; text-align: center; color: #6EE7B7;">
-            ✨ Tabriklaymiz! Testlarda birorta ham xato qilinmadi!
-          </div>
-        `;
-      } else {
-        mistakes.forEach((m, i) => {
-          const div = document.createElement('div');
-          div.className = 'diag-item-card is-wrong';
-          div.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span class="diag-badge wrong">❌ Xato #${i + 1} &bull; ${m.mod}</span>
-              <span style="font-size: 11px; color: var(--text-muted); font-weight: 700;">${m.topicName}</span>
-            </div>
-            <div class="diag-q">${m.qText}</div>
-            <div class="diag-ans-row" style="color: #FCA5A5;">❌ O'quvchi tanlagan javob: <b>"${m.userAns}"</b></div>
-            <div class="diag-ans-row" style="color: #6EE7B7;">✅ To'g'ri javob: <b>"${m.correctAns}"</b></div>
-            <div class="diag-expl">💡 <b>Qoida va tushuntirish:</b> ${m.expl}</div>
-          `;
-          mistakesContainer.appendChild(div);
-        });
-      }
-
-      // 4. Tab 3: All Questions
-      const allContainer = document.getElementById('allQuestionsContainer');
-      allContainer.innerHTML = '';
-      allQuestions.forEach((q, i) => {
-        const div = document.createElement('div');
-        div.className = `diag-item-card ${q.isRight ? 'is-correct' : 'is-wrong'}`;
-        div.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span class="diag-badge ${q.isRight ? 'correct' : 'wrong'}">
-              ${q.isRight ? '✅ To\'g\'ri' : '❌ Noto\'g\'ri'} &bull; ${q.mod}
-            </span>
-            <span style="font-size: 11px; color: var(--text-muted); font-weight: 700;">${q.topicName}</span>
-          </div>
-          <div class="diag-q">${q.qText}</div>
-          <div class="diag-ans-row" style="color: ${q.isRight ? '#6EE7B7' : '#FCA5A5'};">
-            Berilgan javob: <b>"${q.userAns}"</b> ${q.isRight ? '✨' : `➔ To'g'risi: <b>"${q.correctAns}"</b>`}
-          </div>
-          <div class="diag-expl">💡 <b>Izoh:</b> ${q.expl}</div>
-        `;
-        allContainer.appendChild(div);
-      });
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  
-
-    renderModule1();
-    renderModule2();
-    renderModule3();
-    renderModule4();
-  </script>
 </body>
 </html>

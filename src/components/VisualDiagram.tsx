@@ -108,14 +108,6 @@ export default function VisualDiagram({ diagram, onSpeak, isLight = false }: Pro
               </p>
             </div>
           </div>
-          <button
-            onClick={() => speak(sentence)}
-            className="p-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-500 transition-all flex items-center space-x-1 text-[11px] font-bold shadow"
-            title="Butun gapni tinglash"
-          >
-            <Volume2 className="w-3 h-3" />
-            <span className="hidden sm:inline">Tinglash</span>
-          </button>
         </div>
 
         {/* Interactive Sentence Bar */}

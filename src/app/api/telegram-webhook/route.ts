@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BOT_TOKEN = "8787909516:AAFpho1G-GYg1UW87lTIEjR1Ir0z6QjmN78";
-const APP_URL = process.env.APP_URL || "https://downloading-holland-military-win.trycloudflare.com";
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA";
+const APP_URL = process.env.APP_URL || "https://teacher-os-beryl.vercel.app";
 
 async function sendTelegramMessage(chatId: number | string, text: string, replyMarkup?: any) {
   try {
@@ -30,30 +30,32 @@ export async function POST(req: NextRequest) {
     if (update.message && update.message.text) {
       const chatId = update.message.chat.id;
       const text = update.message.text.trim();
-      const firstName = update.message.from?.first_name || "Ustoz";
+      const from = update.message.from || {};
+      const firstName = from.first_name || "O'quvchi";
+      const username = from.username ? `@${from.username}` : "";
+
+      const studentAppUrl = `${APP_URL}/student?tg_id=${chatId}&username=${encodeURIComponent(username)}&first_name=${encodeURIComponent(firstName)}`;
 
       // /start command
       if (text.startsWith("/start")) {
         await sendTelegramMessage(
           chatId,
-          `Salom, ${firstName} 👋\n\n` +
-          `TeacherOS ta'limni osonlashtiradi:\n` +
-          `⚡ <b>16:9 Interaktiv doska</b> — darsni jonli tushuntirish uchun\n` +
-          `📚 <b>AI Darslik & Slaydlar</b> — 1 daqiqada tayyor\n` +
-          `🎯 <b>Mashqlar & Testlar</b> — o'quvchilar darajasini oshirish uchun\n\n` +
-          `Boshlash uchun ilovani oching 👇`,
+          `Salom, <b>${firstName}</b>! 👋\n\n` +
+          `🎓 <b>TeacherOS O'quvchi Ilovasiga xush kelibsiz!</b>\n\n` +
+          `Bu yerda siz dars taqdimotlari, uyga vazifalar, interaktiv testlar va sun'iy intellekt repititoringiz (<b>Bezbet 🐱</b>) yordamida ingliz tilini o'rganishingiz mumkin.\n\n` +
+          `Ilovani ochish uchun quyidagi tugmani bosing 👇`,
           {
             inline_keyboard: [
               [
                 {
-                  text: "🚀 TeacherOS Ilovasini Ochish",
-                  web_app: { url: `${APP_URL}` },
+                  text: "🚀 O'quvchi Ilovasini Ochish",
+                  web_app: { url: studentAppUrl },
                 },
               ],
               [
                 {
-                  text: "🎓 O'quvchilar uchun (Talaba)",
-                  web_app: { url: `${APP_URL}?role=student` },
+                  text: "🌐 Brauzerda Ochish",
+                  url: studentAppUrl,
                 },
               ],
             ],
@@ -62,24 +64,23 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
-      // Help / Any other message
+      // Any other message
       await sendTelegramMessage(
         chatId,
-        `💡 <b>TeacherOS Buyruqlari:</b>\n\n` +
-        `/start — Bosh menyu va ilovani ochish\n\n` +
-        `Platformaga kirish uchun quyidagi tugmani bosing:`,
+        `Salom, <b>${firstName}</b>! 👋\n\n` +
+        `TeacherOS O'quvchi Ilovasiga kirish uchun quyidagi tugmani bosing:`,
         {
           inline_keyboard: [
             [
               {
-                text: "🚀 TeacherOS Ilovasini Ochish",
-                web_app: { url: `${APP_URL}` },
+                text: "🚀 O'quvchi Ilovasini Ochish",
+                web_app: { url: studentAppUrl },
               },
             ],
             [
               {
-                text: "🎓 O'quvchilar uchun",
-                web_app: { url: `${APP_URL}?role=student` },
+                text: "🌐 Brauzerda Ochish",
+                url: studentAppUrl,
               },
             ],
           ],
@@ -96,5 +97,5 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ status: "TeacherOS Webhook Active", bot: "TeacherOS_official_bot" });
+  return NextResponse.json({ status: "TeacherOS Webhook Active", bot: "app_teacheros_bot" });
 }

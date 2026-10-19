@@ -59,7 +59,23 @@ import {
   LogOut,
   Ban,
   Calendar,
-  Flame
+  Flame,
+  Camera,
+  Globe,
+  Mail,
+  Square,
+  Circle,
+  Triangle,
+  Minus,
+  Shapes,
+  Layers,
+  ArrowUpRight,
+  Undo,
+  AlertTriangle,
+  Shuffle,
+  Puzzle,
+  AlignLeft,
+  Swords
 } from "lucide-react";
 import {
   Curriculum,
@@ -71,14 +87,17 @@ import {
   DialogTurn,
   ErrorHuntItem,
   FillGapItem,
-  SummaryRule
+  SummaryRule,
+  VisualDiagram as VisualDiagramType,
+  TeacherClassroom
 } from "../lib/types";
 import { MASTER_CURRICULUMS, enrichCurriculumWithSections } from "../lib/curriculums";
 import VisualDiagram from "../components/VisualDiagram";
 import AuthModal, { AuthUser } from "../components/AuthModal";
+import ClassroomModal from "../components/ClassroomModal";
 import ClassroomSelector from "../components/ClassroomSelector";
 import BaamboozleQuiz from "../components/BaamboozleQuiz";
-import HomeworkViewer from "../components/HomeworkViewer";
+import HomeworkViewer, { HomeworkGeneratedData } from "../components/HomeworkViewer";
 import {
   compressCurriculumToHash,
   decompressCurriculumFromHash,
@@ -87,6 +106,7 @@ import {
   DEFAULT_TEACHER_CHAT_ID
 } from "../lib/share";
 import { getSlideImageUrl, getVocabImageUrl } from "../lib/pollinations";
+import { AppLanguage, TRANSLATIONS, getDynamicGreeting } from "../lib/translations";
 
 function sanitizeSlideBody(rawHtml: string, isLight: boolean = false): string {
   if (!rawHtml || typeof rawHtml !== "string") return "";
@@ -151,62 +171,284 @@ type BoardScreen =
 // Custom Brand Logo Component with automatic fallback (/logo-white.png -> /logo-blue.png -> /logo.png -> CSS Badge)
 function BrandLogo({
   isLight = false,
-  className = "h-8 max-w-[160px] object-contain"
+  className = "h-8 max-w-[160px] object-contain",
+  onClick
 }: {
   isLight?: boolean;
   className?: string;
+  onClick?: () => void;
 }) {
   const [imgSrc, setImgSrc] = useState<string>(isLight ? "/logo-blue.png" : "/logo-white.png");
   const [loadError, setLoadError] = useState(false);
+  const [isSubtleEffect, setIsSubtleEffect] = useState(false);
+  const [sparkles, setSparkles] = useState<Array<{ id: number; tx: number; ty: number; char: string; size: number }>>([]);
 
   useEffect(() => {
     setImgSrc(isLight ? "/logo-blue.png" : "/logo-white.png");
     setLoadError(false);
   }, [isLight]);
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    const sparkleChars = ['✦', '✧', '⋆', '•', '✨', '✦'];
+    const angles = [0, 60, 120, 180, 240, 300];
+    const newSparkles = angles.map((deg, i) => {
+      const rad = (deg * Math.PI) / 180;
+      const dist = 24 + Math.random() * 16;
+      return {
+        id: Date.now() + i,
+        tx: Math.cos(rad) * dist,
+        ty: Math.sin(rad) * dist,
+        char: sparkleChars[i % sparkleChars.length],
+        size: 9 + (i % 3) * 3,
+      };
+    });
+    setSparkles(newSparkles);
+    setIsSubtleEffect(true);
+    setTimeout(() => {
+      setIsSubtleEffect(false);
+    }, 900);
+
+    onClick?.();
+  };
+
   if (loadError) {
     return (
-      <div className="flex items-center space-x-2">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#5B3DF5] to-[#8B5CF6] flex items-center justify-center text-white font-black text-sm shadow-lg group-hover:scale-105 transition-all">
-          OS
+      <div className="relative inline-flex items-center">
+        {isSubtleEffect && (
+          <>
+            <span className="absolute inset-0 rounded-2xl bg-indigo-500/20 pointer-events-none animate-logo-wave" />
+            <span className="absolute inset-0 rounded-2xl border border-indigo-400/50 pointer-events-none animate-logo-wave" style={{ animationDelay: '0.12s' }} />
+            {sparkles.map((sp) => (
+              <span
+                key={sp.id}
+                className="absolute top-1/2 left-1/2 pointer-events-none text-indigo-400 font-bold animate-logo-sparkle select-none z-30"
+                style={{
+                  '--tx': `${sp.tx}px`,
+                  '--ty': `${sp.ty}px`,
+                  fontSize: `${sp.size}px`,
+                } as React.CSSProperties}
+              >
+                {sp.char}
+              </span>
+            ))}
+          </>
+        )}
+        <div
+          onClick={handleLogoClick}
+          className={`flex items-center space-x-2 ${onClick ? "cursor-pointer" : ""}`}
+        >
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#5B3DF5] to-[#8B5CF6] flex items-center justify-center text-white font-black text-sm shadow-lg group-hover:scale-105 transition-all">
+            OS
+          </div>
+          <span className={`font-bold text-sm tracking-tight hidden sm:inline ${isLight ? "text-slate-900" : "text-white"}`}>
+            TeacherOS
+          </span>
         </div>
-        <span className={`font-bold text-sm tracking-tight hidden sm:inline ${isLight ? "text-slate-900" : "text-white"}`}>
-          TeacherOS
-        </span>
       </div>
     );
   }
 
   return (
-    <img
-      src={imgSrc}
-      alt="TeacherOS Logo"
-      className={`${className} transition-transform group-hover:scale-105`}
-      onError={() => {
-        if (imgSrc === "/logo-white.png") {
-          setImgSrc("/logo-blue.png");
-        } else if (imgSrc === "/logo-blue.png") {
-          setImgSrc("/logo.png");
-        } else {
-          setLoadError(true);
-        }
-      }}
-    />
+    <div className="relative inline-flex items-center justify-center">
+      {isSubtleEffect && (
+        <>
+          <span className="absolute inset-0 rounded-2xl bg-indigo-500/20 pointer-events-none animate-logo-wave" />
+          <span className="absolute inset-0 rounded-2xl border border-indigo-400/50 pointer-events-none animate-logo-wave" style={{ animationDelay: '0.12s' }} />
+          {sparkles.map((sp) => (
+            <span
+              key={sp.id}
+              className="absolute top-1/2 left-1/2 pointer-events-none text-indigo-400 font-bold animate-logo-sparkle select-none z-30"
+              style={{
+                '--tx': `${sp.tx}px`,
+                '--ty': `${sp.ty}px`,
+                fontSize: `${sp.size}px`,
+              } as React.CSSProperties}
+            >
+              {sp.char}
+            </span>
+          ))}
+        </>
+      )}
+      <img
+        src={imgSrc}
+        alt="TeacherOS Logo"
+        onClick={handleLogoClick}
+        className={`${className} transition-transform group-hover:scale-105 active:scale-95 cursor-pointer`}
+        onError={() => {
+          if (imgSrc === "/logo-white.png") {
+            setImgSrc("/logo-blue.png");
+          } else if (imgSrc === "/logo-blue.png") {
+            setImgSrc("/logo.png");
+          } else {
+            setLoadError(true);
+          }
+        }}
+      />
+    </div>
   );
 }
+
+const HOMEWORK_QUESTION_TYPES = [
+  {
+    id: "mcq",
+    title: { uz: "Multiple Choice", en: "Multiple Choice", ru: "Multiple Choice" },
+    subtitle: { uz: "A/B/C/D test shakli", en: "A/B/C/D choice test", ru: "Тест с выбором A/B/C/D" },
+    icon: HelpCircle,
+    color: {
+      border: "border-sky-400",
+      bgActive: "bg-sky-950/80",
+      glow: "shadow-[0_0_20px_rgba(56,189,248,0.35)]",
+      text: "text-sky-300",
+      badge: "bg-sky-500/20 text-sky-200 border-sky-500/30",
+      iconBg: "bg-sky-500/20 text-sky-400"
+    }
+  },
+  {
+    id: "mistake_hunter",
+    title: { uz: "Mistake Hunter", en: "Mistake Hunter", ru: "Mistake Hunter" },
+    subtitle: { uz: "Xatolarni topish & tuzatish", en: "Spot & correct errors", ru: "Поиск и исправление ошибок" },
+    icon: AlertTriangle,
+    color: {
+      border: "border-rose-500",
+      bgActive: "bg-rose-950/80",
+      glow: "shadow-[0_0_20px_rgba(244,63,94,0.35)]",
+      text: "text-rose-300",
+      badge: "bg-rose-500/20 text-rose-200 border-rose-500/30",
+      iconBg: "bg-rose-500/20 text-rose-400"
+    }
+  },
+  {
+    id: "open_cloze",
+    title: { uz: "Open Cloze", en: "Open Cloze", ru: "Open Cloze" },
+    subtitle: { uz: "Variantlarsiz to'ldirish", en: "Direct gap filling", ru: "Прямой пропуск без вариантов" },
+    icon: Edit3,
+    color: {
+      border: "border-emerald-400",
+      bgActive: "bg-emerald-950/80",
+      glow: "shadow-[0_0_20px_rgba(16,185,129,0.35)]",
+      text: "text-emerald-300",
+      badge: "bg-emerald-500/20 text-emerald-200 border-emerald-500/30",
+      iconBg: "bg-emerald-500/20 text-emerald-400"
+    }
+  },
+  {
+    id: "sentence_transformation",
+    title: { uz: "Sentence Transform", en: "Sentence Transform", ru: "Sentence Transform" },
+    subtitle: { uz: "Kalit so'z bilan qayta tuzish", en: "Key-word paraphrase", ru: "Перефразирование с ключевым словом" },
+    icon: Shuffle,
+    color: {
+      border: "border-purple-400",
+      bgActive: "bg-purple-950/80",
+      glow: "shadow-[0_0_20px_rgba(168,85,247,0.35)]",
+      text: "text-purple-300",
+      badge: "bg-purple-500/20 text-purple-200 border-purple-500/30",
+      iconBg: "bg-purple-500/20 text-purple-400"
+    }
+  },
+  {
+    id: "word_formation",
+    title: { uz: "Word Formation", en: "Word Formation", ru: "Word Formation" },
+    subtitle: { uz: "Morfologik so'z yasash", en: "Derivational morphology", ru: "Морфологическое словообразование" },
+    icon: Puzzle,
+    color: {
+      border: "border-amber-400",
+      bgActive: "bg-amber-950/80",
+      glow: "shadow-[0_0_20px_rgba(245,158,11,0.35)]",
+      text: "text-amber-300",
+      badge: "bg-amber-500/20 text-amber-200 border-amber-500/30",
+      iconBg: "bg-amber-500/20 text-amber-400"
+    }
+  },
+  {
+    id: "unscramble",
+    title: { uz: "Sentence Scramble", en: "Sentence Scramble", ru: "Sentence Scramble" },
+    subtitle: { uz: "Gapni to'g'ri tartiblash", en: "Reorder word tokens", ru: "Восстановление порядка слов" },
+    icon: AlignLeft,
+    color: {
+      border: "border-cyan-400",
+      bgActive: "bg-cyan-950/80",
+      glow: "shadow-[0_0_20px_rgba(6,182,212,0.35)]",
+      text: "text-cyan-300",
+      badge: "bg-cyan-500/20 text-cyan-200 border-cyan-500/30",
+      iconBg: "bg-cyan-500/20 text-cyan-400"
+    }
+  },
+  {
+    id: "translation",
+    title: { uz: "Translation Drill", en: "Translation Drill", ru: "Translation Drill" },
+    subtitle: { uz: "Ona tilidan inglizchaga", en: "L1 to English drill", ru: "Перевод на английский язык" },
+    icon: Globe,
+    color: {
+      border: "border-teal-400",
+      bgActive: "bg-teal-950/80",
+      glow: "shadow-[0_0_20px_rgba(20,184,166,0.35)]",
+      text: "text-teal-300",
+      badge: "bg-teal-500/20 text-teal-200 border-teal-500/30",
+      iconBg: "bg-teal-500/20 text-teal-400"
+    }
+  },
+  {
+    id: "contrast_duel",
+    title: { uz: "Contrast Duel", en: "Contrast Duel", ru: "Contrast Duel" },
+    subtitle: { uz: "Farqlash: for vs since", en: "Structural contrast", ru: "Различение схожих правил" },
+    icon: Swords,
+    color: {
+      border: "border-orange-400",
+      bgActive: "bg-orange-950/80",
+      glow: "shadow-[0_0_20px_rgba(249,115,22,0.35)]",
+      text: "text-orange-300",
+      badge: "bg-orange-500/20 text-orange-200 border-orange-500/30",
+      iconBg: "bg-orange-500/20 text-orange-400"
+    }
+  },
+  {
+    id: "dialogue_fill",
+    title: { uz: "Dialogue Completion", en: "Dialogue Completion", ru: "Dialogue Completion" },
+    subtitle: { uz: "Kontekstual muloqot", en: "Contextual dialogue", ru: "Живой контекстный диалог" },
+    icon: MessageSquare,
+    color: {
+      border: "border-indigo-400",
+      bgActive: "bg-indigo-950/80",
+      glow: "shadow-[0_0_20px_rgba(99,102,241,0.35)]",
+      text: "text-indigo-300",
+      badge: "bg-indigo-500/20 text-indigo-200 border-indigo-500/30",
+      iconBg: "bg-indigo-500/20 text-indigo-400"
+    }
+  },
+  {
+    id: "writing_challenge",
+    title: { uz: "Writing Challenge", en: "Writing Challenge", ru: "Writing Challenge" },
+    subtitle: { uz: "Erkin insho/yozma", en: "Targeted composition", ru: "Целевое свободное письмо" },
+    icon: PenTool,
+    color: {
+      border: "border-pink-400",
+      bgActive: "bg-pink-950/80",
+      glow: "shadow-[0_0_20px_rgba(236,72,153,0.35)]",
+      text: "text-pink-300",
+      badge: "bg-pink-500/20 text-pink-200 border-pink-500/30",
+      iconBg: "bg-pink-500/20 text-pink-400"
+    }
+  }
+];
 
 export default function StitchTeacherOS() {
   // 1. Persistent User Auth & Auto-Login Session
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // 2. Classroom Workspace Mode ('classroom' | 'solo' | null)
-  const [workspaceMode, setWorkspaceMode] = useState<'classroom' | 'solo' | null>(null);
+  // 2. Classroom Workspace Mode & Real Classroom Management (User Sketch Image 1 & 2)
+  const [workspaceMode, setWorkspaceMode] = useState<'classroom' | 'solo'>('solo');
   const [currentClassroom, setCurrentClassroom] = useState<{ id: string; name: string; students: number }>({
-    id: 'intermediate',
-    name: 'Intermediate',
-    students: 10
+    id: 'solo',
+    name: 'Yakkaxon Rejim',
+    students: 0
   });
+  const [classrooms, setClassrooms] = useState<TeacherClassroom[]>([]);
+  const [activeClassroomId, setActiveClassroomId] = useState<string | null>(null);
+  const [showClassroomModal, setShowClassroomModal] = useState<boolean>(false);
+  const [teacherDisplayName, setTeacherDisplayName] = useState<string>('');
+  const [classroomModalMode, setClassroomModalMode] = useState<'create' | 'list'>('create');
 
   // 3. Studio Mode: 'lesson' | 'others_picker' | 'homework' | 'group_quiz' | 'level_check'
   const [studioMode, setStudioMode] = useState<'lesson' | 'others_picker' | 'homework' | 'group_quiz' | 'level_check'>('lesson');
@@ -217,34 +459,87 @@ export default function StitchTeacherOS() {
   const [activeHomeworkTopic, setActiveHomeworkTopic] = useState<string | null>(null);
   const [levelCheckTopics, setLevelCheckTopics] = useState<string[]>(['Present Simple', 'Past Simple']);
 
-  // Load persistent user auth & workspace on mount
+  // Homework Studio 2-Step Configuration & Multi-Level Intensity State
+  const [homeworkStep, setHomeworkStep] = useState<'prompt' | 'config' | 'review'>('prompt');
+  const [homeworkIntensity, setHomeworkIntensity] = useState<'light' | 'medium' | 'extreme'>('medium');
+  const [selectedHomeworkTypes, setSelectedHomeworkTypes] = useState<string[]>([
+    'mcq', 'mistake_hunter', 'open_cloze', 'sentence_transformation', 'word_formation',
+    'unscramble', 'translation', 'contrast_duel', 'dialogue_fill', 'writing_challenge'
+  ]);
+  const [generatedHomeworkData, setGeneratedHomeworkData] = useState<HomeworkGeneratedData | null>(null);
+  const [isGeneratingHomework, setIsGeneratingHomework] = useState(false);
+
+  // Social Modal & Custom Blank Board
+  type DrawingTool = "pen" | "highlighter" | "text" | "eraser" | "rectangle" | "circle" | "triangle" | "arrow" | "line";
+  const [showSocialModal, setShowSocialModal] = useState(false);
+  const [isBlankBoardOpen, setIsBlankBoardOpen] = useState(false);
+  const blankCanvasRef = useRef<HTMLCanvasElement>(null);
+  const blankDrawingDataRef = useRef<ImageData | null>(null);
+  const isBlankDrawingRef = useRef(false);
+  const blankUndoStackRef = useRef<ImageData[]>([]);
+  const [blankPenTool, setBlankPenTool] = useState<DrawingTool>("pen");
+  const [blankPenColor, setBlankPenColor] = useState<string>("#5B3DF5");
+  const [blankPenSize, setBlankPenSize] = useState<number>(3);
+  const [blankTextInputPos, setBlankTextInputPos] = useState<{ x: number; y: number } | null>(null);
+  const [blankTypedText, setBlankTypedText] = useState("");
+  const blankShapeStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const blankShapeSnapshotRef = useRef<ImageData | null>(null);
+  const isInitialMountRef = useRef(true);
+
+  // Fullscreen Interactive Visual Diagram Modal
+  const [expandedVisual, setExpandedVisual] = useState<VisualDiagramType | null>(null);
+
+  // Smartboard Handwriting Prompt Input State (Pen/Finger Input on Electronic Board)
+  const [isHandwritingPromptOpen, setIsHandwritingPromptOpen] = useState(false);
+  const handwritingCanvasRef = useRef<HTMLCanvasElement>(null);
+  const isHandwritingDrawingRef = useRef(false);
+  const [handwritingPenColor, setHandwritingPenColor] = useState("#FFFFFF");
+  const [handwritingPenSize, setHandwritingPenSize] = useState(4);
+  const [handwritingTool, setHandwritingTool] = useState<"pen" | "eraser">("pen");
+  const handwritingUndoStackRef = useRef<ImageData[]>([]);
+
+  // Continuous Speech-to-Text Recording State
+  const [recordedInterimText, setRecordedInterimText] = useState("");
+  const silenceTimerRef = useRef<any>(null);
+  const baseTopicRef = useRef<string>("");
+
+  // 3-Language UI & Curriculum Localization State
+  const [appLanguage, setAppLanguage] = useState<AppLanguage>('uz');
+  const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
+
   useEffect(() => {
     try {
-      const savedUser = localStorage.getItem('teacheros_auth_user');
-      if (savedUser) {
-        setCurrentUser(JSON.parse(savedUser));
+      const savedLang = localStorage.getItem('teacheros_language') as AppLanguage;
+      if (savedLang === 'uz' || savedLang === 'en' || savedLang === 'ru') {
+        setAppLanguage(savedLang);
       }
-      const savedMode = localStorage.getItem('teacheros_workspace_mode') as 'classroom' | 'solo' | null;
-      if (savedMode) {
-        setWorkspaceMode(savedMode);
-      }
-      const savedClass = localStorage.getItem('teacheros_classroom');
-      if (savedClass) {
-        setCurrentClassroom(JSON.parse(savedClass));
-      }
-    } catch (e) {
-      console.warn('Error reading saved session', e);
-    } finally {
-      setIsAuthLoading(false);
-    }
+    } catch (e) {}
   }, []);
+
+  const handleLanguageChange = (newLang: AppLanguage) => {
+    setAppLanguage(newLang);
+    try {
+      localStorage.setItem('teacheros_language', newLang);
+    } catch (e) {}
+    setHeroGreeting(getDynamicGreeting(newLang, currentUser?.username, teacherDisplayName));
+    showToast(newLang === 'en' ? "Language: English" : newLang === 'ru' ? "Язык: Русский" : "Til: O'zbekcha");
+  };
+
+  // Dynamic Gemini / ChatGPT style teacher greeting
+  const [heroGreeting, setHeroGreeting] = useState<string>("Xayrli kun, ustoz! Yangi darsga tayyormisiz?");
+
+  useEffect(() => {
+    setHeroGreeting(getDynamicGreeting(appLanguage, currentUser?.username, teacherDisplayName));
+  }, [currentUser, appLanguage, teacherDisplayName]);
+
+  const t = TRANSLATIONS[appLanguage];
 
   const handleLogout = () => {
     localStorage.removeItem('teacheros_auth_user');
     localStorage.removeItem('teacheros_workspace_mode');
     setCurrentUser(null);
-    setWorkspaceMode(null);
-    showToast("Tizimdan chiqildi");
+    setWorkspaceMode('solo');
+    showToast(appLanguage === 'en' ? "Signed out" : appLanguage === 'ru' ? "Вы вышли из системы" : "Tizimdan chiqildi");
   };
 
   // Core Prompt & Settings State
@@ -262,14 +557,276 @@ export default function StitchTeacherOS() {
   // Left history drawer & right bar expansion state
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isRightBarExpanded, setIsRightBarExpanded] = useState(false);
-  const [lessonHistory, setLessonHistory] = useState<Array<{ topic: string; time: string }>>([
-    { topic: "Present Perfect", time: "8h" },
-    { topic: "Past continuous", time: "1d" },
-    { topic: "Past simple", time: "2d" },
-    { topic: "Present continuous", time: "3d" },
-    { topic: "Present simple", time: "4d" },
-    { topic: "To be", time: "5d" }
-  ]);
+  const [lessonHistory, setLessonHistory] = useState<Array<{ topic: string; time: string; timestamp?: number }>>([]);
+
+  // Account & Classroom-scoped History & Homework Helpers (Preserved forever per classroom)
+  const getHistoryStorageKey = (user: AuthUser | null, classId?: string | null) => {
+    const uid = user ? (user.telegram_id || (user as any).id || user.username || 'user') : 'guest';
+    const cid = classId !== undefined ? classId : activeClassroomId;
+    if (cid && cid !== 'solo') {
+      return `teacheros_history_${uid}_${cid}`;
+    }
+    return `teacheros_history_${uid}_solo`;
+  };
+
+  const getHomeworkStorageKey = (user: AuthUser | null, classId?: string | null) => {
+    const uid = user ? (user.telegram_id || (user as any).id || user.username || 'user') : 'guest';
+    const cid = classId !== undefined ? classId : activeClassroomId;
+    if (cid && cid !== 'solo') {
+      return `teacheros_homeworks_${uid}_${cid}`;
+    }
+    return `teacheros_homeworks_${uid}_solo`;
+  };
+
+  // Dedicated history loader for specific classroom or solo mode with timestamp migration
+  const loadHistoryForClassroom = (targetClassId: string | null) => {
+    const teacherUid = currentUser ? (currentUser.telegram_id || (currentUser as any)?.id || currentUser?.username || 'user') : 'guest';
+    const key = getHistoryStorageKey(currentUser, targetClassId);
+    let saved = localStorage.getItem(key);
+    // Legacy fallback for solo mode
+    if (!saved && (!targetClassId || targetClassId === 'solo')) {
+      saved = localStorage.getItem(`teacheros_history_${teacherUid}`);
+    }
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // If items don't have distinct timestamps, migrate them with realistic staggered timestamps
+          const now = Date.now();
+          const migrated = parsed.map((item: any, i: number) => {
+            if (!item.timestamp) {
+              return { ...item, timestamp: now - (i + 1) * (18 * 60 * 1000 + 45000) };
+            }
+            return item;
+          });
+          setLessonHistory(migrated);
+          return;
+        }
+      } catch (e) {}
+    }
+    setLessonHistory([]);
+  };
+
+  const addLessonToHistory = (topic: string, fullCurriculum?: Curriculum) => {
+    if (!topic || !topic.trim()) return;
+    const clean = topic.trim();
+    const timeLabel = appLanguage === 'en' ? "Just now" : appLanguage === 'ru' ? "Только что" : "Hozir";
+    const newEntry = {
+      topic: clean,
+      time: timeLabel,
+      timestamp: Date.now(),
+      classroomId: activeClassroomId || 'solo',
+      classroomName: workspaceMode === 'classroom' ? currentClassroom.name : 'Yakkaxon Rejim'
+    };
+
+    setLessonHistory((prev) => {
+      const filtered = prev.filter(
+        (h) => h.topic.toLowerCase() !== clean.toLowerCase()
+      );
+      const updated = [newEntry, ...filtered];
+      try {
+        const key = getHistoryStorageKey(currentUser, activeClassroomId);
+        localStorage.setItem(key, JSON.stringify(updated));
+        if (fullCurriculum) {
+          localStorage.setItem(`teacheros_curriculum_cache_${clean.toLowerCase()}`, JSON.stringify(fullCurriculum));
+        }
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  // Dynamic accurate relative time calculator for history items (shows distinct minutes for each item)
+  const getRelativeTime = (timestamp?: number, fallbackTime?: string) => {
+    if (!timestamp) return fallbackTime || (appLanguage === 'en' ? 'Recently' : appLanguage === 'ru' ? 'Недавно' : 'Hozir');
+    const now = Date.now();
+    const diffSec = Math.max(0, Math.floor((now - timestamp) / 1000));
+    if (diffSec < 60) return appLanguage === 'en' ? 'Just now' : appLanguage === 'ru' ? 'Только что' : 'Hozir';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m`;
+    const diffHours = Math.floor(diffMin / 60);
+    const remMin = diffMin % 60;
+    // Show hours AND minutes for up to 6 hours so every lesson has its own distinct elapsed time!
+    if (diffHours < 6) {
+      return remMin > 0 ? `${diffHours}h ${remMin}m` : `${diffHours}h`;
+    }
+    if (diffHours < 24) return `${diffHours}h`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d`;
+    const diffWeeks = Math.floor(diffDays / 7);
+    return `${diffWeeks}w`;
+  };
+
+  // Classroom Management Actions (Image 1 & 2)
+  const handleCreateClassroom = (name: string, studentUsernames: string[]) => {
+    const teacherUid = currentUser?.telegram_id || (currentUser as any)?.id || currentUser?.username || 'user';
+    const newClass: TeacherClassroom = {
+      id: `cls_${Date.now()}`,
+      name,
+      createdAt: Date.now(),
+      students: studentUsernames.map((u) => ({ username: u, addedAt: Date.now() })),
+      inviteCode: `cls_${Date.now().toString(36)}`
+    };
+    const updated = [newClass, ...classrooms];
+    setClassrooms(updated);
+    setActiveClassroomId(newClass.id);
+    setWorkspaceMode('classroom');
+    setCurrentClassroom({ id: newClass.id, name: newClass.name, students: newClass.students.length });
+    loadHistoryForClassroom(newClass.id);
+    try {
+      localStorage.setItem(`teacheros_classrooms_${teacherUid}`, JSON.stringify(updated));
+      localStorage.setItem('teacheros_workspace_mode', 'classroom');
+      localStorage.setItem('teacheros_classroom', JSON.stringify({ id: newClass.id, name: newClass.name, students: newClass.students.length }));
+    } catch (e) {}
+    showToast(`🎉 "${name}" sinfi yaratildi!`);
+    confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+  };
+
+  const handleSelectClassroom = (cls: TeacherClassroom | null) => {
+    if (!cls) {
+      setWorkspaceMode('solo');
+      setActiveClassroomId(null);
+      setCurrentClassroom({ id: 'solo', name: 'Yakkaxon Rejim', students: 0 });
+      localStorage.setItem('teacheros_workspace_mode', 'solo');
+      localStorage.removeItem('teacheros_classroom');
+      loadHistoryForClassroom(null);
+      try {
+        const hwKey = getHomeworkStorageKey(currentUser, null);
+        const savedHws = localStorage.getItem(hwKey);
+        if (savedHws) {
+          const parsed = JSON.parse(savedHws);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.data) {
+            setGeneratedHomeworkData(parsed[0].data);
+            setActiveHomeworkTopic(parsed[0].topic || null);
+          } else {
+            setGeneratedHomeworkData(null);
+            setActiveHomeworkTopic(null);
+          }
+        } else {
+          setGeneratedHomeworkData(null);
+          setActiveHomeworkTopic(null);
+        }
+      } catch (e) {}
+      showToast(appLanguage === 'en' ? "Switched to Solo Mode" : "Yakkaxon rejimga o'tildi");
+    } else {
+      setWorkspaceMode('classroom');
+      setActiveClassroomId(cls.id);
+      setCurrentClassroom({ id: cls.id, name: cls.name, students: cls.students.length });
+      localStorage.setItem('teacheros_workspace_mode', 'classroom');
+      localStorage.setItem('teacheros_classroom', JSON.stringify({ id: cls.id, name: cls.name, students: cls.students.length }));
+      loadHistoryForClassroom(cls.id);
+      try {
+        const hwKey = getHomeworkStorageKey(currentUser, cls.id);
+        const savedHws = localStorage.getItem(hwKey);
+        if (savedHws) {
+          const parsed = JSON.parse(savedHws);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.data) {
+            setGeneratedHomeworkData(parsed[0].data);
+            setActiveHomeworkTopic(parsed[0].topic || null);
+          } else {
+            setGeneratedHomeworkData(null);
+            setActiveHomeworkTopic(null);
+          }
+        } else {
+          setGeneratedHomeworkData(null);
+          setActiveHomeworkTopic(null);
+        }
+      } catch (e) {}
+      showToast(`"${cls.name}" sinfi faollashtirildi`);
+    }
+  };
+
+  const handleAddStudentsToClassroom = (classroomId: string, usernames: string[]) => {
+    const teacherUid = currentUser?.telegram_id || (currentUser as any)?.id || currentUser?.username || 'user';
+    const updated = classrooms.map((c) => {
+      if (c.id === classroomId) {
+        const existing = new Set(c.students.map((s) => s.username.toLowerCase()));
+        const newEntries = usernames
+          .filter((u) => !existing.has(u.toLowerCase()))
+          .map((u) => ({ username: u, addedAt: Date.now() }));
+        return { ...c, students: [...c.students, ...newEntries] };
+      }
+      return c;
+    });
+    setClassrooms(updated);
+    const active = updated.find((c) => c.id === classroomId);
+    if (active && activeClassroomId === classroomId) {
+      setCurrentClassroom({ id: active.id, name: active.name, students: active.students.length });
+      localStorage.setItem('teacheros_classroom', JSON.stringify({ id: active.id, name: active.name, students: active.students.length }));
+    }
+    localStorage.setItem(`teacheros_classrooms_${teacherUid}`, JSON.stringify(updated));
+    showToast(appLanguage === 'en' ? "Students added!" : "O'quvchilar qo'shildi!");
+  };
+
+  const handleDeleteClassroom = (classroomId: string) => {
+    const teacherUid = currentUser?.telegram_id || (currentUser as any)?.id || currentUser?.username || 'user';
+    const updated = classrooms.filter((c) => c.id !== classroomId);
+    setClassrooms(updated);
+    if (activeClassroomId === classroomId) {
+      setWorkspaceMode('solo');
+      setActiveClassroomId(null);
+      setCurrentClassroom({ id: 'solo', name: 'Yakkaxon Rejim', students: 0 });
+      localStorage.setItem('teacheros_workspace_mode', 'solo');
+      localStorage.removeItem('teacheros_classroom');
+    }
+    localStorage.setItem(`teacheros_classrooms_${teacherUid}`, JSON.stringify(updated));
+    showToast(appLanguage === 'en' ? "Classroom deleted" : "Sinfxona o'chirildi");
+  };
+
+  // Sync isolated history, classrooms, real Telegram avatar, and teacher display name when user logs in / switches accounts
+  useEffect(() => {
+    try {
+      const teacherUid = currentUser?.telegram_id || (currentUser as any)?.id || currentUser?.username || 'user';
+      // Load history for current active classroom (or solo)
+      loadHistoryForClassroom(activeClassroomId);
+
+      // Sync teacher display name
+      const savedTeacherName = localStorage.getItem(`teacheros_teacher_name_${teacherUid}`);
+      if (savedTeacherName) {
+        setTeacherDisplayName(savedTeacherName);
+      } else if (currentUser?.first_name) {
+        setTeacherDisplayName(currentUser.first_name);
+      }
+
+      // Sync classrooms
+      const savedClasses = localStorage.getItem(`teacheros_classrooms_${teacherUid}`);
+      if (savedClasses) {
+        const parsedClasses = JSON.parse(savedClasses);
+        if (Array.isArray(parsedClasses)) {
+          setClassrooms(parsedClasses);
+          const savedActiveCls = localStorage.getItem('teacheros_classroom');
+          if (savedActiveCls) {
+            const active = JSON.parse(savedActiveCls);
+            const found = parsedClasses.find((c: TeacherClassroom) => c.id === active.id);
+            if (found) {
+              setActiveClassroomId(found.id);
+              setCurrentClassroom({ id: found.id, name: found.name, students: found.students.length });
+            }
+          }
+        }
+      } else {
+        setClassrooms([]);
+      }
+
+      // Sync real public Telegram user avatar if current avatar is fallback
+      if (currentUser?.telegram_id) {
+        const isFallback = !currentUser.avatar_url || currentUser.avatar_url.includes('dicebear.com');
+        if (isFallback) {
+          fetch(`/api/auth/telegram-session?action=get_avatar&userId=${currentUser.telegram_id}`)
+            .then((r) => r.json())
+            .then((resData) => {
+              if (resData.success && resData.avatarUrl && !resData.avatarUrl.includes('dicebear.com')) {
+                const updated = { ...currentUser, avatar_url: resData.avatarUrl };
+                setCurrentUser(updated);
+                localStorage.setItem('teacheros_auth_user', JSON.stringify(updated));
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    } catch (e) {
+      setLessonHistory([]);
+    }
+  }, [currentUser]);
 
   // Multimodal file upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -306,14 +863,37 @@ export default function StitchTeacherOS() {
   const cleanTopicTitle = (raw: string): string => {
     if (!raw) return "";
     let clean = raw.trim();
-    clean = clean.replace(/^(create|make|generate|build|write)\s+(a\s+|an\s+)?(interactive\s+)?(lesson|curriculum|class|presentation|topic)\s+(about|on|for|regarding)\s+/i, "");
-    clean = clean.replace(/^(lesson|topic|class)\s+(about|on|for)\s+/i, "");
-    clean = clean.replace(/^(please\s+)?(can\s+you\s+)?(create|make|give\s+me)\s+(a\s+)?/i, "");
-    clean = clean.replace(/^(haqida\s+)?(darslik|dars|mavzu)\s+(yarat|tuz|tayyorla|qil)\s*/i, "");
-    clean = clean.replace(/\s+(haqida|boyicha|to'g'risida)\s+(dars|darslik|mavzu)\s*(yarat|tuz|tayyorla)?$/i, "");
-    clean = clean.trim();
+    // English & Uzbek conversational prefixes
+    clean = clean.replace(/^(?:please\s+)?(?:can\s+you\s+)?(?:could\s+you\s+)?(?:i\s+want\s+(?:you\s+)?to\s+)?(?:create|generate|make|build|design|write|produce|prepare|teach|explain|give\s+me|show\s+me)(?:\s+me)?(?:\s+(?:a|an))?(?:\s+(?:complete|interactive|detailed|quick|short|good|intensive|fun|engaging))?\s+(?:lesson|curriculum|class|presentation|slides?|guide|module|test|topic|explanation|dars)?(?:\s+(?:about|on|for|regarding|of|around|based\s+on))?\s+/i, "");
+    clean = clean.replace(/^(?:create\s+a\s+lesson\s+based\s+on\s+(?:the\s+)?(?:topic\s+)?(?:of\s+)?(?:the\s+)?(?:images?|pictures?|photos?|files?|scans?|documents?|pdf))\s*/i, "");
+    clean = clean.replace(/^(?:based\s+on\s+(?:the\s+)?(?:topic\s+)?(?:of\s+)?(?:the\s+)?(?:images?|pictures?|photos?|files?|scans?|documents?|pdf))\s*/i, "");
+    clean = clean.replace(/^(?:iltimos\s+)?(?:menga\s+)?(?:bugun\s+)?dars\s+(?:tayyorla(?:b\s+ber)?|yarat|o't|tuz|qil|ber)(?:\s*[:\-])?\s*/i, "");
+    clean = clean.replace(/^(?:bugun\s+)?(?:[a-z0-9\s\-]+?)\s+(?:mavzusini|mavzusi)\s+(?:o'tamiz|o'rganamiz|o'tmoqchiman)/i, "");
+    clean = clean.replace(/^(?:mavzu|tema)\s*[:\-]\s*/i, "");
+    // Trailing instructional specifications
+    clean = clean.replace(/\s+(?:with\s+(?:practical\s+|real-life\s+|lots\s+of\s+)?(?:exercises?|examples?|activities|tasks|practice|situations?)).*$/i, "");
+    clean = clean.replace(/\s+(?:focusing\s+on|including|covering|explaining)\s+.*$/i, "");
+    clean = clean.replace(/\s+(?:for\s+(?:my\s+)?(?:students?|learners?|uzbek\s+students?|beginners?|intermediates?|[a-c][1-2](?:\s+level)?)).*$/i, "");
+    clean = clean.replace(/\s+(?:haqida|to'g'risida|mavzusi(?:da)?|boyicha|bo'yicha)\s*(?:dars|slayd|taqdimot)?$/i, "");
+    clean = clean.replace(/\s+(?:amaliy\s+mashqlar|misollar)\s+bilan.*$/i, "");
+    clean = clean.replace(/\s+uchun.*$/i, "");
+    clean = clean.replace(/[\.\?!,;:]+$/, "").trim();
+
+    if (/^(?:the\s+)?(?:images?|pictures?|photos?|files?|scans?|documents?|pdf|textbook\s+lesson|topic|prompt)$/i.test(clean)) {
+      return "";
+    }
+
     if (clean.length > 0) {
-      clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+      clean = clean
+        .split(" ")
+        .map((w, idx) => {
+          const lower = w.toLowerCase();
+          if (idx > 0 && ["of", "the", "and", "in", "on", "at", "to", "for", "a", "an", "vs"].includes(lower)) {
+            return lower;
+          }
+          return w.charAt(0).toUpperCase() + w.slice(1);
+        })
+        .join(" ");
     }
     return clean || raw;
   };
@@ -361,7 +941,7 @@ export default function StitchTeacherOS() {
 
   // Whiteboard Pen & Drawing Annotation State
   const [isAnnotating, setIsAnnotating] = useState(false);
-  const [penTool, setPenTool] = useState<"pen" | "highlighter" | "text" | "eraser">("pen");
+  const [penTool, setPenTool] = useState<DrawingTool>("pen");
   const [penColor, setPenColor] = useState<string>("#ef4444");
   const [penSize, setPenSize] = useState<number>(3);
   const [textInputPos, setTextInputPos] = useState<{ x: number; y: number } | null>(null);
@@ -370,7 +950,91 @@ export default function StitchTeacherOS() {
   const isDrawingRef = useRef(false);
   const undoStackRef = useRef<ImageData[]>([]);
   const pageDrawingsRef = useRef<Record<number, ImageData>>({});
+  const shapeStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const shapeSnapshotRef = useRef<ImageData | null>(null);
   const prevScreenIndexRef = useRef<number>(0);
+
+  // Load persistent user auth, workspace, and active lesson on mount (F5 persistence)
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('teacheros_auth_user');
+      if (savedUser) setCurrentUser(JSON.parse(savedUser));
+      const savedMode = localStorage.getItem('teacheros_workspace_mode') as 'classroom' | 'solo' | null;
+      if (savedMode) setWorkspaceMode(savedMode);
+      const savedClass = localStorage.getItem('teacheros_classroom');
+      if (savedClass) setCurrentClassroom(JSON.parse(savedClass));
+
+      // Restore Studio Mode & Homework state across F5
+      const savedStudioMode = localStorage.getItem('teacheros_studio_mode') as any;
+      if (savedStudioMode && ['lesson', 'homework', 'group_quiz', 'level_check', 'others_picker'].includes(savedStudioMode)) {
+        setStudioMode(savedStudioMode);
+      }
+      const savedHwTopic = localStorage.getItem('teacheros_active_hw_topic');
+      if (savedHwTopic) setActiveHomeworkTopic(savedHwTopic);
+      const savedHwStep = localStorage.getItem('teacheros_hw_step') as any;
+      if (savedHwStep && ['prompt', 'config', 'review'].includes(savedHwStep)) {
+        setHomeworkStep(savedHwStep);
+      }
+      const savedHwData = localStorage.getItem('teacheros_generated_hw');
+      if (savedHwData) {
+        try {
+          const parsedHw = JSON.parse(savedHwData);
+          if (parsedHw) setGeneratedHomeworkData(parsedHw);
+        } catch (e) {}
+      }
+      const savedHwIntensity = localStorage.getItem('teacheros_hw_intensity') as any;
+      if (savedHwIntensity) setHomeworkIntensity(savedHwIntensity);
+
+      const savedCurriculum = localStorage.getItem('teacheros_active_curriculum');
+      const savedScreen = localStorage.getItem('teacheros_active_screen_index');
+      if (savedCurriculum) {
+        const parsed = JSON.parse(savedCurriculum);
+        if (parsed && parsed.slides && parsed.slides.length > 0) {
+          setCurriculum(parsed);
+          if (savedScreen) {
+            const idx = parseInt(savedScreen, 10);
+            if (!isNaN(idx)) {
+              setCurrentScreenIndex(idx);
+              prevScreenIndexRef.current = idx;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading saved session', e);
+    } finally {
+      setIsAuthLoading(false);
+      isInitialMountRef.current = false;
+    }
+  }, []);
+
+  // F5 Refresh Persistence: Sync active curriculum, screen index, studio mode & homework
+  useEffect(() => {
+    if (isInitialMountRef.current) return;
+    try {
+      localStorage.setItem('teacheros_studio_mode', studioMode);
+      if (activeHomeworkTopic) {
+        localStorage.setItem('teacheros_active_hw_topic', activeHomeworkTopic);
+      } else {
+        localStorage.removeItem('teacheros_active_hw_topic');
+      }
+      localStorage.setItem('teacheros_hw_step', homeworkStep);
+      if (generatedHomeworkData) {
+        localStorage.setItem('teacheros_generated_hw', JSON.stringify(generatedHomeworkData));
+      } else {
+        localStorage.removeItem('teacheros_generated_hw');
+      }
+      localStorage.setItem('teacheros_hw_intensity', homeworkIntensity);
+
+      if (curriculum) {
+        localStorage.setItem('teacheros_active_curriculum', JSON.stringify(curriculum));
+        localStorage.setItem('teacheros_active_screen_index', String(currentScreenIndex));
+      } else {
+        localStorage.removeItem('teacheros_active_curriculum');
+        localStorage.removeItem('teacheros_active_screen_index');
+      }
+    } catch (e) {}
+  }, [curriculum, currentScreenIndex, studioMode, activeHomeworkTopic, homeworkStep, generatedHomeworkData, homeworkIntensity]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -444,7 +1108,7 @@ export default function StitchTeacherOS() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
     return () => window.removeEventListener("resize", resizeCanvas);
-  }, [isFullscreen]);
+  }, [isFullscreen, isAnnotating, currentScreenIndex]);
 
   const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -477,6 +1141,80 @@ export default function StitchTeacherOS() {
     } catch (e) {}
   };
 
+  const drawShapeOnCanvas = (
+    ctx: CanvasRenderingContext2D,
+    tool: DrawingTool,
+    start: { x: number; y: number },
+    end: { x: number; y: number },
+    color: string,
+    size: number
+  ) => {
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color + "33";
+    ctx.lineWidth = size;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    if (tool === "rectangle") {
+      const x = Math.min(start.x, end.x);
+      const y = Math.min(start.y, end.y);
+      const w = Math.abs(end.x - start.x);
+      const h = Math.abs(end.y - start.y);
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.fill();
+      ctx.stroke();
+    } else if (tool === "circle") {
+      const rx = Math.abs(end.x - start.x) / 2;
+      const ry = Math.abs(end.y - start.y) / 2;
+      const cx = Math.min(start.x, end.x) + rx;
+      const cy = Math.min(start.y, end.y) + ry;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, Math.max(1, rx), Math.max(1, ry), 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    } else if (tool === "triangle") {
+      const topX = (start.x + end.x) / 2;
+      const topY = Math.min(start.y, end.y);
+      const bottomY = Math.max(start.y, end.y);
+      ctx.beginPath();
+      ctx.moveTo(topX, topY);
+      ctx.lineTo(start.x, bottomY);
+      ctx.lineTo(end.x, bottomY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else if (tool === "line") {
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+    } else if (tool === "arrow") {
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+
+      const angle = Math.atan2(end.y - start.y, end.x - start.x);
+      const headLen = Math.max(12, size * 3.5);
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(
+        end.x - headLen * Math.cos(angle - Math.PI / 6),
+        end.y - headLen * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(
+        end.x - headLen * Math.cos(angle + Math.PI / 6),
+        end.y - headLen * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.stroke();
+    }
+    ctx.restore();
+  };
+
   const handleStartDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isAnnotating) return;
     const { x, y } = getCanvasCoords(e);
@@ -494,20 +1232,31 @@ export default function StitchTeacherOS() {
 
     saveCanvasState();
     isDrawingRef.current = true;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
 
-    if (penTool === "eraser") {
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth = penSize * 4;
-    } else if (penTool === "highlighter") {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.strokeStyle = penColor + "66";
-      ctx.lineWidth = penSize * 4;
+    const isShape = ["rectangle", "circle", "triangle", "line", "arrow"].includes(penTool);
+    if (isShape) {
+      shapeStartPosRef.current = { x, y };
+      try {
+        shapeSnapshotRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      } catch (e) {}
     } else {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.strokeStyle = penColor;
-      ctx.lineWidth = penSize;
+      shapeStartPosRef.current = null;
+      shapeSnapshotRef.current = null;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+
+      if (penTool === "eraser") {
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.lineWidth = penSize * 4;
+      } else if (penTool === "highlighter") {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = penColor + "66";
+        ctx.lineWidth = penSize * 4;
+      } else {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = penColor;
+        ctx.lineWidth = penSize;
+      }
     }
   };
 
@@ -519,13 +1268,21 @@ export default function StitchTeacherOS() {
     if (!ctx) return;
 
     const { x, y } = getCanvasCoords(e);
-    ctx.lineTo(x, y);
-    ctx.stroke();
+    const isShape = ["rectangle", "circle", "triangle", "line", "arrow"].includes(penTool);
+    if (isShape && shapeStartPosRef.current && shapeSnapshotRef.current) {
+      ctx.putImageData(shapeSnapshotRef.current, 0, 0);
+      drawShapeOnCanvas(ctx, penTool, shapeStartPosRef.current, { x, y }, penColor, penSize);
+    } else if (!isShape) {
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
   };
 
   const handleEndDraw = () => {
     if (!isDrawingRef.current) return;
     isDrawingRef.current = false;
+    shapeStartPosRef.current = null;
+    shapeSnapshotRef.current = null;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -574,6 +1331,192 @@ export default function StitchTeacherOS() {
     setTypedAnnotationText("");
   };
 
+  // Blank Board canvas resize & state restoration
+  useEffect(() => {
+    if (!isBlankBoardOpen) return;
+    const canvas = blankCanvasRef.current;
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    if (!parent) return;
+
+    const rect = parent.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.scale(dpr, dpr);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      if (blankDrawingDataRef.current) {
+        try {
+          ctx.putImageData(blankDrawingDataRef.current, 0, 0);
+        } catch (e) {}
+      }
+    }
+  }, [isBlankBoardOpen]);
+
+  const saveBlankCanvas = () => {
+    const canvas = blankCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx || canvas.width <= 0 || canvas.height <= 0) return;
+    try {
+      blankDrawingDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    } catch (e) {}
+  };
+
+  const getBlankCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = blankCanvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    if ("touches" in e) {
+      const touch = e.touches[0];
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+      };
+    }
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  };
+
+  const saveBlankState = () => {
+    const canvas = blankCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    try {
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      blankUndoStackRef.current.push(imgData);
+      if (blankUndoStackRef.current.length > 25) {
+        blankUndoStackRef.current.shift();
+      }
+    } catch (e) {}
+  };
+
+  const handleBlankStartDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const { x, y } = getBlankCanvasCoords(e);
+    if (blankPenTool === "text") {
+      setBlankTextInputPos({ x, y });
+      setBlankTypedText("");
+      return;
+    }
+
+    const canvas = blankCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    saveBlankState();
+    isBlankDrawingRef.current = true;
+
+    const isShape = ["rectangle", "circle", "triangle", "line", "arrow"].includes(blankPenTool);
+    if (isShape) {
+      blankShapeStartPosRef.current = { x, y };
+      try {
+        blankShapeSnapshotRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      } catch (e) {}
+    } else {
+      blankShapeStartPosRef.current = null;
+      blankShapeSnapshotRef.current = null;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+
+      if (blankPenTool === "eraser") {
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.lineWidth = blankPenSize * 4;
+      } else if (blankPenTool === "highlighter") {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = blankPenColor + "66";
+        ctx.lineWidth = blankPenSize * 4;
+      } else {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = blankPenColor;
+        ctx.lineWidth = blankPenSize;
+      }
+    }
+  };
+
+  const handleBlankDrawMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isBlankDrawingRef.current) return;
+    const canvas = blankCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const { x, y } = getBlankCanvasCoords(e);
+    const isShape = ["rectangle", "circle", "triangle", "line", "arrow"].includes(blankPenTool);
+    if (isShape && blankShapeStartPosRef.current && blankShapeSnapshotRef.current) {
+      ctx.putImageData(blankShapeSnapshotRef.current, 0, 0);
+      drawShapeOnCanvas(ctx, blankPenTool, blankShapeStartPosRef.current, { x, y }, blankPenColor, blankPenSize);
+    } else if (!isShape) {
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+  };
+
+  const handleBlankEndDraw = () => {
+    if (!isBlankDrawingRef.current) return;
+    isBlankDrawingRef.current = false;
+    blankShapeStartPosRef.current = null;
+    blankShapeSnapshotRef.current = null;
+    const canvas = blankCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.closePath();
+    saveBlankCanvas();
+  };
+
+  const handleBlankUndo = () => {
+    const canvas = blankCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx || blankUndoStackRef.current.length === 0) return;
+    const previousState = blankUndoStackRef.current.pop();
+    if (previousState) {
+      ctx.putImageData(previousState, 0, 0);
+      saveBlankCanvas();
+    }
+  };
+
+  const handleBlankClear = () => {
+    const canvas = blankCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    saveBlankState();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    blankDrawingDataRef.current = null;
+  };
+
+  const handleBlankAddText = () => {
+    if (!blankTextInputPos || !blankTypedText.trim()) {
+      setBlankTextInputPos(null);
+      return;
+    }
+    const canvas = blankCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    saveBlankState();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = blankPenColor;
+    ctx.font = `bold ${Math.max(16, blankPenSize * 5)}px 'Plus Jakarta Sans', system-ui, sans-serif`;
+    ctx.fillText(blankTypedText.trim(), blankTextInputPos.x, blankTextInputPos.y);
+
+    setBlankTextInputPos(null);
+    setBlankTypedText("");
+    saveBlankCanvas();
+  };
+
   // URL Hash zero-DB loading
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -604,32 +1547,219 @@ export default function StitchTeacherOS() {
     }
   };
 
-  // Speech-to-text recording (Wispr Flow style)
+  // Smartboard Handwriting Prompt Canvas Setup & Handlers
+  useEffect(() => {
+    if (!isHandwritingPromptOpen) return;
+    const canvas = handwritingCanvasRef.current;
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    if (!parent) return;
+
+    const rect = parent.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.scale(dpr, dpr);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(0, 0, rect.width, rect.height);
+    }
+  }, [isHandwritingPromptOpen]);
+
+  const getHandwritingCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = handwritingCanvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    if ("touches" in e) {
+      const touch = e.touches[0];
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+      };
+    }
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  };
+
+  const saveHandwritingState = () => {
+    const canvas = handwritingCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    try {
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      handwritingUndoStackRef.current.push(imgData);
+      if (handwritingUndoStackRef.current.length > 20) {
+        handwritingUndoStackRef.current.shift();
+      }
+    } catch (e) {}
+  };
+
+  const handleHandwritingStartDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const { x, y } = getHandwritingCoords(e);
+    const canvas = handwritingCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    saveHandwritingState();
+    isHandwritingDrawingRef.current = true;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+
+    if (handwritingTool === "eraser") {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = handwritingPenSize * 5;
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = handwritingPenColor;
+      ctx.lineWidth = handwritingPenSize;
+    }
+  };
+
+  const handleHandwritingDrawMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isHandwritingDrawingRef.current) return;
+    const canvas = handwritingCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const { x, y } = getHandwritingCoords(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const handleHandwritingEndDraw = () => {
+    if (!isHandwritingDrawingRef.current) return;
+    isHandwritingDrawingRef.current = false;
+    const canvas = handwritingCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.closePath();
+  };
+
+  const handleHandwritingUndo = () => {
+    const canvas = handwritingCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx || handwritingUndoStackRef.current.length === 0) return;
+    const previousState = handwritingUndoStackRef.current.pop();
+    if (previousState) {
+      ctx.putImageData(previousState, 0, 0);
+    }
+  };
+
+  const handleHandwritingClear = () => {
+    const canvas = handwritingCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    saveHandwritingState();
+    ctx.fillStyle = "#1e293b";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const handleHandwritingGenerate = async () => {
+    const canvas = handwritingCanvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    const base64Data = dataUrl.split(",")[1];
+    if (!base64Data) {
+      showToast("Doskaga mavzuni yozing...");
+      return;
+    }
+    const handwritingFile = {
+      name: "handwriting-prompt.png",
+      type: "image/png",
+      preview: dataUrl,
+      base64: base64Data
+    };
+    setIsHandwritingPromptOpen(false);
+    showToast("✍️ Doska qo'lyozmasi skanerlanmoqda va dars yaratilmoqda...");
+    await handleGenerate(topicInput || "Handwritten Smartboard Topic", lessonLength, [handwritingFile]);
+  };
+
+  // Continuous Speech-to-text recording (Wispr Flow style with Waveform & 6s silence timer)
   const handleVoiceRecord = () => {
     if (isRecording) {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       recognitionRef.current?.stop();
       setIsRecording(false);
+      setRecordedInterimText("");
       return;
     }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser.');
+      alert("Ovoz bilan yozish ushbu brauzerda qo'llab-quvvatlanmaydi (Chrome yoki Edge tavsiya etiladi).");
       return;
     }
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setTopicInput((prev: string) => prev ? prev + ' ' + transcript : transcript);
-      setIsRecording(false);
+
+    baseTopicRef.current = topicInput;
+
+    const resetSilenceTimer = () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        recognition.stop();
+        setIsRecording(false);
+        setRecordedInterimText("");
+      }, 6000);
     };
-    recognition.onerror = () => setIsRecording(false);
-    recognition.onend = () => setIsRecording(false);
+
+    recognition.onresult = (event: any) => {
+      resetSilenceTimer();
+      let interim = "";
+      let finalSpeech = "";
+
+      for (let i = 0; i < event.results.length; i++) {
+        const item = event.results[i];
+        if (item.isFinal) {
+          finalSpeech += item[0].transcript + " ";
+        } else {
+          interim += item[0].transcript;
+        }
+      }
+
+      setRecordedInterimText(interim);
+
+      const combined = (baseTopicRef.current + " " + finalSpeech).trim();
+      setTopicInput(combined);
+    };
+
+    recognition.onerror = () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      setIsRecording(false);
+      setRecordedInterimText("");
+    };
+
+    recognition.onend = () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      setIsRecording(false);
+      setRecordedInterimText("");
+    };
+
     recognitionRef.current = recognition;
-    recognition.start();
-    setIsRecording(true);
+    try {
+      recognition.start();
+      setIsRecording(true);
+      resetSilenceTimer();
+    } catch (e) {
+      console.warn("Speech recognition start error", e);
+    }
   };
 
   // Fullscreen toggle
@@ -844,17 +1974,88 @@ export default function StitchTeacherOS() {
     };
   }, [curriculum, isFullscreen, totalScreens]);
 
+  // Live Homework Synthesis (Multi-Level Intensity & 10 Modular Exercise Engines)
+  const handleGenerateHomework = async () => {
+    if (selectedHomeworkTypes.length === 0) return;
+    setIsGeneratingHomework(true);
+    const activeTopic = topicInput.trim() || "Present Perfect Continuous";
+    try {
+      const res = await fetch("/api/generate-homework", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: activeTopic,
+          intensity: homeworkIntensity,
+          selectedTypes: selectedHomeworkTypes,
+          lang: appLanguage
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const hwPayload = data.homework || data;
+        setGeneratedHomeworkData(hwPayload);
+        // Persist homework permanently scoped to the active classroom forever
+        try {
+          const hwKey = getHomeworkStorageKey(currentUser, activeClassroomId);
+          const existingListRaw = localStorage.getItem(hwKey);
+          const existingList = existingListRaw ? JSON.parse(existingListRaw) : [];
+          const newEntry = {
+            id: `hw_${Date.now()}`,
+            topic: activeTopic,
+            classroomId: activeClassroomId || 'solo',
+            classroomName: workspaceMode === 'classroom' ? currentClassroom.name : 'Yakkaxon Rejim',
+            createdAt: Date.now(),
+            data: hwPayload
+          };
+          const updatedList = [newEntry, ...(Array.isArray(existingList) ? existingList : [])].slice(0, 30);
+          localStorage.setItem(hwKey, JSON.stringify(updatedList));
+        } catch (e) {
+          console.warn("Failed saving classroom homework:", e);
+        }
+      }
+    } catch (err) {
+      console.error("Homework generation error:", err);
+    } finally {
+      setIsGeneratingHomework(false);
+      setActiveHomeworkTopic(activeTopic);
+      setHomeworkStep('review');
+    }
+  };
+
   // Live AI Generation (Instant Preset Matching + Gemini Fast Cascade)
-  const handleGenerate = async (customTopic?: string, customLength?: LessonLength) => {
+  const handleGenerate = async (
+    customTopic?: string,
+    customLength?: LessonLength,
+    customFiles?: Array<{ name: string; type: string; preview: string; base64: string }>
+  ) => {
     const rawQuery = (customTopic || topicInput).trim();
     const lengthToUse = customLength || lessonLength;
+    let filesToUse = customFiles || attachedFiles;
 
-    if (!rawQuery && attachedFiles.length === 0) {
+    // Auto-capture smartboard handwriting if open and drawn upon
+    if (isHandwritingPromptOpen && handwritingCanvasRef.current && handwritingUndoStackRef.current.length > 0 && (!customFiles || customFiles.length === 0)) {
+      try {
+        const dataUrl = handwritingCanvasRef.current.toDataURL("image/png");
+        const base64Data = dataUrl.split(",")[1];
+        if (base64Data) {
+          filesToUse = [{
+            name: "handwriting-prompt.png",
+            type: "image/png",
+            preview: dataUrl,
+            base64: base64Data
+          }];
+          setIsHandwritingPromptOpen(false);
+          showToast("✍️ Doska qo'lyozmasi skanerlanmoqda...");
+        }
+      } catch (e) {}
+    }
+
+    if (!rawQuery && filesToUse.length === 0) {
       showToast("Iltimos, dars mavzusini yozing yoki rasm yuklang...");
       return;
     }
 
-    const query = cleanTopicTitle(rawQuery) || rawQuery || (attachedFiles.length > 0 ? "Textbook Lesson" : "");
+    const query = cleanTopicTitle(rawQuery) || rawQuery || (filesToUse.length > 0 ? "Textbook Lesson" : "");
 
     setIsAnimatingUp(true);
     // Smooth CapCut slide-up transition: capsule shrinks and glides toward the top bar
@@ -878,7 +2079,17 @@ export default function StitchTeacherOS() {
     // Call live Gemini AI engine (90s timeout matching full HTML architecture)
     let stepInterval: NodeJS.Timeout | null = null;
     try {
-      const steps = [
+      const steps = appLanguage === 'en' ? [
+        "⚡ [1/4] Connecting to Google Gemini AI engine...",
+        `🔍 [2/4] Analyzing pedagogical structure of "${query}" (${level})...`,
+        "🎨 [3/4] Architecting interactive whiteboard and visual models...",
+        "💡 [4/4] Assembling flashcards, practice quizzes, and error hunter..."
+      ] : appLanguage === 'ru' ? [
+        "⚡ [1/4] Подключение к движку Google Gemini AI...",
+        `🔍 [2/4] Анализ педагогической структуры "${query}" (${level})...`,
+        "🎨 [3/4] Проектирование интерактивной доски и визуальных моделей...",
+        "💡 [4/4] Сборка флешкарт, тестов и охотника за ошибками..."
+      ] : [
         "⚡ [1/4] Google Gemini dvigateliga ulanmoqda...",
         `🔍 [2/4] "${query}" (${level}) pedagogik tuzilmasi tahlil qilinmoqda...`,
         "🎨 [3/4] Interaktiv gap anatomiyasi va vizual modellar loyihalanmoqda...",
@@ -907,7 +2118,8 @@ export default function StitchTeacherOS() {
           rawPrompt: rawQuery,
           level,
           length: lengthToUse,
-          files: attachedFiles
+          files: filesToUse,
+          lang: appLanguage
         })
       });
 
@@ -921,9 +2133,9 @@ export default function StitchTeacherOS() {
           setCurriculum(enriched);
           setCurrentScreenIndex(0);
           prevScreenIndexRef.current = 0;
-          setLessonHistory((prev) => [{ topic: data.curriculum.topic, time: "Just now" }, ...prev]);
+          addLessonToHistory(data.curriculum.topic, enriched);
           const modelTag = data.modelUsed ? ` (${data.modelUsed})` : "";
-          showToast(`✨ Google Gemini AI darslikni to'liq yaratdi!${modelTag}`);
+          showToast(appLanguage === 'en' ? `✨ Google Gemini AI generated the complete lesson!${modelTag}` : appLanguage === 'ru' ? `✨ Google Gemini AI полностью создал урок!${modelTag}` : `✨ Google Gemini AI darslikni to'liq yaratdi!${modelTag}`);
           confetti({ particleCount: 75, spread: 65, origin: { y: 0.6 } });
           if (stepInterval) clearInterval(stepInterval);
           setIsGenerating(false);
@@ -933,7 +2145,8 @@ export default function StitchTeacherOS() {
 
       // Offline / Synthesized Fallback if API returned non-ok
       console.warn("Gemini API returned non-ok, generating enriched curriculum...");
-      const norm = query.toLowerCase();
+      const cleanTitle = cleanTopicTitle(query) || "English Lesson";
+      const norm = cleanTitle.toLowerCase();
       let matched: Curriculum | null = null;
       if (norm.includes("past") || norm.includes("irregular")) matched = MASTER_CURRICULUMS.past_simple_a1;
       else if (norm.includes("stative") || norm.includes("need")) matched = MASTER_CURRICULUMS.stative_verbs_a1;
@@ -949,23 +2162,23 @@ export default function StitchTeacherOS() {
 
         matched = {
           id: `gen_${Date.now()}`,
-          topic: query,
+          topic: cleanTitle,
           level,
           category: "Grammar & Communication",
-          description: `${query} bo'yicha interaktiv vizual darslik paketi (${lengthToUse} format).`,
+          description: `${cleanTitle} bo'yicha interaktiv vizual darslik paketi (${lengthToUse} format).`,
           slides: [
             {
               id: "s1",
               tag: "MOHIYAT",
-              title: `${query} — Asosiy Tushuncha`,
+              title: `${cleanTitle} — Asosiy Tushuncha`,
               body: isArticleTopic
-                ? `<p class="font-bold text-slate-300"><b>${query}</b> — ingliz tilida otlarning qaysi biri haqida gap ketayotganini aniq ko'rsatuvchi muhim vosita.</p><br>• <b>'A'</b> — undosh tovushdan boshlangan so'zlar oldidan (a book, a car)<br>• <b>'An'</b> — unli tovushdan boshlangan so'zlar oldidan (an apple, an hour)<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>Oltin qoida:</b> Harfga emas, balki TOVUSHGA e'tibor bering! 'an hour' (h aytilmaydi), 'a university' (yu tovushi).</div>`
-                : `<p class="font-bold text-slate-300">Ushbu darsda <b>${query}</b> mavzusining amaliy qo'llanishi va qoidalarini ko'rib chiqamiz.</p>`,
-              imagePrompt: `minimalist educational illustration of ${query} concept`,
+                ? `<p class="font-bold text-slate-300"><b>${cleanTitle}</b> — ingliz tilida otlarning qaysi biri haqida gap ketayotganini aniq ko'rsatuvchi muhim vosita.</p><br>• <b>'A'</b> — undosh tovushdan boshlangan so'zlar oldidan (a book, a car)<br>• <b>'An'</b> — unli tovushdan boshlangan so'zlar oldidan (an apple, an hour)<br><div style='margin-top:10px; padding:10px 14px; background:rgba(99,102,241,0.15); border-left:3px solid #6366f1; border-radius:6px; font-size:0.9rem;'>💡 <b>Oltin qoida:</b> Harfga emas, balki TOVUSHGA e'tibor bering! 'an hour' (h aytilmaydi), 'a university' (yu tovushi).</div>`
+                : `<p class="font-bold text-slate-300">Ushbu darsda <b>${cleanTitle}</b> mavzusining amaliy qo'llanishi va qoidalarini ko'rib chiqamiz.</p>`,
+              imagePrompt: `minimalist educational illustration of ${cleanTitle} concept`,
               ...(isTenseTopic ? {
                 visual: {
                   type: "timeline",
-                  title: `${query} Vaqt Chizig'i`,
+                  title: `${cleanTitle} Vaqt Chizig'i`,
                   subtitle: "Vaqt o'qidagi ifodalanishi va konteksti",
                   data: {
                     events: [
@@ -1041,6 +2254,7 @@ export default function StitchTeacherOS() {
       setCurriculum(enriched);
       setCurrentScreenIndex(0);
       prevScreenIndexRef.current = 0;
+      addLessonToHistory(enriched.topic, enriched);
       showToast("💡 Darslik tayyorlandi.");
     } catch (err: any) {
       console.warn("Fetch failed, generating robust fallback curriculum:", err);
@@ -1143,6 +2357,7 @@ export default function StitchTeacherOS() {
       setCurriculum(fallbackCurriculum);
       setCurrentScreenIndex(0);
       prevScreenIndexRef.current = 0;
+      addLessonToHistory(fallbackCurriculum.topic, fallbackCurriculum);
       showToast("💡 Darslik tayyorlandi.");
       confetti({ particleCount: 60, spread: 50, origin: { y: 0.6 } });
     } finally {
@@ -1172,6 +2387,39 @@ export default function StitchTeacherOS() {
     const shareUrl = `${window.location.origin}${window.location.pathname}#c=${hash}`;
     navigator.clipboard.writeText(shareUrl);
     showToast("🔗 Havola xotiraga nusxalandi!");
+  };
+
+  // Telegram Push Sync (Send whole lesson directly to teacher's Telegram chat)
+  const [isSyncingTelegram, setIsSyncingTelegram] = useState(false);
+  const handleSendToTelegram = async () => {
+    if (!curriculum) return;
+    setIsSyncingTelegram(true);
+    showToast("📲 Dars Telegramga yuborilmoqda...");
+    try {
+      const resp = await fetch("/api/telegram-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId: currentUser?.telegram_id || "7957347033",
+          topic: curriculum.topic,
+          level: curriculum.level,
+          length: curriculum.length,
+          slides: curriculum.slides,
+          description: curriculum.description,
+          teacherName: currentUser?.first_name || currentUser?.username || "Ustoz"
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        showToast("✅ Dars Telegram hisobingizga muvaffaqiyatli saqlandi!");
+      } else {
+        showToast(`⚠️ Xatolik: ${data.error || 'Yuborib bo\'lmadi'}`);
+      }
+    } catch (err: any) {
+      showToast(`⚠️ Tarmoq xatosi: ${err.message}`);
+    } finally {
+      setIsSyncingTelegram(false);
+    }
   };
 
   // Dynamically add +1 question or item to current section
@@ -1242,49 +2490,17 @@ export default function StitchTeacherOS() {
   // 1. Auth Loading Gate
   if (isAuthLoading) {
     return (
-      <div className="w-full h-screen bg-[#0D0F14] flex flex-col items-center justify-center space-y-4 text-slate-100 stitch-grid select-none">
+      <div className={`w-full h-screen ${isBoardLight ? "bg-[#F8FAFC] text-slate-900 stitch-grid-light" : "bg-[#0D0F14] text-slate-100 stitch-grid"} flex flex-col items-center justify-center space-y-4 select-none`}>
         <Sparkles className="w-8 h-8 text-[#5B3DF5] animate-spin" />
-        <span className="text-slate-400 font-mono text-xs">TeacherOS yuklanmoqda...</span>
+        <span className={`${isBoardLight ? "text-slate-600" : "text-slate-400"} font-mono text-xs`}>TeacherOS yuklanmoqda...</span>
       </div>
     );
   }
 
-  // 2. Persistent Login / Sign-up System Gate (Photo 3)
-  if (!currentUser) {
-    return (
-      <AuthModal
-        onLoginSuccess={(user) => {
-          setCurrentUser(user);
-          showToast(`Xush kelibsiz, ${user.username}!`);
-        }}
-      />
-    );
-  }
-
-  // 3. Workspace Selection Gate (Classroom vs Without Classroom - Photo 3)
-  if (!workspaceMode) {
-    return (
-      <ClassroomSelector
-        onSelectMode={(mode, classroomName, studentCount) => {
-          setWorkspaceMode(mode);
-          localStorage.setItem('teacheros_workspace_mode', mode);
-          if (mode === 'classroom' && classroomName) {
-            const classObj = {
-              id: classroomName.toLowerCase(),
-              name: classroomName,
-              students: studentCount || 10
-            };
-            setCurrentClassroom(classObj);
-            localStorage.setItem('teacheros_classroom', JSON.stringify(classObj));
-          }
-          showToast(mode === 'classroom' ? `Classroom: ${classroomName || 'Intermediate'} tanlandi` : "Yakkaxon rejim tanlandi");
-        }}
-      />
-    );
-  }
-
   return (
-    <div className="w-full h-screen bg-[#0D0F14] text-slate-100 flex flex-col overflow-hidden font-sans select-none stitch-grid">
+    <div className={`w-full h-screen ${isBoardLight ? "bg-[#F8FAFC] text-slate-900 stitch-grid-light" : "bg-[#0D0F14] text-slate-100 stitch-grid"} flex flex-col overflow-hidden font-sans select-none`}>
+
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-[#1F222E]/95 border border-[#5B3DF5]/50 text-white px-5 py-2.5 rounded-full shadow-2xl backdrop-blur-xl text-xs sm:text-sm font-bold flex items-center space-x-2 animate-bounce">
@@ -1293,6 +2509,537 @@ export default function StitchTeacherOS() {
         </div>
       )}
 
+      {/* Optional Auth Modal (when triggered by Sign Up / Log In button) */}
+      {showAuthModal && (
+        <AuthModal
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            setShowAuthModal(false);
+            showToast(`Xush kelibsiz, ${user.username}!`);
+          }}
+          onClose={() => setShowAuthModal(false)}
+        />
+      )}
+
+      {/* Classroom Management Modal (User Sketch Image 1 & 2) */}
+      <ClassroomModal
+        isOpen={showClassroomModal}
+        initialViewMode={classroomModalMode}
+        onClose={() => setShowClassroomModal(false)}
+        classrooms={classrooms}
+        activeClassroomId={activeClassroomId}
+        onSelectClassroom={(cls) => {
+          handleSelectClassroom(cls);
+          setShowClassroomModal(false);
+        }}
+        onCreateClassroom={(name, studentUsernames) => {
+          handleCreateClassroom(name, studentUsernames);
+        }}
+        onAddStudentsToClassroom={(classroomId, studentUsernames) => {
+          handleAddStudentsToClassroom(classroomId, studentUsernames);
+        }}
+        onDeleteClassroom={(classroomId) => {
+          handleDeleteClassroom(classroomId);
+        }}
+        isLight={isBoardLight}
+        appLanguage={appLanguage}
+      />
+
+      {/* 3-Language & Theme Settings (Docked adjacent to Sidebar if open, or centered modal) */}
+      {showSettingsModal && (
+        isHistoryOpen ? (
+          /* SIDECAR MODE: Occupies the space directly adjacent to the 3-line sidebar */
+          <div
+            className={`fixed left-80 top-0 bottom-0 z-50 w-[380px] sm:w-[440px] max-w-[calc(100vw-320px)] border-r shadow-2xl p-6 sm:p-7 space-y-6 overflow-y-auto animate-fade-in transition-all ${
+              isBoardLight
+                ? "bg-white/98 border-slate-200 text-slate-900 shadow-2xl"
+                : "bg-[#141724]/98 border-white/10 text-white shadow-[20px_0_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+            }`}
+          >
+            {/* Header */}
+            <div className={`flex items-center justify-between pb-3 border-b ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#5B3DF5] to-[#a855f7] flex items-center justify-center text-white shadow-lg">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black tracking-tight">{t.settings_title}</h3>
+                  <p className="text-xs text-slate-400 font-medium">{t.settings_lang_desc}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                className={`p-1.5 rounded-xl transition-all cursor-pointer ${
+                  isBoardLight ? "hover:bg-slate-100 text-slate-500 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
+                }`}
+                title="Yopish"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Language Selection */}
+            <div className="space-y-2.5">
+              <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
+                <Globe className="w-3.5 h-3.5" />
+                <span>{t.settings_lang_section}</span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {/* Uzbek */}
+                <button
+                  type="button"
+                  onClick={() => handleLanguageChange('uz')}
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
+                    appLanguage === 'uz'
+                      ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
+                      : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">🇺🇿</span>
+                    {appLanguage === 'uz' && <Check className="w-4 h-4 text-indigo-400" />}
+                  </div>
+                  <div className="font-bold text-xs">{t.settings_lang_uz}</div>
+                  <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_uz_sub}</div>
+                </button>
+
+                {/* English */}
+                <button
+                  type="button"
+                  onClick={() => handleLanguageChange('en')}
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
+                    appLanguage === 'en'
+                      ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
+                      : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">🇬🇧</span>
+                    {appLanguage === 'en' && <Check className="w-4 h-4 text-indigo-400" />}
+                  </div>
+                  <div className="font-bold text-xs">{t.settings_lang_en}</div>
+                  <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_en_sub}</div>
+                </button>
+
+                {/* Russian */}
+                <button
+                  type="button"
+                  onClick={() => handleLanguageChange('ru')}
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
+                    appLanguage === 'ru'
+                      ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
+                      : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">🇷🇺</span>
+                    {appLanguage === 'ru' && <Check className="w-4 h-4 text-indigo-400" />}
+                  </div>
+                  <div className="font-bold text-xs">{t.settings_lang_ru}</div>
+                  <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_ru_sub}</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Theme Selection without ugly hex codes */}
+            <div className="space-y-2.5">
+              <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
+                {isBoardLight ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                <span>{t.settings_theme_section}</span>
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsBoardLight(false)}
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center space-x-3 ${
+                    !isBoardLight
+                      ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                      : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-200">
+                    <Moon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs">{t.settings_theme_dark}</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsBoardLight(true)}
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center space-x-3 ${
+                    isBoardLight
+                      ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                      : 'bg-white/5 border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700">
+                    <Sun className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs">{t.settings_theme_light}</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Account Section */}
+            <div className="space-y-2.5">
+              <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
+                <User className="w-3.5 h-3.5" />
+                <span>{t.settings_account_section}</span>
+              </label>
+
+              {currentUser ? (
+                <div className={`p-4 rounded-2xl border space-y-3 ${
+                  isBoardLight ? "bg-slate-50 border-slate-200" : "bg-white/5 border-white/10"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      {currentUser.avatar_url ? (
+                        <img src={currentUser.avatar_url} alt="Telegram" className="w-10 h-10 rounded-full border border-sky-400/50 object-cover shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#229ED9] to-[#0088cc] flex items-center justify-center font-bold text-white text-sm shadow shrink-0">
+                          <Send className="w-5 h-5 fill-white" />
+                        </div>
+                      )}
+                      <div className="truncate">
+                        <div className={`font-bold text-sm truncate flex items-center gap-1.5 ${isBoardLight ? "text-slate-900" : "text-white"}`}>
+                          <span>{teacherDisplayName || currentUser.first_name || currentUser.username}</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0" title="Faol Telegram sessiyasi" />
+                        </div>
+                        <div className="text-[11px] text-sky-400 font-medium truncate flex items-center gap-1">
+                          <span>{currentUser.username.startsWith('@') ? currentUser.username : `@${currentUser.username}`}</span>
+                          {currentUser.telegram_id && (
+                            <span className="text-slate-500 font-mono text-[10px]">• ID: {currentUser.telegram_id}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleLogout();
+                        setShowSettingsModal(false);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 hover-lift ml-2"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>{t.logout}</span>
+                    </button>
+                  </div>
+
+                  {/* Teacher Display Name input for personalized greetings */}
+                  <div className={`pt-2.5 border-t space-y-1.5 ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
+                    <label className="text-[11px] font-semibold text-slate-400 flex items-center justify-between">
+                      <span>{appLanguage === 'en' ? "Teacher Name (for greeting):" : appLanguage === 'ru' ? "Имя учителя (обращение):" : "Ustoz nomi (Murojaat uchun):"}</span>
+                      <span className="text-[10px] text-indigo-400 font-normal">{appLanguage === 'en' ? "Telegram username stays fixed" : appLanguage === 'ru' ? "Telegram ник неизменен" : "Telegram username o'zgarmaydi"}</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={teacherDisplayName}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTeacherDisplayName(val);
+                        const uid = currentUser.telegram_id || (currentUser as any).id || currentUser.username || 'user';
+                        localStorage.setItem(`teacheros_teacher_name_${uid}`, val);
+                      }}
+                      placeholder={currentUser.first_name || currentUser.username || "Masalan: Aziz Ustoz"}
+                      className={`w-full px-3 py-1.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 border transition-all ${
+                        isBoardLight
+                          ? "bg-white text-slate-900 border-slate-300 placeholder-slate-400"
+                          : "bg-white/10 text-white border-white/15 placeholder-slate-500"
+                      }`}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
+                  isBoardLight ? "bg-slate-50 border-slate-200" : "bg-white/5 border-white/10"
+                }`}>
+                  <div className="text-xs text-slate-400">
+                    {t.settings_account_guest}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      setShowAuthModal(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#5B3DF5] to-[#7C3AED] text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+                  >
+                    {t.login_register}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Done button */}
+            <button
+              type="button"
+              onClick={() => setShowSettingsModal(false)}
+              className={`w-full py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                isBoardLight
+                  ? "bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300"
+                  : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
+              }`}
+            >
+              {t.done}
+            </button>
+          </div>
+        ) : (
+          /* CENTERED MODAL MODE */
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+            <div
+              className={`w-full max-w-lg rounded-3xl p-6 sm:p-7 border shadow-2xl relative space-y-6 ${
+                isBoardLight
+                  ? "bg-white border-slate-200 text-slate-900"
+                  : "bg-[#141724] border-white/10 text-white"
+              }`}
+            >
+              {/* Header */}
+              <div className={`flex items-center justify-between pb-3 border-b ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#5B3DF5] to-[#a855f7] flex items-center justify-center text-white shadow-lg">
+                    <Settings className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black tracking-tight">{t.settings_title}</h3>
+                    <p className="text-xs text-slate-400 font-medium">{t.settings_lang_desc}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsModal(false)}
+                  className={`p-1.5 rounded-xl transition-all cursor-pointer ${
+                    isBoardLight ? "hover:bg-slate-100 text-slate-500 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Language Selection */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>{t.settings_lang_section}</span>
+                </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Uzbek */}
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageChange('uz')}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
+                      appLanguage === 'uz'
+                        ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
+                        : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xl">🇺🇿</span>
+                      {appLanguage === 'uz' && <Check className="w-4 h-4 text-indigo-400" />}
+                    </div>
+                    <div className="font-bold text-xs">{t.settings_lang_uz}</div>
+                    <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_uz_sub}</div>
+                  </button>
+
+                  {/* English */}
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageChange('en')}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
+                      appLanguage === 'en'
+                        ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
+                        : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xl">🇬🇧</span>
+                      {appLanguage === 'en' && <Check className="w-4 h-4 text-indigo-400" />}
+                    </div>
+                    <div className="font-bold text-xs">{t.settings_lang_en}</div>
+                    <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_en_sub}</div>
+                  </button>
+
+                  {/* Russian */}
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageChange('ru')}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
+                      appLanguage === 'ru'
+                        ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
+                        : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xl">🇷🇺</span>
+                      {appLanguage === 'ru' && <Check className="w-4 h-4 text-indigo-400" />}
+                    </div>
+                    <div className="font-bold text-xs">{t.settings_lang_ru}</div>
+                    <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_ru_sub}</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Theme Selection */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
+                  {isBoardLight ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                  <span>{t.settings_theme_section}</span>
+                </label>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsBoardLight(false)}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center space-x-3 ${
+                      !isBoardLight
+                        ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                        : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-200">
+                      <Moon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs">{t.settings_theme_dark}</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsBoardLight(true)}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center space-x-3 ${
+                      isBoardLight
+                        ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700">
+                      <Sun className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs">{t.settings_theme_light}</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Account Section */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
+                  <User className="w-3.5 h-3.5" />
+                  <span>{t.settings_account_section}</span>
+                </label>
+
+                {currentUser ? (
+                  <div className={`p-4 rounded-2xl border space-y-3 ${
+                    isBoardLight ? "bg-slate-50 border-slate-200" : "bg-white/5 border-white/10"
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3 min-w-0">
+                        {currentUser.avatar_url ? (
+                          <img src={currentUser.avatar_url} alt="Telegram" className="w-10 h-10 rounded-full border border-sky-400/50 object-cover shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#229ED9] to-[#0088cc] flex items-center justify-center font-bold text-white text-sm shadow shrink-0">
+                            <Send className="w-5 h-5 fill-white" />
+                          </div>
+                        )}
+                        <div className="truncate">
+                          <div className={`font-bold text-sm truncate flex items-center gap-1.5 ${isBoardLight ? "text-slate-900" : "text-white"}`}>
+                            <span>{teacherDisplayName || currentUser.first_name || currentUser.username}</span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0" title="Faol Telegram sessiyasi" />
+                          </div>
+                          <div className="text-[11px] text-sky-400 font-medium truncate flex items-center gap-1">
+                            <span>{currentUser.username.startsWith('@') ? currentUser.username : `@${currentUser.username}`}</span>
+                            {currentUser.telegram_id && (
+                              <span className="text-slate-500 font-mono text-[10px]">• ID: {currentUser.telegram_id}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleLogout();
+                          setShowSettingsModal(false);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 hover-lift ml-2"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>{t.logout}</span>
+                      </button>
+                    </div>
+
+                    {/* Teacher Display Name input for personalized greetings */}
+                    <div className={`pt-2.5 border-t space-y-1.5 ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
+                      <label className="text-[11px] font-semibold text-slate-400 flex items-center justify-between">
+                        <span>{appLanguage === 'en' ? "Teacher Name (for greeting):" : appLanguage === 'ru' ? "Имя учителя (обращение):" : "Ustoz nomi (Murojaat uchun):"}</span>
+                        <span className="text-[10px] text-indigo-400 font-normal">{appLanguage === 'en' ? "Telegram username stays fixed" : appLanguage === 'ru' ? "Telegram ник неизменен" : "Telegram username o'zgarmaydi"}</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={teacherDisplayName}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTeacherDisplayName(val);
+                          const uid = currentUser.telegram_id || (currentUser as any).id || currentUser.username || 'user';
+                          localStorage.setItem(`teacheros_teacher_name_${uid}`, val);
+                        }}
+                        placeholder={currentUser.first_name || currentUser.username || "Masalan: Aziz Ustoz"}
+                        className={`w-full px-3 py-1.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 border transition-all ${
+                          isBoardLight
+                            ? "bg-white text-slate-900 border-slate-300 placeholder-slate-400"
+                            : "bg-white/10 text-white border-white/15 placeholder-slate-500"
+                        }`}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
+                    isBoardLight ? "bg-slate-50 border-slate-200" : "bg-white/5 border-white/10"
+                  }`}>
+                    <div className="text-xs text-slate-400">
+                      {t.settings_account_guest}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSettingsModal(false);
+                        setShowAuthModal(true);
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#5B3DF5] to-[#7C3AED] text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+                    >
+                      {t.login_register}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Done button */}
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                className={`w-full py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  isBoardLight
+                    ? "bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300"
+                    : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
+                }`}
+              >
+                {t.done}
+              </button>
+            </div>
+          </div>
+        )
+      )}
+
+
       {/* Interactive Baamboozle Group Quiz Modal */}
       {activeGroupQuizTopic && (
         <div className="fixed inset-0 z-50 bg-[#0D0F14]/95 backdrop-blur-xl flex items-center justify-center p-4">
@@ -1300,274 +3047,577 @@ export default function StitchTeacherOS() {
             topic={activeGroupQuizTopic}
             teamsCount={quizTeamsCount}
             onClose={() => setActiveGroupQuizTopic(null)}
+            appLanguage={appLanguage}
           />
         </div>
       )}
 
-      {/* Interactive Homework Generator & Viewer Modal */}
-      {activeHomeworkTopic && (
-        <div className="fixed inset-0 z-50 bg-[#0D0F14]/95 backdrop-blur-xl flex items-center justify-center p-4">
-          <HomeworkViewer
-            topic={activeHomeworkTopic}
-            onClose={() => setActiveHomeworkTopic(null)}
-          />
-        </div>
-      )}
 
-      {/* TOP HEADER */}
-      {!isFullscreen && (
-        <header className="relative h-14 border-b border-white/10 px-4 sm:px-6 flex items-center justify-between shrink-0 bg-[#0D0F14]/90 backdrop-blur-md z-30">
-          {/* Brand & Under-Logo 3-Line Hamburger Menu Button (Photo 2) */}
-          <div className="flex items-center space-x-3">
-            <div className="flex flex-col items-start justify-center">
-              <div
-                onClick={() => {
-                  setCurriculum(null);
-                  setStudioMode('lesson');
-                  setIsPromptCollapsed(false);
-                }}
-                className="flex items-center space-x-2 cursor-pointer group"
-                title="Yangi mavzu kiritish"
-              >
-                <BrandLogo isLight={false} />
-              </div>
 
-              {/* Three lines placed on top of each other right under the logo */}
-              <button
-                type="button"
-                onClick={() => setIsHistoryOpen((prev) => !prev)}
-                className="mt-0.5 flex flex-col justify-center items-center w-6 h-4.5 rounded bg-white/10 hover:bg-white/25 border border-white/15 text-slate-200 hover:text-white transition-all cursor-pointer group shadow-sm"
-                title="Menyu & Tarix (☰)"
-              >
-                <div className="w-3.5 h-[2px] bg-slate-200 group-hover:bg-white rounded-full mb-[2px] transition-colors" />
-                <div className="w-3.5 h-[2px] bg-slate-200 group-hover:bg-white rounded-full mb-[2px] transition-colors" />
-                <div className="w-3.5 h-[2px] bg-slate-200 group-hover:bg-white rounded-full transition-colors" />
-              </button>
-            </div>
-
-            {/* History Toggle Button */}
+      {/* 4-Blocks Social Channels & Support Modal (Triggered by Logo Click) */}
+      {showSocialModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className={`relative w-full max-w-xl border rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 ${
+            isBoardLight
+              ? "bg-white/98 border-slate-300 text-slate-900 shadow-slate-300"
+              : "bg-[#141620]/98 border-white/15 text-white"
+          }`}>
+            {/* Big X Close Button */}
             <button
               type="button"
-              onClick={() => setIsHistoryOpen((prev) => !prev)}
-              className={`px-2.5 py-1.5 rounded-xl border flex items-center space-x-1.5 text-xs font-bold transition-all cursor-pointer ${
-                isHistoryOpen
-                  ? "bg-[#5B3DF5] border-[#5B3DF5] text-white shadow-lg"
-                  : "bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white"
+              onClick={() => setShowSocialModal(false)}
+              className={`absolute top-5 right-5 w-9 h-9 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer border ${
+                isBoardLight
+                  ? "bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-300"
+                  : "bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border-white/10"
               }`}
-              title="Darslar tarixi"
+              title="Yopish (Esc)"
             >
-              <History className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden sm:inline text-[11px]">Tarix</span>
+              <X className="w-5 h-5" />
             </button>
 
-            {curriculum && (
-              <>
-                <div className="h-4 w-px bg-white/10" />
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs sm:text-sm font-extrabold text-white truncate max-w-[160px] sm:max-w-xs">
-                    {curriculum.topic}
-                  </span>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
-                    {curriculum.level}
-                  </span>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#5B3DF5]/20 text-[#A5B4FC] border border-[#5B3DF5]/30">
-                    {curriculum.length === "short" ? "Qisqa (4)" : curriculum.length === "long" ? "To'liq (8)" : "O'rtacha (6)"}
+            {/* Header */}
+            <div className="space-y-1 text-left">
+              <div className="flex items-center space-x-2.5">
+                <BrandLogo isLight={isBoardLight} className="h-7 max-w-[130px] object-contain" />
+                <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  Hamjamiyat
+                </span>
+              </div>
+              <h2 className={`text-xl sm:text-2xl font-black ${isBoardLight ? "text-slate-900" : "text-white"}`}>
+                TeacherOS Ijtimoiy Tarmoqlari & Aloqa
+              </h2>
+              <p className={`text-xs sm:text-sm ${isBoardLight ? "text-slate-600" : "text-slate-400"}`}>
+                Dars ishlanmalari, metodik yangiliklar va texnik yordam uchun rasmiy manzillarimiz:
+              </p>
+            </div>
+
+            {/* 4 Distinct Standalone Styled Blocks (2x2 Grid) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {/* Instagram */}
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noreferrer"
+                className={`p-4 rounded-2xl border transition-all group flex flex-col justify-between space-y-3 cursor-pointer shadow-lg hover:scale-[1.02] active:scale-[0.98] ${
+                  isBoardLight
+                    ? "bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-rose-500/10 border-pink-300 hover:border-pink-500 shadow-pink-100"
+                    : "bg-gradient-to-br from-pink-500/15 via-purple-600/10 to-rose-500/15 border-pink-500/30 hover:border-pink-500/60 shadow-pink-950/20"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-mono text-pink-500 font-bold px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20">
+                    @teacheros.ai
                   </span>
                 </div>
-              </>
-            )}
+                <div>
+                  <div className={`font-extrabold text-sm transition-colors ${
+                    isBoardLight ? "text-slate-900 group-hover:text-pink-600" : "text-white group-hover:text-pink-200"
+                  }`}>
+                    Instagram
+                  </div>
+                  <div className={`text-[11px] mt-0.5 leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-400"}`}>
+                    Dars ishlanmalari, qisqa videolar va yangi funksiyalar taqdimoti.
+                  </div>
+                </div>
+              </a>
+
+              {/* Telegram */}
+              <a
+                href="https://t.me"
+                target="_blank"
+                rel="noreferrer"
+                className={`p-4 rounded-2xl border transition-all group flex flex-col justify-between space-y-3 cursor-pointer shadow-lg hover:scale-[1.02] active:scale-[0.98] ${
+                  isBoardLight
+                    ? "bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-cyan-500/10 border-sky-300 hover:border-sky-500 shadow-sky-100"
+                    : "bg-gradient-to-br from-sky-500/15 via-blue-600/10 to-cyan-500/15 border-sky-500/30 hover:border-sky-500/60 shadow-sky-950/20"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#229ED9] to-[#0088cc] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                    <Send className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-mono text-sky-500 font-bold px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/20">
+                    @teacheros_official
+                  </span>
+                </div>
+                <div>
+                  <div className={`font-extrabold text-sm transition-colors ${
+                    isBoardLight ? "text-slate-900 group-hover:text-sky-600" : "text-white group-hover:text-sky-200"
+                  }`}>
+                    Telegram Kanal
+                  </div>
+                  <div className={`text-[11px] mt-0.5 leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-400"}`}>
+                    O'qituvchilar hamjamiyati, bepul materiallar va tezkor xabarlar.
+                  </div>
+                </div>
+              </a>
+
+              {/* Facebook */}
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noreferrer"
+                className={`p-4 rounded-2xl border transition-all group flex flex-col justify-between space-y-3 cursor-pointer shadow-lg hover:scale-[1.02] active:scale-[0.98] ${
+                  isBoardLight
+                    ? "bg-gradient-to-br from-blue-600/10 via-indigo-500/5 to-blue-700/10 border-blue-300 hover:border-blue-500 shadow-blue-100"
+                    : "bg-gradient-to-br from-blue-600/15 via-indigo-600/10 to-blue-700/15 border-blue-500/30 hover:border-blue-500/60 shadow-blue-950/20"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#1877F2] to-[#0D65D9] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                    <Globe className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-mono text-blue-500 font-bold px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                    Community
+                  </span>
+                </div>
+                <div>
+                  <div className={`font-extrabold text-sm transition-colors ${
+                    isBoardLight ? "text-slate-900 group-hover:text-blue-600" : "text-white group-hover:text-blue-200"
+                  }`}>
+                    Facebook Guruhi
+                  </div>
+                  <div className={`text-[11px] mt-0.5 leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-400"}`}>
+                    Metodik tajriba almashish va xalqaro pedagoglar forumi.
+                  </div>
+                </div>
+              </a>
+
+              {/* Support */}
+              <a
+                href="mailto:support@teacheros.ai"
+                className={`p-4 rounded-2xl border transition-all group flex flex-col justify-between space-y-3 cursor-pointer shadow-lg hover:scale-[1.02] active:scale-[0.98] ${
+                  isBoardLight
+                    ? "bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-emerald-600/10 border-emerald-300 hover:border-emerald-500 shadow-emerald-100"
+                    : "bg-gradient-to-br from-emerald-500/15 via-teal-600/10 to-emerald-600/15 border-emerald-500/30 hover:border-emerald-500/60 shadow-emerald-950/20"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-mono text-emerald-500 font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    24/7 Aloqa
+                  </span>
+                </div>
+                <div>
+                  <div className={`font-extrabold text-sm transition-colors ${
+                    isBoardLight ? "text-slate-900 group-hover:text-emerald-600" : "text-white group-hover:text-emerald-200"
+                  }`}>
+                    Support (Qo'llab-quvvatlash)
+                  </div>
+                  <div className={`text-[11px] mt-0.5 leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-400"}`}>
+                    Takliflar, darslik integratsiyasi va har qanday texnik yordam.
+                  </div>
+                </div>
+              </a>
+            </div>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => setShowSocialModal(false)}
+                className={`px-6 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  isBoardLight
+                    ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                    : "bg-white/10 hover:bg-white/20 text-white border-white/10"
+                }`}
+              >
+                Yopish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HISTORY & NAVIGATION DRAWER (Physical push drawer) */}
+      <aside
+        className={`fixed left-0 top-0 bottom-0 z-50 w-80 ${
+          isBoardLight
+            ? "bg-white/98 border-r border-slate-200 text-slate-900 shadow-2xl"
+            : "bg-[#12141D]/98 border-r border-white/10 text-white shadow-2xl"
+        } p-5 backdrop-blur-2xl flex flex-col justify-between transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isHistoryOpen ? "translate-x-0 shadow-[20px_0_50px_rgba(0,0,0,0.8)]" : "-translate-x-full pointer-events-none"
+        }`}
+      >
+        <div className="space-y-4">
+          {/* Drawer Top Header */}
+          <div className={`flex items-center justify-between pb-3 border-b ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
+            <div className="flex items-center space-x-2.5">
+              <BrandLogo
+                isLight={isBoardLight}
+                className="h-8 max-w-[130px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+              />
+              <span
+                className={`text-lg font-black tracking-tight font-sans flex items-center gap-1 select-none ${
+                  isBoardLight ? "text-slate-900" : "text-white"
+                }`}
+              >
+                Teacher <span className="bg-gradient-to-r from-[#818cf8] via-[#a855f7] to-[#ec4899] bg-clip-text text-transparent font-black">OS</span>
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setIsHistoryOpen(false);
+                setShowSettingsModal(false);
+              }}
+              className={`p-1.5 rounded-lg cursor-pointer transition-colors ${
+                isBoardLight ? "hover:bg-slate-100 text-slate-500 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
+              }`}
+              title={t.close}
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* MIDDLE: AI STUDIO COCKPIT IN TOP BAR (Centered precisely in entire header) */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-40 pointer-events-auto">
-            {isGenerating ? (
-              /* During generation: Clean AI Studio button with pulse */
-              <div className="px-4 py-1.5 rounded-full bg-[#18191E]/95 border border-[#5B3DF5]/50 shadow-xl text-white text-xs font-bold flex items-center space-x-2 animate-pulse">
-                <Sparkles className="w-3.5 h-3.5 text-[#5B3DF5] animate-spin" />
-                <span className="text-[#A5B4FC]">AI Studio</span>
+          {/* Classroom Context or Guest Notice (User Sketch Image 1 & 2) */}
+          {currentUser ? (
+            <div className={`p-3.5 rounded-2xl border space-y-2.5 transition-all ${
+              isBoardLight ? "bg-slate-50 border-slate-200" : "bg-white/5 border-white/10"
+            }`}>
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className={`${isBoardLight ? "text-indigo-900" : "text-[#A5B4FC]"} flex items-center space-x-1.5 min-w-0`}>
+                  <Users className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <span className="truncate">{workspaceMode === 'classroom' ? currentClassroom.name : t.drawer_classroom_solo}</span>
+                </span>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full shrink-0 ${
+                  isBoardLight ? "bg-slate-200 text-slate-700" : "bg-white/10 text-slate-300"
+                }`}>
+                  {workspaceMode === 'classroom' ? `${currentClassroom.students} ${appLanguage === 'en' ? 'students' : appLanguage === 'ru' ? 'учеников' : 'talaba'}` : (appLanguage === 'en' ? 'No class' : appLanguage === 'ru' ? 'Без класса' : 'Sinfsiz')}
+                </span>
               </div>
-            ) : isPromptCollapsed ? (
-              /* Collapsed AI Studio Pill with chevron \/ */
-              <button
-                onClick={() => setIsPromptCollapsed(false)}
-                className="px-3.5 py-1.5 rounded-full bg-[#18191E]/95 border border-[#5B3DF5]/40 shadow-xl backdrop-blur-xl text-white text-xs font-bold flex items-center space-x-2 hover:bg-[#5B3DF5]/20 hover:scale-105 transition-all group"
-                title="AI Darslik Studiyasini ochish"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#5B3DF5] group-hover:rotate-12 transition-transform" />
-                <span>AI Studio</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-            ) : (
-              /* Expanded Popover directly in the center */
-              <div className="relative">
-                <button
-                  onClick={() => setIsPromptCollapsed(true)}
-                  className="px-3.5 py-1.5 rounded-full bg-[#5B3DF5]/25 border border-[#5B3DF5] shadow-xl text-white text-xs font-bold flex items-center space-x-2 transition-all"
-                  title="Yopish"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-[#5B3DF5]" />
-                  <span>AI Studio</span>
-                  <ChevronUp className="w-3.5 h-3.5 text-slate-300" />
-                </button>
 
-                {/* Backdrop to close on outside click */}
-                <div
-                  className="fixed inset-0 z-40 bg-black/20"
-                  onClick={() => setIsPromptCollapsed(true)}
-                />
-
-                {/* Dropdown panel */}
-                <div className="absolute top-10 left-1/2 -translate-x-1/2 w-84 rounded-2xl bg-[#18191E]/98 border border-[#5B3DF5]/40 p-3.5 shadow-2xl backdrop-blur-2xl space-y-2.5 z-50 text-left animate-fade-in">
-                  <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
-                    <span className="text-[11px] font-bold text-[#A5B4FC] flex items-center space-x-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#5B3DF5]" />
-                      <span>Yangi Mavzu Yaratish</span>
+              {classrooms.length > 0 ? (
+                <div className="space-y-1.5 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClassroomModalMode('list');
+                      setShowClassroomModal(true);
+                      setIsHistoryOpen(false);
+                    }}
+                    className={`w-full py-1.5 px-2.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center justify-between border ${
+                      isBoardLight
+                        ? "bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-200"
+                        : "bg-white/5 hover:bg-white/10 text-indigo-300 border-indigo-500/30"
+                    }`}
+                  >
+                    <span className="flex items-center space-x-1.5">
+                      <span className="text-xs">⇄</span>
+                      <span>{t.drawer_classroom_switch}</span>
                     </span>
-                    <button
-                      onClick={() => setIsPromptCollapsed(true)}
-                      className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all flex items-center space-x-1 text-[10px] font-bold border border-white/10"
-                      title="Kichraytirish va doskani ko'rish"
-                    >
-                      <ChevronUp className="w-3 h-3 text-[#A5B4FC]" />
-                      <span>Yopish (▲)</span>
-                    </button>
-                  </div>
+                    <span className="text-[10px] opacity-75 font-mono">({classrooms.length})</span>
+                  </button>
 
-                  {/* Input with Mic */}
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={topicInput}
-                      onChange={(e) => setTopicInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleGenerate();
-                          setIsPromptCollapsed(true);
-                        }
-                      }}
-                      placeholder="Yangi mavzu (masalan: Second Conditional)..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#5B3DF5] font-medium pr-8 transition-colors"
-                    />
-                    <button
-                      onClick={handleVoiceRecord}
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded transition-all ${
-                        isRecording
-                          ? "text-red-400 animate-pulse bg-red-500/20"
-                          : "text-slate-400 hover:text-white"
-                      }`}
-                      title={isRecording ? "Yozishni to'xtatish" : "Ovoz bilan yozish"}
-                    >
-                      <Mic className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  {/* Length toggles */}
-                  <div className="flex items-center justify-between gap-1 text-[10px] font-bold">
-                    <button
-                      type="button"
-                      onClick={() => setLessonLength("short")}
-                      className={`flex-1 py-1 rounded-lg text-center transition-all ${
-                        lessonLength === "short"
-                          ? "bg-[#5B3DF5] text-white shadow-sm"
-                          : "bg-white/5 hover:bg-white/10 text-slate-400"
-                      }`}
-                    >
-                      ⚡ Qisqa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLessonLength("medium")}
-                      className={`flex-1 py-1 rounded-lg text-center transition-all ${
-                        lessonLength === "medium"
-                          ? "bg-[#5B3DF5] text-white shadow-sm"
-                          : "bg-white/5 hover:bg-white/10 text-slate-400"
-                      }`}
-                    >
-                      🎯 O'rtacha
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLessonLength("long")}
-                      className={`flex-1 py-1 rounded-lg text-center transition-all ${
-                        lessonLength === "long"
-                          ? "bg-[#5B3DF5] text-white shadow-sm"
-                          : "bg-white/5 hover:bg-white/10 text-slate-400"
-                      }`}
-                    >
-                      🚀 Uzun
-                    </button>
-                  </div>
-
-                  {/* Level + Generate button */}
-                  <div className="flex items-center justify-between pt-1 border-t border-white/5 text-xs">
-                    <div className="flex items-center space-x-1 px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
-                      <select
-                        value={level}
-                        onChange={(e) => setLevel(e.target.value as any)}
-                        className="bg-transparent text-[11px] font-bold focus:outline-none cursor-pointer"
-                      >
-                        {["A1", "A2", "B1", "B2", "C1"].map((lvl) => (
-                          <option key={lvl} value={lvl} className="bg-[#1A1C23] text-white">
-                            Daraja: {lvl}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        handleGenerate();
-                        setIsPromptCollapsed(true);
-                      }}
-                      disabled={isGenerating}
-                      className="h-7 px-3 rounded-lg bg-[#5B3DF5] hover:bg-[#4C2FE0] text-white font-bold flex items-center space-x-1.5 transition-all shadow-md disabled:opacity-50 text-[11px]"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <RotateCw className="w-3 h-3 animate-spin" />
-                          <span>Sintez...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3 h-3" />
-                          <span>Yaratish</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClassroomModalMode('create');
+                      setShowClassroomModal(true);
+                      setIsHistoryOpen(false);
+                    }}
+                    className={`w-full py-1.5 px-2.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 border border-dashed ${
+                      isBoardLight
+                        ? "hover:bg-slate-100 text-slate-700 border-slate-300"
+                        : "hover:bg-white/5 text-slate-300 border-white/20"
+                    }`}
+                  >
+                    <Plus className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>{appLanguage === 'en' ? "Add New Classroom" : appLanguage === 'ru' ? "Добавить класс" : "Yangi sinf qo'shish"}</span>
+                  </button>
                 </div>
+              ) : (
+                <div className="pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClassroomModalMode('create');
+                      setShowClassroomModal(true);
+                      setIsHistoryOpen(false);
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-[#5B3DF5] to-[#7C3AED] hover:from-[#4C2FE0] hover:to-[#6D28D9] text-white text-[11.5px] font-bold transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-md hover-lift"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{appLanguage === 'en' ? "Add New Classroom" : appLanguage === 'ru' ? "Создать новый класс" : "Yangi sinf qo'shish"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 space-y-2">
+              <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs">
+                <Users className="w-4 h-4 text-indigo-500" />
+                <span>{t.drawer_classroom_guest_title}</span>
+              </div>
+              <p className={`text-[11px] leading-relaxed ${isBoardLight ? "text-slate-700" : "text-slate-300"}`}>
+                {t.drawer_classroom_guest_desc}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsHistoryOpen(false);
+                  setShowAuthModal(true);
+                }}
+                className="w-full py-1.5 rounded-xl bg-[#5B3DF5] hover:bg-[#4C2FE0] text-white text-xs font-bold transition-all text-center cursor-pointer shadow-md"
+              >
+                {t.login_register}
+              </button>
+            </div>
+          )}
+
+          {/* Drawer Action Buttons: Single Clean Icon per Button */}
+          <div className="space-y-1.5 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setCurriculum(null);
+                setStudioMode('lesson');
+                setTopicInput('');
+                setIsPromptCollapsed(false);
+                setIsHistoryOpen(false);
+              }}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-[#5B3DF5] to-[#7C3AED] text-white font-bold text-xs flex items-center space-x-2.5 shadow-lg shadow-[#5B3DF5]/30 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>{t.drawer_new_lesson}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCurriculum(null);
+                setStudioMode('homework');
+                setIsHistoryOpen(false);
+              }}
+              className={`w-full px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 transition-all cursor-pointer ${
+                isBoardLight
+                  ? "bg-slate-50 hover:bg-emerald-50 text-slate-800 hover:text-emerald-700 border border-slate-200"
+                  : "bg-white/5 hover:bg-emerald-500/20 text-slate-200 hover:text-emerald-300 border border-white/5 hover:border-emerald-500/30"
+              }`}
+            >
+              <Home className="w-4 h-4 text-emerald-500" />
+              <span>{t.others_hw_title}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCurriculum(null);
+                setStudioMode('level_check');
+                setIsHistoryOpen(false);
+              }}
+              className={`w-full px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 transition-all cursor-pointer ${
+                isBoardLight
+                  ? "bg-slate-50 hover:bg-amber-50 text-slate-800 hover:text-amber-700 border border-slate-200"
+                  : "bg-white/5 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 border border-white/5 hover:border-amber-500/30"
+              }`}
+            >
+              <FileText className="w-4 h-4 text-amber-500" />
+              <span>{t.others_lc_title}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCurriculum(null);
+                setStudioMode('group_quiz');
+                setIsHistoryOpen(false);
+              }}
+              className={`w-full px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2.5 transition-all cursor-pointer ${
+                isBoardLight
+                  ? "bg-slate-50 hover:bg-indigo-50 text-slate-800 hover:text-indigo-700 border border-slate-200"
+                  : "bg-white/5 hover:bg-indigo-500/20 text-slate-200 hover:text-indigo-300 border border-white/5 hover:border-indigo-500/30"
+              }`}
+            >
+              <Users className="w-4 h-4 text-indigo-500" />
+              <span>{t.others_gq_title}</span>
+            </button>
+          </div>
+
+          {/* History List Section */}
+          <div className="pt-2">
+            <div className={`flex items-center space-x-2 pb-2 text-[11px] font-bold uppercase tracking-wider ${
+              isBoardLight ? "text-slate-500" : "text-slate-400"
+            }`}>
+              <History className="w-3.5 h-3.5 text-indigo-500" />
+              <span>{t.drawer_history_heading}</span>
+            </div>
+
+            {currentUser ? (
+              <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                {lessonHistory.length > 0 ? (
+                  lessonHistory.map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        const cached = localStorage.getItem(`teacheros_curriculum_cache_${item.topic.toLowerCase()}`);
+                        if (cached) {
+                          try {
+                            const parsed = JSON.parse(cached);
+                            if (parsed && parsed.slides && parsed.slides.length > 0) {
+                              setCurriculum(parsed);
+                              setCurrentScreenIndex(0);
+                              prevScreenIndexRef.current = 0;
+                              setIsHistoryOpen(false);
+                              showToast(appLanguage === 'en' ? `Loaded "${item.topic}" from saved lessons` : appLanguage === 'ru' ? `Урок "${item.topic}" открыт` : `"${item.topic}" darsi ochildi!`);
+                              return;
+                            }
+                          } catch (e) {}
+                        }
+                        setTopicInput(item.topic);
+                        handleGenerate(item.topic);
+                        setIsHistoryOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between group transition-all cursor-pointer border ${
+                        isBoardLight
+                          ? "hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-transparent hover:border-slate-200"
+                          : "hover:bg-white/5 text-slate-200 group-hover:text-white border-transparent hover:border-white/5"
+                      }`}
+                    >
+                      <span className="text-xs font-medium truncate max-w-[180px]">
+                        {item.topic}
+                      </span>
+                      <span className={`text-[11px] font-mono font-semibold ${isBoardLight ? "text-slate-400 group-hover:text-indigo-600" : "text-slate-500 group-hover:text-indigo-400"}`}>
+                        {getRelativeTime(item.timestamp, item.time)}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className={`p-4 text-center space-y-1.5 rounded-2xl border border-dashed my-1 ${
+                    isBoardLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
+                  }`}>
+                    <div className="w-7 h-7 rounded-full bg-indigo-500/10 text-indigo-400 mx-auto flex items-center justify-center">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </div>
+                    <div className={`text-xs font-semibold ${isBoardLight ? "text-slate-700" : "text-slate-300"}`}>
+                      {t.drawer_no_history}
+                    </div>
+                    <div className="text-[10.5px] text-slate-400 leading-relaxed">
+                      {appLanguage === 'en' ? "Your created lessons will appear here." : appLanguage === 'ru' ? "Созданные уроки появятся здесь." : "Yaratilgan darslaringiz shu yerda saqlanadi."}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className={`p-3 rounded-xl border text-center text-[11px] leading-relaxed ${
+                isBoardLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-white/5 border-white/5 text-slate-400"
+              }`}>
+                {t.drawer_guest_hint}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Bottom Settings Section (Account is integrated inside Settings) */}
+        <div className={`pt-3 border-t ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
+          <button
+            type="button"
+            onClick={() => {
+              setShowSettingsModal((prev) => !prev);
+            }}
+            className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer group hover-lift border ${
+              isBoardLight
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200 shadow-sm"
+                : "bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border-white/10"
+            }`}
+          >
+            <div className="flex items-center space-x-2.5">
+              <Settings className="w-4 h-4 text-indigo-500 group-hover:rotate-45 transition-transform" />
+              <span>{t.drawer_settings}</span>
+              {currentUser && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" title="Telegram ulangan" />
+              )}
+            </div>
+            <div className={`flex items-center space-x-1.5 px-2 py-0.5 rounded-md text-[10px] uppercase font-bold ${
+              isBoardLight ? "bg-slate-200 text-slate-700" : "bg-white/10 text-slate-300"
+            }`}>
+              <span>{appLanguage === 'uz' ? '🇺🇿 UZ' : appLanguage === 'en' ? '🇬🇧 EN' : '🇷🇺 RU'}</span>
+            </div>
+          </button>
+        </div>
+      </aside>
+
+      {/* PUSH CONTAINER: Shifts right when drawer opens for genuine physical push */}
+      <div
+        className={`w-full h-full flex flex-col relative overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isHistoryOpen ? "translate-x-80" : "translate-x-0"
+        }`}
+      >
+        {/* Scrim covering the pushed viewport to close on click */}
+        {isHistoryOpen && (
+          <div
+            className="absolute inset-0 z-40 bg-black/40 backdrop-blur-[1px] cursor-pointer"
+            onClick={() => {
+              setIsHistoryOpen(false);
+              setShowSettingsModal(false);
+            }}
+            title={t.close}
+          />
+        )}
+
+
+        {/* TOP HEADER - Only shown when curriculum is active */}
+        {!isFullscreen && curriculum && (
+          <header className={`relative h-14 border-b px-4 sm:px-6 flex items-center justify-between shrink-0 backdrop-blur-md z-30 transition-colors ${
+            isBoardLight
+              ? "bg-white/95 border-slate-200 text-slate-900 shadow-sm"
+              : "bg-[#0D0F14]/90 border-white/10 text-white"
+          }`}>
+          {/* Brand Logo in Header */}
+          <div className="flex items-center space-x-3">
+            <div
+              onClick={() => setShowSocialModal(true)}
+              className="flex items-center space-x-2 cursor-pointer group"
+              title="TeacherOS Hamjamiyati & Aloqa"
+            >
+              <BrandLogo isLight={isBoardLight} onClick={() => setShowSocialModal(true)} />
+            </div>
+
+            <div className={`h-4 w-px ${isBoardLight ? "bg-slate-300" : "bg-white/10"}`} />
+            <div className="flex items-center space-x-2">
+              <span className={`text-xs sm:text-sm font-extrabold truncate max-w-[160px] sm:max-w-xs ${
+                isBoardLight ? "text-slate-900" : "text-white"
+              }`}>
+                {curriculum.topic}
+              </span>
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                isBoardLight ? "bg-slate-100 text-slate-700 border border-slate-200" : "bg-white/10 text-slate-300"
+              }`}>
+                {curriculum.level}
+              </span>
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                isBoardLight
+                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                  : "bg-[#5B3DF5]/20 text-[#A5B4FC] border border-[#5B3DF5]/30"
+              }`}>
+                {curriculum.length === "short" ? "Qisqa (4)" : curriculum.length === "long" ? "To'liq (8)" : "O'rtacha (6)"}
+              </span>
+            </div>
           </div>
 
           {/* Right Header Actions */}
           <div className="flex items-center space-x-2 text-xs">
-            {workspaceMode === 'classroom' ? (
+            {currentUser && workspaceMode === 'classroom' && (
               <button
                 type="button"
                 onClick={() => {
-                  setWorkspaceMode(null);
+                  setWorkspaceMode('solo');
                   localStorage.removeItem('teacheros_workspace_mode');
                 }}
-                className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-xs font-bold flex items-center space-x-1.5 hover:bg-indigo-500/25 transition-all cursor-pointer"
+                className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
+                  isBoardLight
+                    ? "bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800"
+                    : "bg-indigo-500/15 hover:bg-indigo-500/25 border-indigo-500/30 text-indigo-200"
+                }`}
                 title="Sinfxonani almashtirish"
               >
-                <Users className="w-3.5 h-3.5 text-indigo-400" />
+                <Users className="w-3.5 h-3.5 text-indigo-500" />
                 <span className="hidden md:inline">{currentClassroom.name}</span>
                 <span className="text-[10px] opacity-75">({currentClassroom.students})</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setWorkspaceMode(null);
-                  localStorage.removeItem('teacheros_workspace_mode');
-                }}
-                className="px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-xs font-bold flex items-center space-x-1.5 hover:bg-white/10 transition-all cursor-pointer"
-                title="Sinfxona rejimiga o'tish"
-              >
-                <Ban className="w-3.5 h-3.5 text-slate-400" />
-                <span className="hidden md:inline">Yakkaxon</span>
               </button>
             )}
 
@@ -1575,16 +3625,20 @@ export default function StitchTeacherOS() {
               <>
                 <button
                   onClick={toggleFullscreen}
-                  className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1.5 font-bold transition-all"
+                  className="px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center space-x-1.5 font-bold transition-all cursor-pointer"
                   title="To'liq doska rejimi (F)"
                 >
-                  <Play className="w-3.5 h-3.5 fill-emerald-400" />
+                  <Play className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
                   <span className="hidden sm:inline">Present</span>
                 </button>
 
                 <button
                   onClick={handleDownloadHtml}
-                  className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-1 font-medium transition-all"
+                  className={`p-1.5 sm:px-3 sm:py-1.5 rounded-full border flex items-center space-x-1 font-medium transition-all cursor-pointer ${
+                    isBoardLight
+                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                      : "bg-white/5 hover:bg-white/10 text-white border-white/10"
+                  }`}
                   title="HTML Yuklab Olish"
                 >
                   <Download className="w-3.5 h-3.5" />
@@ -1593,198 +3647,148 @@ export default function StitchTeacherOS() {
 
                 <button
                   onClick={handleShareLink}
-                  className="p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-1 font-medium transition-all"
+                  className={`p-1.5 sm:px-3 sm:py-1.5 rounded-full border flex items-center space-x-1 font-medium transition-all cursor-pointer ${
+                    isBoardLight
+                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                      : "bg-white/5 hover:bg-white/10 text-white border-white/10"
+                  }`}
                   title="Havolani Nusxalash"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Share</span>
                 </button>
+
+                {/* Direct Telegram Sync Button */}
+                <button
+                  onClick={handleSendToTelegram}
+                  disabled={isSyncingTelegram}
+                  className="px-2.5 sm:px-3 py-1.5 rounded-full bg-[#229ED9]/15 hover:bg-[#229ED9]/25 text-[#229ED9] border border-[#229ED9]/40 flex items-center space-x-1.5 font-bold transition-all cursor-pointer hover-lift disabled:opacity-50"
+                  title="Darsni shaxsiy Telegramga yuborish"
+                >
+                  <Send className="w-3.5 h-3.5 fill-[#229ED9]" />
+                  <span className="hidden sm:inline">
+                    {isSyncingTelegram ? "Yuborilmoqda..." : "Telegramga"}
+                  </span>
+                </button>
               </>
             )}
 
-            {/* User Pill */}
-            <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 font-medium">
-              <User className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="font-bold text-white truncate max-w-[90px]">{currentUser.username}</span>
-              <span className="text-[10px] text-slate-400 font-mono">({currentUser.age})</span>
-            </div>
+            {/* Auth section: Sign in button for guests, Account pill + Logout for logged in */}
+            {currentUser ? (
+              <>
+                {/* User Pill - Clickable to open Settings & Account */}
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsModal(true)}
+                  className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium cursor-pointer transition-all hover:scale-[1.02] hover-lift ${
+                    isBoardLight
+                      ? "bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-indigo-400 text-slate-800"
+                      : "bg-white/5 hover:bg-white/10 border-white/10 hover:border-indigo-400 text-slate-300 hover:text-white"
+                  }`}
+                  title={appLanguage === 'en' ? "Open Settings & Account" : appLanguage === 'ru' ? "Настройки и профиль" : "Sozlamalar va hisob"}
+                >
+                  <Send className="w-3.5 h-3.5 text-[#229ED9]" />
+                  <span className={`font-bold truncate max-w-[100px] ${isBoardLight ? "text-slate-900" : "text-white"}`}>
+                    {currentUser.first_name || currentUser.username}
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                </button>
 
-            {/* Logout button */}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-white/10 hover:border-red-500/30 transition-all flex items-center space-x-1 text-xs font-bold cursor-pointer"
-              title="Tizimdan chiqish"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Chiqish</span>
-            </button>
+                {/* Logout button */}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-white/10 hover:border-red-500/30 transition-all flex items-center space-x-1 text-xs font-bold cursor-pointer"
+                  title="Tizimdan chiqish"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">Chiqish</span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAuthModal(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#229ED9] to-[#0088cc] hover:from-[#2ba6e3] hover:to-[#0094de] text-white text-xs font-bold flex items-center space-x-1.5 shadow-lg shadow-[#229ED9]/30 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5 fill-white" />
+                <span>Telegram orqali Kirish</span>
+              </button>
+            )}
           </div>
         </header>
       )}
 
-      {/* HISTORY & NAVIGATION DRAWER MODAL (Matching Photo 2 Handwritten Sketch) */}
-      {isHistoryOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs"
-            onClick={() => setIsHistoryOpen(false)}
-          />
-          <aside className="fixed left-0 top-0 bottom-0 z-50 w-80 bg-[#12141D]/98 border-r border-white/10 p-5 shadow-2xl backdrop-blur-2xl flex flex-col justify-between animate-fade-in">
-            <div className="space-y-4">
-              {/* Drawer Top Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <div className="flex items-center space-x-2">
-                  <BrandLogo isLight={false} className="h-7 max-w-[140px] object-contain" />
-                </div>
-                <button
-                  onClick={() => setIsHistoryOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer transition-colors"
-                  title="Yopish"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Classroom Context Badge */}
-              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-[#A5B4FC] flex items-center space-x-1.5">
-                    <Users className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>{workspaceMode === 'classroom' ? currentClassroom.name : 'Yakkaxon Rejim'}</span>
-                  </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
-                    {workspaceMode === 'classroom' ? `${currentClassroom.students} talaba` : 'Sinfsiz'}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setWorkspaceMode(null);
-                    localStorage.removeItem('teacheros_workspace_mode');
-                    setIsHistoryOpen(false);
-                  }}
-                  className="w-full text-left text-[11px] text-slate-400 hover:text-indigo-300 transition-colors cursor-pointer"
-                >
-                  ⇄ Sinfxonani almashtirish
-                </button>
-              </div>
-
-              {/* Photo 2 Action Buttons: + New Lesson, Homework, Level, Jack Rock Quiz */}
-              <div className="space-y-1.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurriculum(null);
-                    setStudioMode('lesson');
-                    setTopicInput('');
-                    setIsPromptCollapsed(false);
-                    setIsHistoryOpen(false);
-                  }}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-[#5B3DF5] to-[#7C3AED] text-white font-bold text-xs flex items-center space-x-2.5 shadow-lg shadow-[#5B3DF5]/30 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer"
-                >
-                  <Plus className="w-4 h-4 stroke-[3]" />
-                  <span>+ New Lesson</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurriculum(null);
-                    setStudioMode('homework');
-                    setIsHistoryOpen(false);
-                  }}
-                  className="w-full px-3.5 py-2 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-slate-200 hover:text-emerald-300 border border-white/5 hover:border-emerald-500/30 text-xs font-bold flex items-center space-x-2.5 transition-all cursor-pointer"
-                >
-                  <Home className="w-4 h-4 text-emerald-400" />
-                  <span>🏠 Homework</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurriculum(null);
-                    setStudioMode('level_check');
-                    setIsHistoryOpen(false);
-                  }}
-                  className="w-full px-3.5 py-2 rounded-xl bg-white/5 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 border border-white/5 hover:border-amber-500/30 text-xs font-bold flex items-center space-x-2.5 transition-all cursor-pointer"
-                >
-                  <FileText className="w-4 h-4 text-amber-400" />
-                  <span>📖 Level Check</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurriculum(null);
-                    setStudioMode('group_quiz');
-                    setIsHistoryOpen(false);
-                  }}
-                  className="w-full px-3.5 py-2 rounded-xl bg-white/5 hover:bg-indigo-500/20 text-slate-200 hover:text-indigo-300 border border-white/5 hover:border-indigo-500/30 text-xs font-bold flex items-center space-x-2.5 transition-all cursor-pointer"
-                >
-                  <Users className="w-4 h-4 text-indigo-400" />
-                  <span>👥 Jack Rock Quiz (Group)</span>
-                </button>
-              </div>
-
-              {/* Photo 2 History List Section */}
-              <div className="pt-2">
-                <div className="flex items-center space-x-2 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  <History className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>↺ Tarix (Darslar ro'yxati)</span>
-                </div>
-
-                <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-                  {lessonHistory.map((item, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setTopicInput(item.topic);
-                        handleGenerate(item.topic);
-                        setIsHistoryOpen(false);
-                      }}
-                      className="w-full px-3 py-2 rounded-xl hover:bg-white/5 text-left flex items-center justify-between group transition-all cursor-pointer border border-transparent hover:border-white/5"
-                    >
-                      <span className="text-xs font-medium text-slate-200 group-hover:text-white truncate max-w-[180px]">
-                        {item.topic}
-                      </span>
-                      <span className="text-[11px] font-mono text-slate-500 group-hover:text-indigo-400 font-semibold">
-                        {item.time}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Profile & Settings Section */}
-            <div className="pt-3 border-t border-white/10 space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-300">
-                <div className="flex items-center space-x-2">
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#5B3DF5] to-[#7C3AED] flex items-center justify-center font-bold text-white text-[11px]">
-                    {currentUser.username.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="font-bold text-white leading-none">{currentUser.username}</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">{currentUser.age} yosh • {currentUser.provider}</div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
-                  title="Chiqish"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </aside>
-        </>
+      {/* Floating Login / User Profile in Top Right */}
+      {!isFullscreen && !curriculum && studioMode !== 'homework' && !activeHomeworkTopic && (
+        <div className="absolute top-5 right-6 z-30 flex items-center space-x-2">
+          {currentUser ? (
+            <>
+              {/* Floating User Pill - Clickable to open Settings & Account */}
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(true)}
+                className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-xl border shadow-2xl backdrop-blur-xl text-xs font-medium cursor-pointer transition-all hover:scale-[1.02] hover-lift ${
+                  isBoardLight
+                    ? "bg-white/95 hover:bg-slate-50 border-slate-300 hover:border-indigo-400 text-slate-800 shadow-slate-200"
+                    : "bg-[#141724]/90 hover:bg-[#1a1e30] border-white/20 hover:border-indigo-400 text-slate-300 hover:text-white"
+                }`}
+                title={appLanguage === 'en' ? "Open Settings & Account" : appLanguage === 'ru' ? "Настройки и профиль" : "Sozlamalar va hisob"}
+              >
+                <Send className="w-3.5 h-3.5 text-[#229ED9]" />
+                <span className={`font-bold truncate max-w-[130px] ${isBoardLight ? "text-slate-900" : "text-white"}`}>
+                  {currentUser.first_name || currentUser.username}
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className={`p-2 rounded-xl border shadow-2xl backdrop-blur-xl transition-all flex items-center space-x-1 text-xs font-bold cursor-pointer hover-lift ${
+                  isBoardLight
+                    ? "bg-white/95 hover:bg-red-50 text-slate-500 hover:text-red-500 border-slate-300 hover:border-red-300"
+                    : "bg-[#141724]/90 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border-white/20 hover:border-red-500/30"
+                }`}
+                title={t.logout}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowAuthModal(true)}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#229ED9] to-[#0088cc] hover:from-[#2ba6e3] hover:to-[#0094de] text-white text-xs font-bold flex items-center space-x-2 shadow-2xl shadow-[#229ED9]/40 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer border border-white/10 hover-lift"
+            >
+              <Send className="w-3.5 h-3.5 fill-white" />
+              <span>Telegram orqali Kirish</span>
+            </button>
+          )}
+        </div>
       )}
 
-      {/* MAIN CANVAS */}
-      <div className="flex-1 w-full relative flex items-center justify-center overflow-hidden">
+      {/* Floating 3-Lines Menu Button UNDER the Logo (First Screen) */}
+      {!isFullscreen && !curriculum && studioMode !== 'homework' && !activeHomeworkTopic && (
+        <button
+          type="button"
+          onClick={() => setIsHistoryOpen((prev) => !prev)}
+          className={`absolute top-5 left-5 sm:left-6 z-30 w-10 h-10 rounded-xl border shadow-xl backdrop-blur-xl flex flex-col items-center justify-center space-y-1 transition-all hover:scale-105 active:scale-95 cursor-pointer group hover-lift ${
+            isBoardLight
+              ? "bg-white/95 hover:bg-slate-100 border-slate-300 hover:border-[#5B3DF5] shadow-slate-200"
+              : "bg-[#141724]/95 hover:bg-[#1E2235] border-white/20 hover:border-[#5B3DF5]"
+          } ${
+            isHistoryOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+          }`}
+          title={appLanguage === 'en' ? "Menu & Lessons (☰)" : appLanguage === 'ru' ? "Меню и уроки (☰)" : "Menyu va Darslar (☰)"}
+        >
+          <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-[#5B3DF5]" : "bg-slate-100 group-hover:bg-white"}`} />
+          <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-[#5B3DF5]" : "bg-slate-100 group-hover:bg-white"}`} />
+          <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-[#5B3DF5]" : "bg-slate-100 group-hover:bg-white"}`} />
+        </button>
+      )}
+
+      {/* MAIN CANVAS - Flexible & Scrollable for Windowed PC View */}
+      <div className="flex-1 w-full relative flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden min-h-0 py-2 sm:py-4">
         {/* ============================================================ */}
         {/* GENERATING STATE: ONLY CLEAN PROCESS CARD IN CENTER          */}
         {/* ============================================================ */}
@@ -1794,47 +3798,67 @@ export default function StitchTeacherOS() {
         {isGenerating && (
           <div className="w-full max-w-4xl px-4 z-20 flex flex-col items-center justify-center animate-fade-in">
             {/* High-Tech Studio Blueprint Card */}
-            <div className="w-full rounded-3xl bg-[#12141D]/95 border border-[#5B3DF5]/35 shadow-[0_25px_70px_-15px_rgba(91,61,245,0.35)] backdrop-blur-2xl p-5 sm:p-7 flex flex-col space-y-5 overflow-hidden relative">
+            <div className={`w-full rounded-3xl border shadow-2xl backdrop-blur-2xl p-5 sm:p-7 flex flex-col space-y-5 overflow-hidden relative transition-colors ${
+              isBoardLight
+                ? "bg-white/98 border-slate-200 shadow-slate-200/80 text-slate-800"
+                : "bg-[#12141D]/95 border-[#5B3DF5]/35 shadow-[0_25px_70px_-15px_rgba(91,61,245,0.35)] text-white"
+            }`}>
               {/* Ambient background glows */}
               <div className="absolute -top-24 -left-24 w-72 h-72 bg-[#5B3DF5]/15 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
               {/* Header Telemetry */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10 text-xs">
+              <div className={`flex flex-wrap items-center justify-between gap-3 pb-3 border-b text-xs ${
+                isBoardLight ? "border-slate-200" : "border-white/10"
+              }`}>
                 <div className="flex items-center space-x-2.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-mono text-emerald-400 font-bold uppercase tracking-wider text-[11px]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider text-[11px]">
                     AI SYNTHESIS LAB • ACTIVE
                   </span>
-                  <span className="text-white/20">|</span>
-                  <span className="text-slate-400 font-mono text-[11px]">Gemini 3.5 Engine</span>
+                  <span className={isBoardLight ? "text-slate-300" : "text-white/20"}>|</span>
+                  <span className={`font-mono text-[11px] ${isBoardLight ? "text-slate-500 font-semibold" : "text-slate-400"}`}>
+                    Gemini 3.5 Engine
+                  </span>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <span className="px-3 py-1 rounded-full bg-[#5B3DF5]/20 text-[#A5B4FC] border border-[#5B3DF5]/40 font-bold text-xs flex items-center space-x-1.5 shadow-sm">
+                  <span className={`px-3 py-1 rounded-full font-bold text-xs flex items-center space-x-1.5 shadow-sm border ${
+                    isBoardLight
+                      ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                      : "bg-[#5B3DF5]/20 text-[#A5B4FC] border-[#5B3DF5]/40"
+                  }`}>
                     <Sparkles className="w-3.5 h-3.5 text-[#5B3DF5] animate-spin" />
                     <span className="truncate max-w-[200px]">Mavzu: {topicInput || "Yangi Dars"}</span>
                   </span>
-                  <span className="px-2.5 py-1 rounded-full bg-white/10 text-slate-300 font-mono font-bold text-[11px]">
+                  <span className={`px-2.5 py-1 rounded-full font-mono font-bold text-[11px] border ${
+                    isBoardLight
+                      ? "bg-slate-100 text-slate-700 border-slate-200"
+                      : "bg-white/10 text-slate-300 border-transparent"
+                  }`}>
                     {level}
                   </span>
                 </div>
               </div>
 
               {/* Shimmer Blueprint 16:9 Slide Preview */}
-              <div className="w-full aspect-[16/9] max-h-52 sm:max-h-60 rounded-2xl bg-black/40 border border-white/10 p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden shadow-inner">
+              <div className={`w-full aspect-[16/9] max-h-52 sm:max-h-60 rounded-2xl border p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden shadow-inner ${
+                isBoardLight
+                  ? "bg-slate-50 border-slate-200"
+                  : "bg-black/40 border-white/10"
+              }`}>
                 {/* Laser shimmer animation wave traversing skeleton */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-laser-shimmer pointer-events-none" />
+                <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-laser-shimmer pointer-events-none`} />
 
                 {/* Top skeleton header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="w-20 h-4 rounded-md bg-white/15 animate-pulse" />
-                    <div className="w-36 h-5 rounded-md bg-white/20 animate-pulse" />
+                    <div className={`w-20 h-4 rounded-md animate-pulse ${isBoardLight ? "bg-slate-300" : "bg-white/15"}`} />
+                    <div className={`w-36 h-5 rounded-md animate-pulse ${isBoardLight ? "bg-slate-300" : "bg-white/20"}`} />
                   </div>
                   <div className="flex space-x-1.5">
-                    <div className="w-6 h-6 rounded-lg bg-white/10" />
-                    <div className="w-6 h-6 rounded-lg bg-white/10" />
+                    <div className={`w-6 h-6 rounded-lg ${isBoardLight ? "bg-slate-200" : "bg-white/10"}`} />
+                    <div className={`w-6 h-6 rounded-lg ${isBoardLight ? "bg-slate-200" : "bg-white/10"}`} />
                   </div>
                 </div>
 
@@ -1842,39 +3866,49 @@ export default function StitchTeacherOS() {
                 <div className="grid grid-cols-12 gap-4 items-center my-auto">
                   {/* Left: rule skeleton */}
                   <div className="col-span-6 space-y-2.5">
-                    <div className="w-3/4 h-3.5 rounded bg-white/20 animate-pulse" />
-                    <div className="w-full h-3 rounded bg-white/10 animate-pulse" />
-                    <div className="w-5/6 h-3 rounded bg-white/10 animate-pulse" />
-                    <div className="w-full h-9 rounded-xl bg-[#5B3DF5]/15 border border-[#5B3DF5]/30 flex items-center px-3 space-x-2">
+                    <div className={`w-3/4 h-3.5 rounded animate-pulse ${isBoardLight ? "bg-slate-300" : "bg-white/20"}`} />
+                    <div className={`w-full h-3 rounded animate-pulse ${isBoardLight ? "bg-slate-200" : "bg-white/10"}`} />
+                    <div className={`w-5/6 h-3 rounded animate-pulse ${isBoardLight ? "bg-slate-200" : "bg-white/10"}`} />
+                    <div className={`w-full h-9 rounded-xl border flex items-center px-3 space-x-2 ${
+                      isBoardLight
+                        ? "bg-indigo-50 border-indigo-200"
+                        : "bg-[#5B3DF5]/15 border-[#5B3DF5]/30"
+                    }`}>
                       <div className="w-3 h-3 rounded-full bg-[#5B3DF5] animate-pulse" />
-                      <div className="w-44 h-2.5 rounded bg-white/20 animate-pulse" />
+                      <div className={`w-44 h-2.5 rounded animate-pulse ${isBoardLight ? "bg-indigo-200" : "bg-white/20"}`} />
                     </div>
                   </div>
 
                   {/* Right: visual diagram skeleton */}
-                  <div className="col-span-6 h-28 sm:h-32 rounded-xl bg-white/5 border border-white/10 p-3 flex flex-col justify-between">
+                  <div className={`col-span-6 h-28 sm:h-32 rounded-xl border p-3 flex flex-col justify-between ${
+                    isBoardLight
+                      ? "bg-white border-slate-200 shadow-sm"
+                      : "bg-white/5 border-white/10"
+                  }`}>
                     <div className="flex items-center justify-between">
-                      <div className="w-24 h-3 rounded bg-white/15" />
+                      <div className={`w-24 h-3 rounded ${isBoardLight ? "bg-slate-200" : "bg-white/15"}`} />
                       <div className="w-12 h-3 rounded-full bg-[#5B3DF5]/30" />
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="flex-1 h-12 rounded-lg bg-indigo-600/20 border border-indigo-500/30 animate-pulse" />
-                      <div className="flex-1 h-12 rounded-lg bg-purple-600/20 border border-purple-500/30 animate-pulse" />
-                      <div className="flex-1 h-12 rounded-lg bg-emerald-600/20 border border-emerald-500/30 animate-pulse" />
+                      <div className="flex-1 h-12 rounded-lg bg-indigo-500/20 border border-indigo-500/30 animate-pulse" />
+                      <div className="flex-1 h-12 rounded-lg bg-purple-500/20 border border-purple-500/30 animate-pulse" />
+                      <div className="flex-1 h-12 rounded-lg bg-emerald-500/20 border border-emerald-500/30 animate-pulse" />
                     </div>
-                    <div className="w-full h-1.5 rounded-full bg-white/10" />
+                    <div className={`w-full h-1.5 rounded-full ${isBoardLight ? "bg-slate-200" : "bg-white/10"}`} />
                   </div>
                 </div>
 
                 {/* Bottom slide dots */}
-                <div className="flex items-center justify-center space-x-2 pt-2 border-t border-white/5">
+                <div className={`flex items-center justify-center space-x-2 pt-2 border-t ${
+                  isBoardLight ? "border-slate-200" : "border-white/5"
+                }`}>
                   {[1, 2, 3, 4, 5].map((d) => (
                     <div
                       key={d}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
                         d <= generationStage
                           ? "w-8 bg-[#5B3DF5] shadow-[0_0_8px_#5B3DF5]"
-                          : "w-2 bg-white/15"
+                          : isBoardLight ? "w-2 bg-slate-300" : "w-2 bg-white/15"
                       }`}
                     />
                   ))}
@@ -1896,26 +3930,40 @@ export default function StitchTeacherOS() {
                       key={st.num}
                       className={`p-3 rounded-xl border text-left transition-all ${
                         isCurrent
-                          ? "bg-[#5B3DF5]/20 border-[#5B3DF5] shadow-[0_0_15px_rgba(91,61,245,0.25)] scale-102"
+                          ? isBoardLight
+                            ? "bg-indigo-50 border-indigo-500 text-indigo-950 shadow-md scale-102 font-bold"
+                            : "bg-[#5B3DF5]/20 border-[#5B3DF5] shadow-[0_0_15px_rgba(91,61,245,0.25)] scale-102 text-white"
                           : isDone
-                          ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-300"
+                          ? isBoardLight
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+                            : "bg-emerald-950/20 border-emerald-500/30 text-emerald-300"
+                          : isBoardLight
+                          ? "bg-slate-50 border-slate-200 text-slate-500 opacity-70"
                           : "bg-white/5 border-white/5 text-slate-500 opacity-60"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-base">{st.icon}</span>
                         {isDone ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                         ) : isCurrent ? (
                           <RotateCw className="w-3.5 h-3.5 text-[#5B3DF5] animate-spin" />
                         ) : (
-                          <span className="text-[10px] font-mono text-slate-500">#{st.num}</span>
+                          <span className={`text-[10px] font-mono ${isBoardLight ? "text-slate-400" : "text-slate-500"}`}>#{st.num}</span>
                         )}
                       </div>
-                      <div className={`text-xs font-black ${isCurrent ? "text-white" : isDone ? "text-emerald-200" : "text-slate-400"}`}>
+                      <div className={`text-xs font-black ${
+                        isCurrent
+                          ? isBoardLight ? "text-indigo-950" : "text-white"
+                          : isDone
+                          ? isBoardLight ? "text-emerald-900" : "text-emerald-200"
+                          : isBoardLight ? "text-slate-600" : "text-slate-400"
+                      }`}>
                         {st.title}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate mt-0.5">{st.desc}</div>
+                      <div className={`text-[10px] truncate mt-0.5 ${
+                        isBoardLight ? "text-slate-500" : "text-slate-400"
+                      }`}>{st.desc}</div>
                     </div>
                   );
                 })}
@@ -1923,11 +3971,15 @@ export default function StitchTeacherOS() {
 
               {/* Active Telemetry text */}
               <div className="text-center space-y-1 pt-1">
-                <div className="text-xs sm:text-sm font-bold text-white flex items-center justify-center space-x-2">
+                <div className={`text-xs sm:text-sm font-bold flex items-center justify-center space-x-2 ${
+                  isBoardLight ? "text-slate-900" : "text-white"
+                }`}>
                   <RotateCw className="w-3.5 h-3.5 animate-spin text-[#5B3DF5]" />
                   <span>{generationStep}</span>
                 </div>
-                <p className="text-[11px] text-slate-400 font-mono">
+                <p className={`text-[11px] font-mono ${
+                  isBoardLight ? "text-slate-600" : "text-slate-400"
+                }`}>
                   O'qituvchi va talabalar uchun yuqori aniqlikdagi interaktiv doska sintez qilinmoqda...
                 </p>
               </div>
@@ -1939,32 +3991,474 @@ export default function StitchTeacherOS() {
         {/* INITIAL STATE: PROMPT BAR & LENGTH SELECTOR HERO             */}
         {/* ============================================================ */}
         {!curriculum && !isGenerating && (
+          studioMode === 'homework' && isGeneratingHomework ? (
+            /* ============================================================ */
+            /* HOMEWORK GENERATING TRANSFORMATION SKELETON SCREEN           */
+            /* ============================================================ */
+            <div className="w-full max-w-5xl px-4 sm:px-6 z-20 flex flex-col items-center justify-center space-y-6 animate-fade-in my-auto py-4">
+              {/* Telemetry Header */}
+              <div className={`w-full p-4 sm:p-5 rounded-2xl border backdrop-blur-xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 ${
+                isBoardLight
+                  ? "bg-white/90 border-slate-300 shadow-slate-200"
+                  : "bg-[#12141D]/95 border-[#5B3DF5]/30 shadow-[0_20px_50px_rgba(91,61,245,0.25)]"
+              }`}>
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#5B3DF5] to-[#10B981] flex items-center justify-center shadow-lg text-white">
+                    <Sparkles className="w-5 h-5 animate-spin" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="text-xs font-black tracking-wider uppercase text-emerald-500 font-mono">
+                        {appLanguage === 'en' ? "TRANSFORMING TASKS..." : appLanguage === 'ru' ? "СИНТЕЗ ЗАДАНИЙ..." : "VAZIFALAR SINTEZI..."}
+                      </span>
+                    </div>
+                    <div className={`text-sm font-extrabold truncate max-w-sm sm:max-w-md ${isBoardLight ? "text-slate-900" : "text-white"}`}>
+                      {topicInput || "Present Perfect Continuous"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
+                    homeworkIntensity === 'light'
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                      : homeworkIntensity === 'extreme'
+                      ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                      : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                  }`}>
+                    {homeworkIntensity.toUpperCase()} MODE ({homeworkIntensity === 'light' ? 5 : homeworkIntensity === 'extreme' ? 15 : 10}/tur)
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 text-xs font-mono font-bold">
+                    CEFR: {level}
+                  </span>
+                </div>
+              </div>
+
+              {/* Shimmering Top Question Tabs (Like Template) */}
+              <div className="w-full flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
+                {selectedHomeworkTypes.map((typeId, i) => {
+                  const meta = HOMEWORK_QUESTION_TYPES.find((qt) => qt.id === typeId);
+                  const Icon = meta?.icon || Sparkles;
+                  return (
+                    <div
+                      key={typeId}
+                      className={`flex-shrink-0 flex items-center space-x-2 px-3.5 py-2 rounded-xl border text-xs font-bold animate-pulse ${
+                        isBoardLight
+                          ? "bg-white/80 border-slate-300 text-slate-700 shadow-sm"
+                          : "bg-[#141724]/80 border-white/10 text-slate-300"
+                      }`}
+                      style={{ animationDelay: `${i * 120}ms` }}
+                    >
+                      <Icon className="w-3.5 h-3.5 text-[#5B3DF5]" />
+                      <span className="truncate max-w-[120px]">{meta?.title[appLanguage] || typeId}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping" />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 3 Transforming Question Skeleton Cards (Directly on Dotted Canvas) */}
+              <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map((cardIdx) => (
+                  <div
+                    key={cardIdx}
+                    className={`p-5 rounded-3xl border flex flex-col justify-between space-y-4 relative overflow-hidden backdrop-blur-xl shadow-xl transition-all ${
+                      isBoardLight
+                        ? "bg-white/80 border-slate-300 shadow-slate-200"
+                        : "bg-[#141622]/85 border-white/15"
+                    }`}
+                  >
+                    {/* Laser scanning light sweep */}
+                    <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent animate-laser pointer-events-none" />
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="h-5 w-20 rounded-full bg-indigo-500/20 animate-pulse" />
+                        <div className="h-4 w-12 rounded-full bg-slate-500/20 animate-pulse" />
+                      </div>
+                      <div className="h-4 w-full rounded-lg bg-slate-500/20 animate-pulse" />
+                      <div className="h-4 w-3/4 rounded-lg bg-slate-500/15 animate-pulse" />
+                    </div>
+
+                    <div className="space-y-2 pt-3">
+                      <div className="h-10 w-full rounded-xl bg-slate-500/10 border border-slate-500/20 animate-pulse" />
+                      <div className="h-10 w-full rounded-xl bg-slate-500/10 border border-slate-500/20 animate-pulse" />
+                      <div className="h-10 w-full rounded-xl bg-slate-500/10 border border-slate-500/20 animate-pulse" />
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between border-t border-white/5">
+                      <div className="h-4 w-28 rounded-md bg-slate-500/20 animate-pulse" />
+                      <RotateCw className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Progress Text */}
+              <div className="text-center space-y-1">
+                <div className={`text-xs sm:text-sm font-bold flex items-center justify-center space-x-2 ${isBoardLight ? "text-slate-900" : "text-white"}`}>
+                  <RotateCw className="w-4 h-4 animate-spin text-[#5B3DF5]" />
+                  <span>
+                    {appLanguage === 'en'
+                      ? "AI is generating authentic pedagogical questions & explanations..."
+                      : appLanguage === 'ru'
+                      ? "ИИ создаёт аутентичные задания и объяснения..."
+                      : "AI o'quvchilar darajasi bo'yicha original savol va izohlarni sintez qilmoqda..."}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 font-mono">
+                  {selectedHomeworkTypes.length} tur • {selectedHomeworkTypes.length * (homeworkIntensity === 'light' ? 5 : homeworkIntensity === 'extreme' ? 15 : 10)} ta vazifa
+                </p>
+              </div>
+            </div>
+          ) : studioMode === 'homework' && (homeworkStep === 'review' || activeHomeworkTopic) ? (
+            /* ============================================================ */
+            /* STANDALONE HOMEWORK REVIEW (Floating Directly on Dotted Canvas) */
+            /* ============================================================ */
+            <div className="w-full max-w-6xl px-4 sm:px-6 z-20 flex flex-col items-center justify-center animate-fade-in my-auto py-2 sm:py-4">
+              <HomeworkViewer
+                topic={activeHomeworkTopic || topicInput.trim() || "Present Perfect"}
+                data={generatedHomeworkData}
+                onClose={() => {
+                  setActiveHomeworkTopic(null);
+                  setGeneratedHomeworkData(null);
+                  setHomeworkStep('prompt');
+                }}
+                appLanguage={appLanguage}
+                isLight={isBoardLight}
+                activeClassroomName={workspaceMode === 'classroom' ? currentClassroom.name : (appLanguage === 'en' ? "Solo Mode" : appLanguage === 'ru' ? "Индивидуальный" : "Yakkaxon rejim")}
+                onSwitchClassroom={() => {
+                  setClassroomModalMode('list');
+                  setShowClassroomModal(true);
+                }}
+              />
+            </div>
+          ) : studioMode === 'homework' && homeworkStep === 'config' ? (
+            /* ============================================================ */
+            /* STANDALONE HOMEWORK STUDIO (Floating Directly on Dotted Canvas) */
+            /* ============================================================ */
+            <div className="w-full max-w-5xl px-4 sm:px-6 z-20 flex flex-col items-center justify-center space-y-6 animate-fade-in my-auto pt-2 sm:pt-4">
+              
+              {/* TOP ROW: Back Button + 3 Intensity Capsule Pills (Matching Image) + Topic Pill */}
+              <div className="w-full flex flex-wrap items-center justify-between gap-3">
+                {/* Back Button */}
+                <button
+                  type="button"
+                  onClick={() => setHomeworkStep('prompt')}
+                  className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer border flex items-center space-x-1.5 backdrop-blur-md hover-lift ${
+                    isBoardLight
+                      ? "bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-300 shadow-sm"
+                      : "bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white border-white/10"
+                  }`}
+                  title={appLanguage === 'en' ? "Back to Prompt" : appLanguage === 'ru' ? "Назад к запросу" : "Orqaga (Ko'rsatmaga qaytish)"}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>{appLanguage === 'en' ? "Back" : appLanguage === 'ru' ? "Назад" : "Orqaga"}</span>
+                </button>
+
+                {/* THE 3 INTENSITY CAPSULE PILLS (Shape of the User's Image) */}
+                <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
+                  {/* 🟢 LIGHT MODE */}
+                  <button
+                    type="button"
+                    onClick={() => setHomeworkIntensity('light')}
+                    className={`inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-full text-xs font-black tracking-wider transition-all cursor-pointer backdrop-blur-md ${
+                      homeworkIntensity === 'light'
+                        ? "bg-[#06241a]/90 border-2 border-emerald-400 text-emerald-200 shadow-[0_0_25px_rgba(52,211,153,0.55)] ring-2 ring-emerald-400/40 scale-105"
+                        : isBoardLight
+                        ? "bg-white/80 border-2 border-slate-200 text-slate-600 hover:border-emerald-500/50 hover:text-emerald-600 hover:bg-white"
+                        : "bg-white/5 border-2 border-white/10 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-300 hover:bg-white/10"
+                    }`}
+                  >
+                    <Zap className="w-4 h-4 text-emerald-400" />
+                    <span>LIGHT MODE</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                      5 {appLanguage === 'en' ? "/ type" : appLanguage === 'ru' ? "/ тип" : "ta / tur"}
+                    </span>
+                  </button>
+
+                  {/* 🟡 MEDIUM MODE */}
+                  <button
+                    type="button"
+                    onClick={() => setHomeworkIntensity('medium')}
+                    className={`inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-full text-xs font-black tracking-wider transition-all cursor-pointer backdrop-blur-md ${
+                      homeworkIntensity === 'medium'
+                        ? "bg-[#2b1704]/90 border-2 border-amber-400 text-amber-200 shadow-[0_0_25px_rgba(251,191,36,0.55)] ring-2 ring-amber-400/40 scale-105"
+                        : isBoardLight
+                        ? "bg-white/80 border-2 border-slate-200 text-slate-600 hover:border-amber-500/50 hover:text-amber-600 hover:bg-white"
+                        : "bg-white/5 border-2 border-white/10 text-slate-400 hover:border-amber-500/50 hover:text-amber-300 hover:bg-white/10"
+                    }`}
+                  >
+                    <Target className="w-4 h-4 text-amber-400" />
+                    <span>MEDIUM MODE</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                      10 {appLanguage === 'en' ? "/ type" : appLanguage === 'ru' ? "/ тип" : "ta / tur"}
+                    </span>
+                  </button>
+
+                  {/* 🔴 EXTREME MODE */}
+                  <button
+                    type="button"
+                    onClick={() => setHomeworkIntensity('extreme')}
+                    className={`inline-flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-full text-xs font-black tracking-wider transition-all cursor-pointer backdrop-blur-md ${
+                      homeworkIntensity === 'extreme'
+                        ? "bg-[#2b080c]/90 border-2 border-rose-500 text-rose-200 shadow-[0_0_25px_rgba(244,63,94,0.55)] ring-2 ring-rose-500/40 scale-105"
+                        : isBoardLight
+                        ? "bg-white/80 border-2 border-slate-200 text-slate-600 hover:border-rose-500/50 hover:text-rose-600 hover:bg-white"
+                        : "bg-white/5 border-2 border-white/10 text-slate-400 hover:border-rose-500/50 hover:text-rose-300 hover:bg-white/10"
+                    }`}
+                  >
+                    <Flame className="w-4 h-4 text-rose-400 animate-pulse" />
+                    <span>EXTREME MODE</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
+                      15 {appLanguage === 'en' ? "/ type" : appLanguage === 'ru' ? "/ тип" : "ta / tur"}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Topic Pill */}
+                <div className={`hidden sm:inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full border text-xs font-medium truncate max-w-xs backdrop-blur-md ${
+                  isBoardLight
+                    ? "bg-white/80 border-slate-300 text-slate-700 shadow-sm"
+                    : "bg-white/5 border-white/10 text-slate-300"
+                }`}>
+                  <span className="text-slate-400 text-[10px] uppercase font-mono">{appLanguage === 'en' ? "Topic:" : appLanguage === 'ru' ? "Тема:" : "Mavzu:"}</span>
+                  <span className={`font-bold truncate ${isBoardLight ? "text-slate-900" : "text-white"}`}>{topicInput || "Present Perfect Continuous"}</span>
+                </div>
+              </div>
+
+              {/* MIDDLE: 10 SEPARATE BLOCKS DIRECTLY ON DOTTED CANVAS (WITH BUBBLE-IN ANIMATION) */}
+              <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {HOMEWORK_QUESTION_TYPES.map((qt, idx) => {
+                  const isSelected = selectedHomeworkTypes.includes(qt.id);
+                  const Icon = qt.icon;
+                  const countPerType = homeworkIntensity === 'light' ? 5 : homeworkIntensity === 'extreme' ? 15 : 10;
+                  const colors = qt.color;
+
+                  return (
+                    <button
+                      key={qt.id}
+                      type="button"
+                      style={{ animationDelay: `${idx * 45}ms` }}
+                      onClick={() => {
+                        setSelectedHomeworkTypes((prev) =>
+                          isSelected ? prev.filter((id) => id !== qt.id) : [...prev, qt.id]
+                        );
+                      }}
+                      className={`animate-bubble-in p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2.5 backdrop-blur-md group hover:scale-[1.02] active:scale-[0.98] ${
+                        isSelected
+                          ? `${colors.bgActive} ${colors.border} ${colors.glow} ring-1 ${colors.border}`
+                          : isBoardLight
+                          ? "bg-white/85 border-slate-200 hover:border-slate-300 hover:bg-white shadow-sm opacity-90 hover:opacity-100"
+                          : "bg-[#141620]/70 border-white/10 hover:border-white/20 hover:bg-white/10 opacity-70 hover:opacity-100"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className={`p-2 rounded-xl transition-colors ${
+                          isSelected
+                            ? colors.iconBg
+                            : isBoardLight
+                            ? "bg-slate-100 text-slate-500 group-hover:text-slate-900"
+                            : "bg-white/10 text-slate-400 group-hover:text-white"
+                        }`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                          isSelected
+                            ? colors.badge
+                            : isBoardLight
+                            ? "bg-slate-100 text-slate-600 border-slate-200"
+                            : "bg-white/5 text-slate-400 border-white/5"
+                        }`}>
+                          {countPerType} {appLanguage === 'en' ? "items" : appLanguage === 'ru' ? "зад." : "ta"}
+                        </span>
+                      </div>
+
+                      <div>
+                        <div className={`text-xs font-black line-clamp-1 ${
+                          isSelected
+                            ? "text-white"
+                            : isBoardLight
+                            ? "text-slate-900 group-hover:text-indigo-600"
+                            : "text-white"
+                        }`}>
+                          {qt.title[appLanguage] || qt.title.uz}
+                        </div>
+                        <div className={`text-[10px] line-clamp-1 mt-0.5 font-medium ${
+                          isBoardLight ? "text-slate-500" : "text-slate-400"
+                        }`}>
+                          {qt.subtitle[appLanguage] || qt.subtitle.uz}
+                        </div>
+                      </div>
+
+                      <div className={`flex items-center space-x-1.5 pt-1.5 border-t ${
+                        isBoardLight ? "border-slate-200/80" : "border-white/5"
+                      }`}>
+                        <div className={`w-4 h-4 rounded-md flex items-center justify-center border text-[10px] font-bold ${
+                          isSelected
+                            ? `${colors.iconBg} ${colors.border} text-white`
+                            : isBoardLight
+                            ? "border-slate-300 text-transparent"
+                            : "border-white/20 text-transparent"
+                        }`}>
+                          {isSelected ? "✓" : ""}
+                        </div>
+                        <span className={`text-[10px] font-medium ${
+                          isSelected
+                            ? colors.text
+                            : isBoardLight
+                            ? "text-slate-500"
+                            : "text-slate-500"
+                        }`}>
+                          {isSelected
+                            ? (appLanguage === 'en' ? "Selected" : appLanguage === 'ru' ? "Выбрано" : "Tanlandi")
+                            : (appLanguage === 'en' ? "Click to add" : appLanguage === 'ru' ? "Добавить" : "Tanlash")}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* BOTTOM: FLOATING ACTION BAR DIRECTLY ON CANVAS */}
+              <div className={`w-full flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl border backdrop-blur-xl shadow-2xl ${
+                isBoardLight
+                  ? "bg-white/95 border-slate-300 shadow-slate-200"
+                  : "bg-[#141724]/90 border-white/15"
+              }`}>
+                {/* Left Quick Toggles */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedHomeworkTypes([
+                      'mcq', 'mistake_hunter', 'open_cloze', 'sentence_transformation', 'word_formation',
+                      'unscramble', 'translation', 'contrast_duel', 'dialogue_fill', 'writing_challenge'
+                    ])}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      isBoardLight
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                        : "bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white border-white/10"
+                    }`}
+                  >
+                    ✓ {appLanguage === 'en' ? "Select All (10)" : appLanguage === 'ru' ? "Выбрать все (10)" : "Barchasini Tanlash (10)"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedHomeworkTypes([])}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      isBoardLight
+                        ? "bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200"
+                        : "bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 border-white/5"
+                    }`}
+                  >
+                    ✕ {appLanguage === 'en' ? "Clear" : appLanguage === 'ru' ? "Очистить" : "Tozalash"}
+                  </button>
+                </div>
+
+                {/* Center Task Volume Counter */}
+                <div className={`text-xs font-mono flex items-center space-x-2 ${
+                  isBoardLight ? "text-slate-700" : "text-slate-300"
+                }`}>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>
+                    {appLanguage === 'en'
+                      ? `Total: ${selectedHomeworkTypes.length * (homeworkIntensity === 'light' ? 5 : homeworkIntensity === 'extreme' ? 15 : 10)} authentic questions`
+                      : appLanguage === 'ru'
+                      ? `Всего: ${selectedHomeworkTypes.length * (homeworkIntensity === 'light' ? 5 : homeworkIntensity === 'extreme' ? 15 : 10)} аутентичных заданий`
+                      : `Jami: ${selectedHomeworkTypes.length * (homeworkIntensity === 'light' ? 5 : homeworkIntensity === 'extreme' ? 15 : 10)} ta original savol`}
+                  </span>
+                </div>
+
+                {/* Right Action Button */}
+                <button
+                  type="button"
+                  onClick={handleGenerateHomework}
+                  disabled={isGeneratingHomework || selectedHomeworkTypes.length === 0}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#5B3DF5] via-[#7C3AED] to-[#10B981] hover:from-[#4C2FE0] hover:to-[#059669] text-white font-black text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-[0_0_25px_rgba(91,61,245,0.4)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {isGeneratingHomework ? (
+                    <>
+                      <RotateCw className="w-4 h-4 animate-spin text-white" />
+                      <span>{appLanguage === 'en' ? "Synthesizing Tasks..." : appLanguage === 'ru' ? "Синтез заданий..." : "Vazifalar Sintez Qilinmoqda..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-yellow-300" />
+                      <span>
+                        {appLanguage === 'en'
+                          ? `Generate Homework (${selectedHomeworkTypes.length * (homeworkIntensity === 'light' ? 5 : homeworkIntensity === 'extreme' ? 15 : 10)} Tasks)`
+                          : appLanguage === 'ru'
+                          ? `Создать задание (${selectedHomeworkTypes.length * (homeworkIntensity === 'light' ? 5 : homeworkIntensity === 'extreme' ? 15 : 10)} зад.)`
+                          : `Uyga Vazifani Sintez Qilish (${selectedHomeworkTypes.length * (homeworkIntensity === 'light' ? 5 : homeworkIntensity === 'extreme' ? 15 : 10)} ta)`}
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          ) : (
           <div
-            className={`w-full max-w-2xl px-6 flex flex-col items-center text-center space-y-6 z-20 ${
+            className={`w-full max-w-2xl px-6 flex flex-col items-center text-center space-y-4 sm:space-y-6 z-20 my-auto py-2 ${
               isAnimatingUp ? "pointer-events-none" : "animate-fade-in"
             }`}
           >
             {/* Minimalist Hero Branding (ONLY shown in standard lesson mode) */}
             {studioMode === 'lesson' && (
-              <div
-                className={`space-y-3 transition-all duration-400 ease-out ${
-                  isAnimatingUp ? "opacity-0 -translate-y-8 scale-95 pointer-events-none" : "opacity-100 translate-y-0"
-                }`}
-              >
-                <div className="flex items-center justify-center space-x-3 mb-1">
-                  <BrandLogo isLight={false} className="h-14 sm:h-16 max-w-[220px] object-contain" />
-                  <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs sm:text-sm font-semibold text-slate-300 shadow-md">
-                    <Sparkles className="w-4 h-4 text-[#5B3DF5]" />
-                    <span>TeacherOS • Interaktiv Doska Studiyasi</span>
-                  </div>
+              isHandwritingPromptOpen ? (
+                /* Compact Hero Branding when handwriting is open to prevent pushing prompt offscreen */
+                <div className="flex items-center justify-center space-x-3 mb-2 animate-fade-in">
+                  <BrandLogo
+                    isLight={isBoardLight}
+                    className="h-9 sm:h-11 max-w-[170px] object-contain cursor-pointer hover:opacity-90 transition-opacity drop-shadow-[0_0_20px_rgba(91,61,245,0.6)]"
+                  />
+                  <span
+                    className={`text-xl sm:text-2xl md:text-3xl font-black tracking-tight font-sans select-none flex items-center gap-1.5 ${
+                      isBoardLight ? "text-slate-900" : "text-white"
+                    }`}
+                  >
+                    Teacher <span className="bg-gradient-to-r from-[#818cf8] via-[#a855f7] to-[#ec4899] bg-clip-text text-transparent font-black">OS</span>
+                  </span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-                  Darslikni sun'iy intellekt bilan yarating
-                </h1>
-                <p className="text-sm text-slate-400 max-w-md mx-auto">
-                  Mavzuni kiriting — Google Gemini AI 16:9 interaktiv doska, tezkor savollar, xato ovchisi va muloqot mashqlarini sintez qiladi.
-                </p>
-              </div>
+              ) : (
+                <div
+                  className={`space-y-3.5 transition-all duration-400 ease-out ${
+                    isAnimatingUp ? "opacity-0 -translate-y-8 scale-95 pointer-events-none" : "opacity-100 translate-y-0"
+                  }`}
+                >
+                  {/* Outstanding, sleek Brand Lockup aligned with logo */}
+                  <div
+                    className={`inline-flex items-center justify-center space-x-3.5 px-4 py-1.5 rounded-2xl transition-all duration-300 select-none group mb-1 ${
+                      isBoardLight
+                        ? "hover:bg-slate-200/50 drop-shadow-[0_0_20px_rgba(91,61,245,0.2)]"
+                        : "hover:bg-white/[0.05] drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]"
+                    }`}
+                    title="TeacherOS"
+                  >
+                    <BrandLogo
+                      isLight={isBoardLight}
+                      className="h-12 sm:h-16 md:h-20 max-w-[240px] sm:max-w-[280px] object-contain transition-transform group-hover:scale-105 duration-300 drop-shadow-[0_0_30px_rgba(91,61,245,0.7)]"
+                    />
+                    <span className={`text-2xl sm:text-3xl md:text-4xl font-black tracking-tight font-sans flex items-center gap-2 ${
+                      isBoardLight ? "text-slate-900" : "text-white"
+                    }`}>
+                      Teacher <span className="bg-gradient-to-r from-[#818cf8] via-[#a855f7] to-[#ec4899] bg-clip-text text-transparent font-black">OS</span>
+                    </span>
+                  </div>
+
+                  <h1 className={`text-3xl sm:text-4xl md:text-[44px] font-black tracking-tight leading-tight ${
+                    isBoardLight ? "text-slate-900" : "text-white"
+                  }`}>
+                    {t.hero_title}
+                  </h1>
+                  <p className={`text-sm sm:text-base max-w-lg mx-auto font-medium flex items-center justify-center gap-2 ${
+                    isBoardLight ? "text-slate-600" : "text-slate-300/90"
+                  }`}>
+                    <Sparkles className="w-4 h-4 text-[#a855f7] shrink-0 animate-pulse" />
+                    <span>{heroGreeting}</span>
+                  </p>
+                </div>
+              )
             )}
 
             {/* Hidden File Input */}
@@ -1984,25 +4478,24 @@ export default function StitchTeacherOS() {
                   isAnimatingUp ? "opacity-0 -translate-y-4 scale-95 pointer-events-none" : "opacity-100 translate-y-0"
                 }`}
               >
-                {/* + Image: Navy Blue with electric cyan glow */}
+                {/* + Image: Navy Blue with electric cyan glow & 3D Parallax Hover */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="py-3 px-4 rounded-2xl bg-gradient-to-r from-[#0c1f3d] via-[#1e3a8a] to-[#172554] border-2 border-[#38bdf8] text-white font-black text-sm sm:text-base flex items-center justify-center space-x-2.5 shadow-[0_0_25px_rgba(56,189,248,0.35)] hover:shadow-[0_0_35px_rgba(56,189,248,0.55)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+                  className="btn-parallax-hover py-3 px-4 rounded-2xl bg-gradient-to-r from-[#0c1f3d] via-[#1e3a8a] to-[#172554] border-2 border-[#38bdf8] text-white font-black text-sm sm:text-base flex items-center justify-center space-x-2.5 shadow-[0_0_25px_rgba(56,189,248,0.35)] hover:shadow-[0_0_35px_rgba(56,189,248,0.55)] cursor-pointer backdrop-blur-md"
                 >
-                  <span className="text-[#38bdf8] text-lg font-black leading-none">+</span>
                   <ImageIcon className="w-5 h-5 text-[#38bdf8] shrink-0" />
-                  <span className="tracking-wide">+ Image</span>
+                  <span className="tracking-wide">{t.image_btn}</span>
                 </button>
 
-                {/* Others: Navy Orange with vibrant amber glow */}
+                {/* Others: Navy Orange with vibrant amber glow & 3D Parallax Hover */}
                 <button
                   type="button"
                   onClick={() => setStudioMode('others_picker')}
-                  className="py-3 px-4 rounded-2xl bg-gradient-to-r from-[#361605] via-[#7c2d12] to-[#431407] border-2 border-[#fb923c] text-white font-black text-sm sm:text-base flex items-center justify-center space-x-2.5 shadow-[0_0_25px_rgba(251,146,60,0.35)] hover:shadow-[0_0_35px_rgba(251,146,60,0.55)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+                  className="btn-parallax-hover py-3 px-4 rounded-2xl bg-gradient-to-r from-[#361605] via-[#7c2d12] to-[#431407] border-2 border-[#fb923c] text-white font-black text-sm sm:text-base flex items-center justify-center space-x-2.5 shadow-[0_0_25px_rgba(251,146,60,0.35)] hover:shadow-[0_0_35px_rgba(251,146,60,0.55)] cursor-pointer backdrop-blur-md"
                 >
                   <MoreHorizontal className="w-5 h-5 text-[#fb923c] shrink-0" />
-                  <span className="tracking-wide">Others</span>
+                  <span className="tracking-wide">{t.others_btn}</span>
                 </button>
               </div>
             )}
@@ -2010,18 +4503,24 @@ export default function StitchTeacherOS() {
             {/* OTHERS PICKER: 3 BLOCKS SCREEN (Photo 4 & 5) */}
             {studioMode === 'others_picker' && (
               <div className="w-full max-w-xl mx-auto space-y-4 animate-fade-in text-left">
-                <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+                <div className={`flex items-center justify-between pb-2 border-b ${isBoardLight ? "border-slate-300" : "border-white/10"}`}>
+                  <span className={`text-xs font-black uppercase tracking-wider flex items-center space-x-2 ${
+                    isBoardLight ? "text-slate-800" : "text-slate-300"
+                  }`}>
                     <Sparkles className="w-4 h-4 text-[#fb923c]" />
-                    <span>Others • Maxsus Rejimlar</span>
+                    <span>{t.others_title}</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => setStudioMode('lesson')}
-                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer"
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                      isBoardLight
+                        ? "bg-slate-200 hover:bg-slate-300 text-slate-800"
+                        : "bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white"
+                    }`}
                   >
                     <X className="w-3.5 h-3.5" />
-                    <span>Oddiy darsga qaytish</span>
+                    <span>{t.others_back_to_lesson}</span>
                   </button>
                 </div>
 
@@ -2037,10 +4536,10 @@ export default function StitchTeacherOS() {
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-white group-hover:text-emerald-200">
-                        HOMEWORK
+                        {t.others_hw_title}
                       </h3>
                       <p className="text-[11px] text-emerald-200/70 mt-1 leading-snug">
-                        Kengaytirilgan uy vazifasi va lug'atlar
+                        {t.others_hw_desc}
                       </p>
                     </div>
                   </button>
@@ -2056,10 +4555,10 @@ export default function StitchTeacherOS() {
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-white group-hover:text-indigo-200">
-                        GROUP QUIZ
+                        {t.others_gq_title}
                       </h3>
                       <p className="text-[11px] text-indigo-200/70 mt-1 leading-snug">
-                        Baamboozle 2 yoki 3 guruhli bellashuv
+                        {t.others_gq_desc}
                       </p>
                     </div>
                   </button>
@@ -2075,10 +4574,10 @@ export default function StitchTeacherOS() {
                     </div>
                     <div>
                       <h3 className="text-sm font-black text-white group-hover:text-amber-200">
-                        LEVEL CHECK
+                        {t.others_lc_title}
                       </h3>
                       <p className="text-[11px] text-amber-200/70 mt-1 leading-snug">
-                        Ko'p mavzuli diagnostik sinov
+                        {t.others_lc_desc}
                       </p>
                     </div>
                   </button>
@@ -2090,12 +4589,15 @@ export default function StitchTeacherOS() {
             {studioMode === 'homework' && (
               <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-950 to-teal-900 border-2 border-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.35)] animate-fade-in">
                 <Home className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-black tracking-wide text-emerald-200">HOMEWORK REJIMI</span>
+                <span className="text-xs font-black tracking-wide text-emerald-200">{t.mode_badge_homework}</span>
                 <button
                   type="button"
-                  onClick={() => setStudioMode('others_picker')}
+                  onClick={() => {
+                    setStudioMode('others_picker');
+                    setHomeworkStep('prompt');
+                  }}
                   className="p-1 rounded-md hover:bg-white/20 text-emerald-300 hover:text-white transition-all ml-1 cursor-pointer"
-                  title="Boshqa rejim tanlash"
+                  title={t.others_title}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -2106,12 +4608,12 @@ export default function StitchTeacherOS() {
               <div className="flex flex-col sm:flex-row items-center gap-3 animate-fade-in">
                 <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-indigo-950 to-purple-900 border-2 border-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.35)]">
                   <Users className="w-4 h-4 text-indigo-400" />
-                  <span className="text-xs font-black tracking-wide text-indigo-200">GROUP QUIZ (Baamboozle)</span>
+                  <span className="text-xs font-black tracking-wide text-indigo-200">{t.mode_badge_group_quiz}</span>
                   <button
                     type="button"
                     onClick={() => setStudioMode('others_picker')}
                     className="p-1 rounded-md hover:bg-white/20 text-indigo-300 hover:text-white transition-all ml-1 cursor-pointer"
-                    title="Boshqa rejim tanlash"
+                    title={t.others_title}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -2119,7 +4621,7 @@ export default function StitchTeacherOS() {
 
                 {/* Team Count Selector (2 or 3 Groups) */}
                 <div className="flex items-center space-x-1.5 p-1 rounded-xl bg-white/10 border border-white/15">
-                  <span className="text-[11px] font-bold text-slate-300 px-2">Guruhlar:</span>
+                  <span className="text-[11px] font-bold text-slate-300 px-2">{t.quiz_teams_label}</span>
                   <button
                     type="button"
                     onClick={() => setQuizTeamsCount(2)}
@@ -2129,7 +4631,7 @@ export default function StitchTeacherOS() {
                         : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    2 Guruh
+                    {t.quiz_team_2}
                   </button>
                   <button
                     type="button"
@@ -2140,7 +4642,7 @@ export default function StitchTeacherOS() {
                         : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    3 Guruh
+                    {t.quiz_team_3}
                   </button>
                 </div>
               </div>
@@ -2151,19 +4653,19 @@ export default function StitchTeacherOS() {
                 <div className="flex items-center justify-between">
                   <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-2xl bg-gradient-to-r from-amber-950 to-orange-900 border-2 border-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.35)]">
                     <FileText className="w-4 h-4 text-amber-400" />
-                    <span className="text-xs font-black tracking-wide text-amber-200">LEVEL CHECK (Ko'p mavzuli)</span>
+                    <span className="text-xs font-black tracking-wide text-amber-200">{t.mode_badge_level_check}</span>
                     <button
                       type="button"
                       onClick={() => setStudioMode('others_picker')}
                       className="p-1 rounded-md hover:bg-white/20 text-amber-300 hover:text-white transition-all ml-1 cursor-pointer"
-                      title="Boshqa rejim tanlash"
+                      title={t.others_title}
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
                   <span className="text-xs font-mono font-bold text-amber-400">
-                    {levelCheckTopics.length} ta mavzu tanlandi
+                    {levelCheckTopics.length} {t.topics_selected_suffix}
                   </span>
                 </div>
 
@@ -2206,7 +4708,11 @@ export default function StitchTeacherOS() {
 
             {/* Prompt Capsule Box - CapCut Slide-Up */}
             <div
-              className={`w-full rounded-2xl bg-[#1A1C23]/95 border border-white/15 p-4 shadow-2xl backdrop-blur-2xl space-y-3.5 focus-within:border-[#5B3DF5] text-left capcut-slide-up ${
+              className={`w-full rounded-2xl border p-4 shadow-2xl backdrop-blur-2xl space-y-3.5 focus-within:border-[#5B3DF5] text-left capcut-slide-up ${
+                isBoardLight
+                  ? "bg-white/95 border-slate-300 shadow-slate-200"
+                  : "bg-[#1A1C23]/95 border-white/15"
+              } ${
                 isAnimatingUp
                   ? "-translate-y-7 scale-[0.97] opacity-0 blur-xs"
                   : "translate-y-0 scale-100 opacity-100 blur-none"
@@ -2217,83 +4723,224 @@ export default function StitchTeacherOS() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white transition-all shrink-0 cursor-pointer border border-white/10"
+                  className={`p-2 rounded-xl transition-all shrink-0 cursor-pointer border ${
+                    isBoardLight
+                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-300"
+                      : "bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white border-white/10"
+                  }`}
                   title="Rasm yoki PDF yuklash (+)"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
 
-                <input
-                  type="text"
-                  value={topicInput}
-                  onChange={(e) => setTopicInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      if (studioMode === 'homework') {
-                        setActiveHomeworkTopic(topicInput || "Present Perfect");
-                      } else if (studioMode === 'group_quiz') {
-                        setActiveGroupQuizTopic(topicInput || "English Grammar & Vocabulary");
-                      } else if (studioMode === 'level_check') {
-                        handleGenerate(levelCheckTopics.join(', ') || topicInput || "Level Check");
-                      } else {
-                        handleGenerate();
+                {/* Voice recording active wave pill */}
+                {isRecording ? (
+                  <div className="flex-1 flex items-center space-x-3 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30">
+                    <div className="flex items-center space-x-1">
+                      <span className="w-1.5 h-4 bg-red-500 rounded-full animate-wave-1" />
+                      <span className="w-1.5 h-6 bg-red-400 rounded-full animate-wave-2" />
+                      <span className="w-1.5 h-8 bg-red-500 rounded-full animate-wave-3" />
+                      <span className="w-1.5 h-5 bg-red-400 rounded-full animate-wave-4" />
+                      <span className="w-1.5 h-3 bg-red-500 rounded-full animate-wave-5" />
+                    </div>
+                    <span className="text-xs font-bold text-red-400">Tinglamoqda...</span>
+                    {recordedInterimText && (
+                      <span className="text-xs text-indigo-400 italic truncate max-w-xs">{recordedInterimText}</span>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={topicInput}
+                    onChange={(e) => setTopicInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        if (studioMode === 'homework') {
+                          setHomeworkStep('config');
+                        } else if (studioMode === 'group_quiz') {
+                          setActiveGroupQuizTopic(topicInput || "English Grammar & Vocabulary");
+                        } else if (studioMode === 'level_check') {
+                          handleGenerate(levelCheckTopics.join(', ') || topicInput || "Level Check");
+                        } else {
+                          handleGenerate();
+                        }
                       }
+                    }}
+                    placeholder={
+                      studioMode === 'homework'
+                        ? (appLanguage === 'en' ? "Write detailed homework prompt (e.g. Present Perfect Continuous, focus on for vs since, realistic life contexts)..." : appLanguage === 'ru' ? "Подробная инструкция к заданию (напр., Present Perfect Continuous, акцент на for vs since)..." : "Uyga vazifa uchun batafsil ko'rsatma (masalan: Present Perfect Continuous, for va since farqlari, hayotiy misollar)...")
+                        : studioMode === 'group_quiz'
+                        ? (appLanguage === 'en' ? "Group quiz topic (e.g. Irregular Verbs, Animals)..." : appLanguage === 'ru' ? "Тема викторины (напр., Неправильные глаголы)..." : "Guruhlar musobaqasi mavzusi (masalan: Irregular Verbs, Animals, Tenses)...")
+                        : studioMode === 'level_check'
+                        ? (appLanguage === 'en' ? "Additional requirements or topics..." : appLanguage === 'ru' ? "Дополнительные требования или темы..." : "Qo'shimcha talablar yoki mavzular (masalan: 15 ta test, 10 ta ochiq savol)...")
+                        : attachedFiles.length > 0
+                        ? (appLanguage === 'en' ? "Write instruction based on image (optional)..." : appLanguage === 'ru' ? "Инструкция к изображению (необязательно)..." : "Rasm bo'yicha ko'rsatma yozing (ixtiyoriy)...")
+                        : t.prompt_placeholder
                     }
-                  }}
-                  placeholder={
-                    studioMode === 'homework'
-                      ? "Uyga vazifa mavzusi (masalan: Present Perfect, 10 ta savol)..."
-                      : studioMode === 'group_quiz'
-                      ? "Guruhlar musobaqasi mavzusi (masalan: Irregular Verbs, Animals, Tenses)..."
-                      : studioMode === 'level_check'
-                      ? "Qo'shimcha talablar yoki mavzular (masalan: 15 ta test, 10 ta ochiq savol)..."
-                      : attachedFiles.length > 0
-                      ? "Rasm bo'yicha ko'rsatma yozing (ixtiyoriy)..."
-                      : "Bugun qaysi mavzuni o'tamiz? (masalan: Present Perfect, History of Sports)..."
-                  }
-                  className="w-full bg-transparent text-sm sm:text-base text-white placeholder-slate-400 focus:outline-none font-medium px-1 pr-10"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={handleVoiceRecord}
-                  className={`absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
-                    isRecording
-                      ? 'bg-red-500/20 text-red-400 animate-pulse'
-                      : 'text-slate-400 hover:text-white hover:bg-white/10'
-                  }`}
-                  title={isRecording ? "Yozishni to'xtatish" : "Ovoz bilan yozish"}
-                >
-                  <Mic className="w-4 h-4" />
-                </button>
+                    className={`w-full bg-transparent text-sm sm:text-base focus:outline-none font-medium px-1 pr-20 ${
+                      isBoardLight ? "text-slate-900 placeholder-slate-400" : "text-white placeholder-slate-400"
+                    }`}
+                    autoFocus
+                  />
+                )}
+
+                {/* Right actions: Mic & Handwriting Button */}
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center space-x-1">
+                  <button
+                    type="button"
+                    onClick={handleVoiceRecord}
+                    className={`p-1.5 rounded-lg transition-all ${
+                      isRecording
+                        ? 'bg-red-500/20 text-red-400 animate-pulse'
+                        : isBoardLight
+                        ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                        : 'text-slate-400 hover:text-white hover:bg-white/10'
+                    }`}
+                    title={isRecording ? t.voice_stop_title : t.voice_start_title}
+                  >
+                    <Mic className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsHandwritingPromptOpen(!isHandwritingPromptOpen)}
+                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                      isHandwritingPromptOpen
+                        ? 'bg-[#5B3DF5] text-white shadow-md shadow-[#5B3DF5]/40'
+                        : isBoardLight
+                        ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                        : 'text-slate-400 hover:text-white hover:bg-white/10'
+                    }`}
+                    title={isHandwritingPromptOpen ? (appLanguage === 'en' ? "Close handwriting board (✕)" : appLanguage === 'ru' ? "Закрыть доску (✕)" : "Qo'lyozma doskasini yopish (✕)") : t.draw_open_title}
+                  >
+                    {isHandwritingPromptOpen ? <X className="w-4 h-4 text-white" /> : <PenTool className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
+
+              {/* Smartboard Handwriting Canvas Panel (Expands downward for stylus / touch input) */}
+              {isHandwritingPromptOpen && (
+                <div className={`w-full pt-3 pb-1 border-t space-y-3 animate-fade-in ${isBoardLight ? "border-slate-300" : "border-white/10"}`}>
+                  {/* Toolbar: Color picker, stroke size, eraser, undo, clear */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[11px] font-black text-indigo-300 flex items-center space-x-1.5">
+                        <PenTool className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>{appLanguage === 'en' ? "SMARTBOARD HANDWRITING CANVAS:" : appLanguage === 'ru' ? "ДОСКА РУКОПИСНОГО ВВОДА:" : "SMARTBOARD QO'LYOZMA DOSKASI:"}</span>
+                      </span>
+
+                      {/* Color Palette */}
+                      <div className="flex items-center space-x-1 pl-2">
+                        {["#FFFFFF", "#38BDF8", "#34D399", "#FBBF24", "#F472B6"].map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => {
+                              setHandwritingPenColor(c);
+                              setHandwritingTool("pen");
+                            }}
+                            style={{ backgroundColor: c }}
+                            className={`w-5 h-5 rounded-full transition-transform cursor-pointer border ${
+                              handwritingPenColor === c && handwritingTool === "pen"
+                                ? "scale-125 border-white ring-2 ring-indigo-500/50"
+                                : "border-black/30 hover:scale-110"
+                            }`}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Eraser */}
+                      <button
+                        type="button"
+                        onClick={() => setHandwritingTool(handwritingTool === "eraser" ? "pen" : "eraser")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center space-x-1 transition-all cursor-pointer ${
+                          handwritingTool === "eraser"
+                            ? "bg-red-500 text-white shadow-sm"
+                            : "bg-white/5 hover:bg-white/10 text-slate-300"
+                        }`}
+                        title={t.draw_eraser}
+                      >
+                        <Eraser className="w-3 h-3" />
+                        <span>{t.draw_eraser}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      {/* Undo & Clear */}
+                      <button
+                        type="button"
+                        onClick={handleHandwritingUndo}
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all cursor-pointer"
+                        title={appLanguage === 'en' ? "Undo" : appLanguage === 'ru' ? "Отменить" : "Qaytarish (Undo)"}
+                      >
+                        <Undo className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleHandwritingClear}
+                        className="px-2 py-1 rounded-lg bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-red-300 text-[11px] font-bold transition-all cursor-pointer"
+                        title={t.draw_clear}
+                      >
+                        {t.draw_clear}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* The Handwriting Canvas (Compact height so all controls fit without scrolling) */}
+                  <div className="relative w-full h-32 sm:h-36 rounded-2xl border-2 border-indigo-500/40 bg-[#1e293b] shadow-inner overflow-hidden">
+                    <canvas
+                      ref={handwritingCanvasRef}
+                      onMouseDown={handleHandwritingStartDraw}
+                      onMouseMove={handleHandwritingDrawMove}
+                      onMouseUp={handleHandwritingEndDraw}
+                      onMouseLeave={handleHandwritingEndDraw}
+                      onTouchStart={handleHandwritingStartDraw}
+                      onTouchMove={handleHandwritingDrawMove}
+                      onTouchEnd={handleHandwritingEndDraw}
+                      style={{ touchAction: "none" }}
+                      className="w-full h-full cursor-crosshair block"
+                    />
+                    <div className="absolute bottom-2 left-3 pointer-events-none text-[11px] text-slate-400/60 font-mono">
+                      💡 {t.draw_hint}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Attached file chips */}
               {attachedFiles.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1 border-t border-white/10">
-                  {attachedFiles.map((f, i) => (
-                    <span
-                      key={i}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-xs text-indigo-200 font-medium"
-                    >
-                      <span>📎 {f.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeFile(i)}
-                        className="text-slate-400 hover:text-red-400 ml-1 font-bold cursor-pointer"
-                        title="Olib tashlash"
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  <div className="flex items-center space-x-2 text-xs font-bold text-sky-400">
+                    <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
+                    <span>OCR Skanerlash Faol: {attachedFiles.length} ta fayl (Darslik / PDF 5 sahifagacha)</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {attachedFiles.map((f, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-xs text-indigo-200 font-medium"
                       >
-                        ✕
-                      </button>
-                    </span>
-                  ))}
+                        <span>{f.name.toLowerCase().endsWith('.pdf') ? '📄' : '🖼️'} {f.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(i)}
+                          className="text-slate-400 hover:text-red-400 ml-1 font-bold cursor-pointer"
+                          title="Olib tashlash"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {/* DARS UZUNLIGI (Lesson Length Selector: Short / Medium / Long) */}
-              <div className="pt-2 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className={`pt-2 border-t flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs ${
+                isBoardLight ? "border-slate-300" : "border-white/10"
+              }`}>
                 <div className="flex items-center space-x-1.5">
-                  <span className="text-[11px] font-bold text-slate-400 mr-1">Dars Uzunligi:</span>
+                  <span className={`text-[11px] font-bold mr-1 ${isBoardLight ? "text-slate-700" : "text-slate-400"}`}>{t.length_label}</span>
                   
                   <button
                     type="button"
@@ -2301,10 +4948,12 @@ export default function StitchTeacherOS() {
                     className={`px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center space-x-1 transition-all ${
                       lessonLength === "short"
                         ? "bg-[#5B3DF5] text-white shadow-md"
+                        : isBoardLight
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
                         : "bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5"
                     }`}
                   >
-                    <span>⚡ Qisqa</span>
+                    <span>⚡ {t.length_short}</span>
                   </button>
 
                   <button
@@ -2313,10 +4962,12 @@ export default function StitchTeacherOS() {
                     className={`px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center space-x-1 transition-all ${
                       lessonLength === "medium"
                         ? "bg-[#5B3DF5] text-white shadow-md"
+                        : isBoardLight
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
                         : "bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5"
                     }`}
                   >
-                    <span>🎯 O'rtacha</span>
+                    <span>🎯 {t.length_medium}</span>
                   </button>
 
                   <button
@@ -2325,35 +4976,41 @@ export default function StitchTeacherOS() {
                     className={`px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center space-x-1 transition-all ${
                       lessonLength === "long"
                         ? "bg-[#5B3DF5] text-white shadow-md"
+                        : isBoardLight
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
                         : "bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5"
                     }`}
                   >
-                    <span>🚀 Uzun</span>
+                    <span>🚀 {t.length_long}</span>
                   </button>
                 </div>
 
                 <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
-                  {/* Level Pill */}
-                  <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                  {/* Level Pill with clickable Chevron */}
+                  <label className={`relative flex items-center space-x-1.5 px-2.5 py-1 rounded-lg border cursor-pointer ${
+                    isBoardLight
+                      ? "bg-slate-100 border-slate-300 text-slate-800"
+                      : "bg-white/5 border-white/10 text-slate-300"
+                  }`}>
                     <span className="w-2 h-2 rounded-full bg-emerald-400" />
                     <select
                       value={level}
                       onChange={(e) => setLevel(e.target.value as any)}
-                      className="bg-transparent text-[11px] font-bold focus:outline-none cursor-pointer"
+                      className="bg-transparent text-[11px] font-bold focus:outline-none cursor-pointer appearance-none pr-5 z-10"
                     >
                       {["A1", "A2", "B1", "B2", "C1"].map((lvl) => (
-                        <option key={lvl} value={lvl} className="bg-[#1A1C23] text-white">
-                          Level: {lvl}
+                        <option key={lvl} value={lvl} className={isBoardLight ? "bg-white text-slate-900" : "bg-[#1A1C23] text-white"}>
+                          {t.level_label} {lvl}
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
-                  </div>
+                    <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none absolute right-2" />
+                  </label>
 
                   <button
                     onClick={() => {
                       if (studioMode === 'homework') {
-                        setActiveHomeworkTopic(topicInput || "Present Perfect");
+                        setHomeworkStep('config');
                       } else if (studioMode === 'group_quiz') {
                         setActiveGroupQuizTopic(topicInput || "English Grammar & Vocabulary");
                       } else if (studioMode === 'level_check') {
@@ -2367,40 +5024,340 @@ export default function StitchTeacherOS() {
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span className="text-[11px]">
-                      {studioMode === 'homework'
-                        ? "Vazifa Yaratish"
+                      {isGenerating
+                        ? t.generating_btn
+                        : studioMode === 'homework'
+                        ? (appLanguage === 'en' ? "Configure Homework →" : appLanguage === 'ru' ? "Настроить задание →" : "Vazifani Sozlash →")
                         : studioMode === 'group_quiz'
-                        ? "Musobaqani Boshlash"
+                        ? (appLanguage === 'en' ? "Start Quiz" : appLanguage === 'ru' ? "Начать викторину" : "Musobaqani Boshlash")
                         : studioMode === 'level_check'
-                        ? "Sinovni Boshlash"
-                        : "Yaratish"}
+                        ? (appLanguage === 'en' ? "Start Diagnostic" : appLanguage === 'ru' ? "Начать тест" : "Sinovni Boshlash")
+                        : t.generate_btn}
                     </span>
                   </button>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        )
+      )}
 
         {/* ============================================================ */}
         {/* ACTIVE STUDIO STATE: ZERO-SCROLL INTERACTIVE WHITEBOARD      */}
         {/* ============================================================ */}
         {curriculum && (
           <>
-            {/* MAIN PRESENTATION WRAPPER: Board and Right Toolbar as Flex Siblings (Photo 1: shifted right with ample gap-8 mr-4 sm:mr-6) */}
-            <div className="w-full h-full min-h-0 flex items-center justify-center p-2 sm:p-3 md:p-4 gap-8 mr-4 sm:mr-6 overflow-hidden">
+            {/* MAIN PRESENTATION WRAPPER: Left ☰ Column, Slides Board, and Right Toolbar as Flex Siblings */}
+            <div className="w-full h-full min-h-0 flex items-center justify-center p-2 sm:p-3 md:p-4 gap-2.5 sm:gap-3 md:gap-4 overflow-hidden">
+              {/* 1. LEFT GUTTER: ☰ History & Classrooms Menu Button (Completely separate from the slides block, never overlaps) */}
+              {!isFullscreen && (
+                <div className="flex flex-col items-center justify-start h-full pt-1.5 sm:pt-2 shrink-0 z-30">
+                  <button
+                    type="button"
+                    onClick={() => setIsHistoryOpen((prev) => !prev)}
+                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border shadow-xl backdrop-blur-xl flex flex-col items-center justify-center space-y-1 transition-all hover:scale-105 active:scale-95 cursor-pointer group hover-lift shrink-0 ${
+                      isBoardLight
+                        ? "bg-white/95 hover:bg-slate-100 border-slate-300 text-slate-800 shadow-slate-200"
+                        : "bg-[#141724]/95 hover:bg-[#1E2235] border-white/20 hover:border-[#5B3DF5]"
+                    }`}
+                    title="Menyu va Darslar (☰)"
+                  >
+                    <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-slate-900" : "bg-slate-100 group-hover:bg-white"}`} />
+                    <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-slate-900" : "bg-slate-100 group-hover:bg-white"}`} />
+                    <div className={`w-5 h-[2px] rounded-full transition-colors ${isBoardLight ? "bg-slate-700 group-hover:bg-slate-900" : "bg-slate-100 group-hover:bg-white"}`} />
+                  </button>
+                </div>
+              )}
+
+              {/* 2. CENTER: Slides Board */}
               <div
                 ref={boardRef}
                 className={`transition-all duration-200 relative flex flex-col justify-between shadow-2xl ${
                   isFullscreen
                     ? "w-screen h-screen rounded-none p-3 sm:p-5 md:p-6 z-50 fixed inset-0 overflow-hidden"
-                    : "flex-1 max-w-5xl xl:max-w-6xl h-full max-h-[calc(100vh-4.25rem)] rounded-2xl sm:rounded-3xl p-3 sm:p-4 border overflow-hidden min-w-0"
+                    : "flex-1 max-w-6xl 2xl:max-w-7xl h-full max-h-[calc(100vh-4.25rem)] rounded-2xl sm:rounded-3xl p-3 sm:p-4 border overflow-hidden min-w-0"
                 } ${
                   isBoardLight
                     ? "bg-white text-slate-900 border-slate-200 board-light"
                     : "bg-[#16181F] text-white border-white/15"
                 }`}
               >
+                {/* Custom Blank Board (Expands to the size of the whole slides block with Light/Dark mode support) */}
+                {isBlankBoardOpen && (
+                  <div className={`absolute inset-0 z-50 rounded-2xl sm:rounded-3xl p-3 sm:p-5 flex flex-col justify-between overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 ${
+                    isBoardLight ? "bg-[#f8fafc] text-slate-900 border-2 border-slate-300" : "bg-[#12141C] text-white border-2 border-white/10"
+                  }`}>
+                    {/* Blank Board Top Toolbar */}
+                    <div className={`flex flex-wrap items-center justify-between gap-2 pb-3 border-b shrink-0 ${
+                      isBoardLight ? "border-slate-200" : "border-white/15"
+                    }`}>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-black flex items-center space-x-1.5 shadow-md">
+                          <Square className="w-3.5 h-3.5" />
+                          <span>BO'SH DOSKA</span>
+                        </span>
+                        <span className={`text-[11px] font-medium hidden sm:inline ${
+                          isBoardLight ? "text-slate-600" : "text-slate-400"
+                        }`}>
+                          Dars davomida chizmalar saqlanadi
+                        </span>
+                      </div>
+
+                      {/* Drawing & Shape Tools for Blank Board */}
+                      <div className={`flex items-center space-x-1 sm:space-x-1.5 px-2 py-1 rounded-xl border ${
+                        isBoardLight ? "bg-white border-slate-300 shadow-sm" : "bg-black/40 border-white/10"
+                      }`}>
+                        {/* Freehand Pen */}
+                        <button
+                          onClick={() => setBlankPenTool("pen")}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            blankPenTool === "pen" ? "bg-[#5B3DF5] text-white shadow-sm" : isBoardLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white"
+                          }`}
+                          title="Qalam"
+                        >
+                          <PenTool className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Highlighter */}
+                        <button
+                          onClick={() => setBlankPenTool("highlighter")}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            blankPenTool === "highlighter" ? "bg-[#5B3DF5] text-white shadow-sm" : isBoardLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white"
+                          }`}
+                          title="Marker"
+                        >
+                          <Highlighter className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Text note */}
+                        <button
+                          onClick={() => setBlankPenTool("text")}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            blankPenTool === "text" ? "bg-[#5B3DF5] text-white shadow-sm" : isBoardLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white"
+                          }`}
+                          title="Matn yozish"
+                        >
+                          <Type className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Shape Tools */}
+                        <div className={`h-4 w-px mx-0.5 ${isBoardLight ? "bg-slate-300" : "bg-white/20"}`} />
+
+                        <button
+                          onClick={() => setBlankPenTool("rectangle")}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            blankPenTool === "rectangle" ? "bg-[#5B3DF5] text-white shadow-sm" : isBoardLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white"
+                          }`}
+                          title="To'rtburchak (Rectangle)"
+                        >
+                          <Square className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => setBlankPenTool("circle")}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            blankPenTool === "circle" ? "bg-[#5B3DF5] text-white shadow-sm" : isBoardLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white"
+                          }`}
+                          title="Aylana (Circle)"
+                        >
+                          <Circle className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => setBlankPenTool("triangle")}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            blankPenTool === "triangle" ? "bg-[#5B3DF5] text-white shadow-sm" : isBoardLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white"
+                          }`}
+                          title="Uchburchak (Triangle)"
+                        >
+                          <Triangle className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => setBlankPenTool("line")}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            blankPenTool === "line" ? "bg-[#5B3DF5] text-white shadow-sm" : isBoardLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white"
+                          }`}
+                          title="To'g'ri chiziq (Line)"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => setBlankPenTool("arrow")}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            blankPenTool === "arrow" ? "bg-[#5B3DF5] text-white shadow-sm" : isBoardLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white"
+                          }`}
+                          title="Strelka (Arrow)"
+                        >
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Eraser */}
+                        <div className={`h-4 w-px mx-0.5 ${isBoardLight ? "bg-slate-300" : "bg-white/20"}`} />
+
+                        <button
+                          onClick={() => setBlankPenTool("eraser")}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            blankPenTool === "eraser" ? "bg-[#5B3DF5] text-white shadow-sm" : isBoardLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100" : "text-slate-400 hover:text-white"
+                          }`}
+                          title="O'chirg'ich"
+                        >
+                          <Eraser className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className={`h-4 w-px mx-0.5 ${isBoardLight ? "bg-slate-300" : "bg-white/20"}`} />
+
+                        {/* Colors */}
+                        <div className="flex items-center space-x-1">
+                          {["#1e293b", "#ef4444", "#f59e0b", "#10b981", "#5B3DF5", "#0ea5e9"].map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => setBlankPenColor(color)}
+                              className={`w-4 h-4 rounded-full border transition-transform ${
+                                blankPenColor === color ? "scale-125 border-white ring-2 ring-[#5B3DF5]" : "border-black/30"
+                              }`}
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
+
+                        <div className={`h-4 w-px mx-0.5 ${isBoardLight ? "bg-slate-300" : "bg-white/20"}`} />
+
+                        {/* Undo */}
+                        <button
+                          onClick={handleBlankUndo}
+                          className={`p-1.5 rounded-lg transition-all ${
+                            isBoardLight ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
+                          }`}
+                          title="Undo"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Clear */}
+                        <button
+                          onClick={handleBlankClear}
+                          className="p-1.5 rounded-lg hover:bg-rose-500/20 text-rose-500 hover:text-rose-600"
+                          title="Tozalash"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Right toolbar controls: Sun/Moon toggle & Close Button "X" */}
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsBoardLight((prev) => !prev);
+                            showToast(isBoardLight ? "🌙 To'q doska yoqildi" : "☀️ Katakli daftar (Light Mode) yoqildi");
+                          }}
+                          className={`px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition-all shadow-md cursor-pointer border ${
+                            isBoardLight
+                              ? "bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300"
+                              : "bg-white/10 hover:bg-white/20 text-slate-200 border-white/15"
+                          }`}
+                          title={isBoardLight ? "To'q doskaga o'tish (Dark)" : "Katakli daftar yorug' rejimiga o'tish (Light)"}
+                        >
+                          {isBoardLight ? <Sun className="w-3.5 h-3.5 text-amber-600 fill-amber-500" /> : <Moon className="w-3.5 h-3.5 text-indigo-300" />}
+                          <span className="hidden sm:inline">{isBoardLight ? "Katakli Daftar" : "Doska"}</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            saveBlankCanvas();
+                            setIsBlankBoardOpen(false);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition-all shadow-md cursor-pointer border ${
+                            isBoardLight
+                              ? "bg-slate-200 hover:bg-slate-300 text-slate-900 border-slate-300"
+                              : "bg-white/10 hover:bg-white/20 text-white border-white/15 hover:border-white/30"
+                          }`}
+                          title="Slaydga qaytish"
+                        >
+                          <span>Slaydga Qaytish</span>
+                          <X className="w-4 h-4 font-black" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Blank Canvas Area - School Copybook Checked / Squared Notebook Grid (Katakli Daftar) */}
+                    <div className={`relative flex-1 min-h-0 w-full my-2 rounded-2xl border overflow-hidden cursor-crosshair ${
+                      isBoardLight ? "copybook-grid-light border-blue-200/70 shadow-inner" : "copybook-grid-dark border-white/15 shadow-inner"
+                    }`}>
+                      <canvas
+                        ref={blankCanvasRef}
+                        onMouseDown={handleBlankStartDraw}
+                        onMouseMove={handleBlankDrawMove}
+                        onMouseUp={handleBlankEndDraw}
+                        onMouseLeave={handleBlankEndDraw}
+                        onTouchStart={handleBlankStartDraw}
+                        onTouchMove={handleBlankDrawMove}
+                        onTouchEnd={handleBlankEndDraw}
+                        className="absolute inset-0 w-full h-full"
+                      />
+
+                      {/* Floating text input on blank board */}
+                      {blankTextInputPos && (
+                        <div
+                          style={{
+                            left: Math.max(10, Math.min(blankTextInputPos.x, (blankCanvasRef.current?.clientWidth || 800) - 220)),
+                            top: Math.max(10, Math.min(blankTextInputPos.y, (blankCanvasRef.current?.clientHeight || 600) - 60))
+                          }}
+                          className={`absolute z-40 p-2 rounded-xl border shadow-2xl flex items-center space-x-2 ${
+                            isBoardLight ? "bg-white border-[#5B3DF5]" : "bg-[#16181F] border-[#5B3DF5]"
+                          }`}
+                        >
+                          <input
+                            type="text"
+                            autoFocus
+                            value={blankTypedText}
+                            onChange={(e) => setBlankTypedText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleBlankAddText();
+                              if (e.key === "Escape") setBlankTextInputPos(null);
+                            }}
+                            placeholder="Matn yozing..."
+                            className={`border text-xs px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-[#5B3DF5] w-48 font-bold ${
+                              isBoardLight ? "bg-slate-50 border-slate-300 text-slate-900" : "bg-black/50 border-white/20 text-white"
+                            }`}
+                          />
+                          <button
+                            onClick={handleBlankAddText}
+                            className="p-1.5 rounded-lg bg-[#5B3DF5] text-white hover:bg-[#4C2FE0] text-xs font-bold"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setBlankTextInputPos(null)}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Blank Board Footer Note */}
+                    <div className={`flex items-center justify-between text-[11px] pt-1 shrink-0 ${
+                      isBoardLight ? "text-slate-500" : "text-slate-500"
+                    }`}>
+                      <span>Chizmalar dars yakunlangunga qadar saqlanib turadi.</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          saveBlankCanvas();
+                          setIsBlankBoardOpen(false);
+                        }}
+                        className="text-[#5B3DF5] hover:text-[#4C2FE0] font-bold transition-colors cursor-pointer"
+                      >
+                        ✕ Yopish va slaydga o'tish
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* 1. Whiteboard Top Header Bar */}
                 <div className={`flex items-center justify-between pb-2 border-b shrink-0 ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
                   <div className="flex items-center space-x-2 sm:space-x-3">
@@ -2417,8 +5374,8 @@ export default function StitchTeacherOS() {
                     <button
                       onClick={handleAddMoreItem}
                       disabled={isAddingItem}
-                      className="px-2.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-xs flex items-center space-x-1 shadow-md transition-all hover:scale-105 disabled:opacity-50"
-                      title="Yana bitta savol yoki element qo'shish (+)"
+                      className="px-2.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-xs flex items-center space-x-1 shadow-md transition-all hover-lift disabled:opacity-50"
+                      title={appLanguage === 'en' ? "Add another question or item (+)" : appLanguage === 'ru' ? "Добавить элемент (+)" : "Yana bitta savol yoki element qo'shish (+)"}
                     >
                       {isAddingItem ? (
                         <RotateCw className="w-3.5 h-3.5 animate-spin" />
@@ -2426,7 +5383,9 @@ export default function StitchTeacherOS() {
                         <Plus className="w-3.5 h-3.5 stroke-[3]" />
                       )}
                       <span className="hidden sm:inline text-[11px] font-bold">
-                        {isAddingItem ? "Qo'shilmoqda..." : "Qo'shish"}
+                        {isAddingItem
+                          ? (appLanguage === 'en' ? "Adding..." : appLanguage === 'ru' ? "Добавление..." : "Qo'shilmoqda...")
+                          : (appLanguage === 'en' ? "Add" : appLanguage === 'ru' ? "Добавить" : "Qo'shish")}
                       </span>
                     </button>
                   </div>
@@ -2442,8 +5401,8 @@ export default function StitchTeacherOS() {
                         else if (activeScreen?.type === "dialog") speak(activeScreen.data.text);
                         else if (activeScreen?.type === "errorHunt") speak(activeScreen.data.sentence);
                       }}
-                      className="p-1.5 sm:p-2 rounded-xl bg-amber-400 text-slate-950 font-black hover:bg-amber-300 transition-all shadow-sm"
-                      title="Talaffuzni tinglash"
+                      className="p-1.5 sm:p-2 rounded-xl bg-amber-400 text-slate-950 font-black hover:bg-amber-300 transition-all shadow-sm hover-lift"
+                      title={t.board_audio}
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>
@@ -2451,25 +5410,41 @@ export default function StitchTeacherOS() {
                     {/* Pen / Annotation Tool Toggle */}
                     <button
                       onClick={() => setIsAnnotating((prev) => !prev)}
-                      className={`p-1.5 sm:p-2 rounded-xl transition-all shadow-sm ${
+                      className={`p-1.5 sm:p-2 rounded-xl transition-all shadow-sm hover-lift ${
                         isAnnotating
                           ? "bg-[#5B3DF5] text-white ring-2 ring-[#5B3DF5]/50 scale-105"
                           : isBoardLight
                           ? "bg-slate-100 hover:bg-slate-200 text-slate-800"
                           : "bg-white/10 hover:bg-white/20 text-white"
                       }`}
-                      title={isAnnotating ? "Qalam rejimini yopish" : "Doskaga chizish & Qalam (Pen)"}
+                      title={isAnnotating ? (appLanguage === 'en' ? "Close Pen" : appLanguage === 'ru' ? "Закрыть перо" : "Qalam rejimini yopish") : t.board_draw}
                     >
                       <PenTool className="w-4 h-4" />
+                    </button>
+
+                    {/* Blank Board Icon Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsBlankBoardOpen((prev) => !prev)}
+                      className={`p-1.5 sm:p-2 rounded-xl transition-all shadow-sm hover-lift ${
+                        isBlankBoardOpen
+                          ? "bg-emerald-600 text-white ring-2 ring-emerald-500/50 scale-105"
+                          : isBoardLight
+                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800"
+                          : "bg-white/10 hover:bg-white/20 text-white"
+                      }`}
+                      title={isBlankBoardOpen ? (appLanguage === 'en' ? "Back to slide" : appLanguage === 'ru' ? "Назад к слайду" : "Slaydga qaytish") : (appLanguage === 'en' ? "Blank Board" : appLanguage === 'ru' ? "Чистая доска" : "Bo'sh doska")}
+                    >
+                      <Square className="w-4 h-4" />
                     </button>
 
                     {/* Dark/Light toggle */}
                     <button
                       onClick={() => setIsBoardLight((prev) => !prev)}
-                      className={`p-1.5 sm:p-2 rounded-xl transition-all shadow-sm ${
+                      className={`p-1.5 sm:p-2 rounded-xl transition-all shadow-sm hover-lift ${
                         isBoardLight ? "bg-slate-100 hover:bg-slate-200 text-slate-800" : "bg-white/10 hover:bg-white/20 text-amber-300"
                       }`}
-                      title={isBoardLight ? "To'q rejim" : "Yorug' rejim"}
+                      title={isBoardLight ? t.settings_theme_dark : t.settings_theme_light}
                     >
                       {isBoardLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                     </button>
@@ -2477,10 +5452,10 @@ export default function StitchTeacherOS() {
                     {/* Fullscreen Button */}
                     <button
                       onClick={toggleFullscreen}
-                      className={`p-1.5 sm:p-2 rounded-xl transition-all shadow-sm ${
+                      className={`p-1.5 sm:p-2 rounded-xl transition-all shadow-sm hover-lift ${
                         isBoardLight ? "bg-slate-100 hover:bg-slate-200 text-slate-800" : "bg-white/10 hover:bg-white/20 text-white"
                       }`}
-                      title={isFullscreen ? "Chiqish (Esc)" : "Katta Ekran (F)"}
+                      title={isFullscreen ? (appLanguage === 'en' ? "Exit (Esc)" : appLanguage === 'ru' ? "Выйти (Esc)" : "Chiqish (Esc)") : t.board_fullscreen}
                     >
                       {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </button>
@@ -2489,14 +5464,22 @@ export default function StitchTeacherOS() {
 
                 {/* 2. Whiteboard Center Interactive Stage */}
                 <div className="flex-1 min-h-0 overflow-y-auto my-1.5 sm:my-2 px-1 relative custom-scrollbar flex flex-col">
-                  {/* Floating Whiteboard Annotation Toolbar */}
+                  {/* Floating Whiteboard Annotation Toolbar (Full Light & Dark mode support + hover-lift) */}
                   {isAnnotating && (
-                    <div className="absolute top-1 left-1/2 -translate-x-1/2 z-40 bg-[#16181F]/95 backdrop-blur-xl border border-white/20 px-3 py-2 rounded-2xl shadow-2xl flex items-center space-x-2 text-white animate-in fade-in slide-in-from-top-2">
+                    <div className={`absolute top-1 left-1/2 -translate-x-1/2 z-40 backdrop-blur-xl border px-3 py-2 rounded-2xl shadow-2xl flex items-center space-x-2 animate-in fade-in slide-in-from-top-2 ${
+                      isBoardLight
+                        ? "bg-white/95 border-slate-300 text-slate-800 shadow-xl shadow-slate-300/40"
+                        : "bg-[#16181F]/95 border-white/20 text-white shadow-2xl"
+                    }`}>
                       {/* Pen */}
                       <button
                         onClick={() => setPenTool("pen")}
-                        className={`p-2 rounded-xl transition-all ${
-                          penTool === "pen" ? "bg-[#5B3DF5] text-white shadow-md scale-105" : "hover:bg-white/10 text-slate-300"
+                        className={`p-2 rounded-xl transition-all hover-lift ${
+                          penTool === "pen"
+                            ? "bg-[#5B3DF5] text-white shadow-md scale-105"
+                            : isBoardLight
+                            ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                            : "hover:bg-white/10 text-slate-300"
                         }`}
                         title="Qalam (Pen)"
                       >
@@ -2506,8 +5489,12 @@ export default function StitchTeacherOS() {
                       {/* Highlighter */}
                       <button
                         onClick={() => setPenTool("highlighter")}
-                        className={`p-2 rounded-xl transition-all ${
-                          penTool === "highlighter" ? "bg-[#5B3DF5] text-white shadow-md scale-105" : "hover:bg-white/10 text-slate-300"
+                        className={`p-2 rounded-xl transition-all hover-lift ${
+                          penTool === "highlighter"
+                            ? "bg-[#5B3DF5] text-white shadow-md scale-105"
+                            : isBoardLight
+                            ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                            : "hover:bg-white/10 text-slate-300"
                         }`}
                         title="Marker (Highlighter)"
                       >
@@ -2517,26 +5504,105 @@ export default function StitchTeacherOS() {
                       {/* Text Note */}
                       <button
                         onClick={() => setPenTool("text")}
-                        className={`p-2 rounded-xl transition-all ${
-                          penTool === "text" ? "bg-[#5B3DF5] text-white shadow-md scale-105" : "hover:bg-white/10 text-slate-300"
+                        className={`p-2 rounded-xl transition-all hover-lift ${
+                          penTool === "text"
+                            ? "bg-[#5B3DF5] text-white shadow-md scale-105"
+                            : isBoardLight
+                            ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                            : "hover:bg-white/10 text-slate-300"
                         }`}
                         title="Matn yozish (Doskaga bosing)"
                       >
                         <Type className="w-4 h-4" />
                       </button>
 
+                      {/* Shapes */}
+                      <button
+                        onClick={() => setPenTool("rectangle")}
+                        className={`p-2 rounded-xl transition-all hover-lift ${
+                          penTool === "rectangle"
+                            ? "bg-[#5B3DF5] text-white shadow-md scale-105"
+                            : isBoardLight
+                            ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                            : "hover:bg-white/10 text-slate-300"
+                        }`}
+                        title="To'rtburchak (Rectangle)"
+                      >
+                        <Square className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => setPenTool("circle")}
+                        className={`p-2 rounded-xl transition-all hover-lift ${
+                          penTool === "circle"
+                            ? "bg-[#5B3DF5] text-white shadow-md scale-105"
+                            : isBoardLight
+                            ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                            : "hover:bg-white/10 text-slate-300"
+                        }`}
+                        title="Aylana (Circle)"
+                      >
+                        <Circle className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => setPenTool("triangle")}
+                        className={`p-2 rounded-xl transition-all hover-lift ${
+                          penTool === "triangle"
+                            ? "bg-[#5B3DF5] text-white shadow-md scale-105"
+                            : isBoardLight
+                            ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                            : "hover:bg-white/10 text-slate-300"
+                        }`}
+                        title="Uchburchak (Triangle)"
+                      >
+                        <Triangle className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => setPenTool("line")}
+                        className={`p-2 rounded-xl transition-all hover-lift ${
+                          penTool === "line"
+                            ? "bg-[#5B3DF5] text-white shadow-md scale-105"
+                            : isBoardLight
+                            ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                            : "hover:bg-white/10 text-slate-300"
+                        }`}
+                        title="Chiziq (Line)"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => setPenTool("arrow")}
+                        className={`p-2 rounded-xl transition-all hover-lift ${
+                          penTool === "arrow"
+                            ? "bg-[#5B3DF5] text-white shadow-md scale-105"
+                            : isBoardLight
+                            ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                            : "hover:bg-white/10 text-slate-300"
+                        }`}
+                        title="Strelka (Arrow)"
+                      >
+                        <ArrowUpRight className="w-4 h-4" />
+                      </button>
+
                       {/* Eraser */}
                       <button
                         onClick={() => setPenTool("eraser")}
-                        className={`p-2 rounded-xl transition-all ${
-                          penTool === "eraser" ? "bg-[#5B3DF5] text-white shadow-md scale-105" : "hover:bg-white/10 text-slate-300"
+                        className={`p-2 rounded-xl transition-all hover-lift ${
+                          penTool === "eraser"
+                            ? "bg-[#5B3DF5] text-white shadow-md scale-105"
+                            : isBoardLight
+                            ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                            : "hover:bg-white/10 text-slate-300"
                         }`}
                         title="O'chirg'ich (Eraser)"
                       >
                         <Eraser className="w-4 h-4" />
                       </button>
 
-                      <div className="h-5 w-[1px] bg-white/20 my-auto" />
+                      <div className={`h-5 w-[1px] my-auto ${isBoardLight ? "bg-slate-300" : "bg-white/20"}`} />
 
                       {/* Color Palette */}
                       <div className="flex items-center space-x-1.5">
@@ -2551,8 +5617,14 @@ export default function StitchTeacherOS() {
                           <button
                             key={c.color}
                             onClick={() => setPenColor(c.color)}
-                            className={`w-5 h-5 rounded-full border-2 transition-transform ${
-                              penColor === c.color ? "scale-125 border-white ring-2 ring-[#5B3DF5]" : "border-white/30 hover:scale-110"
+                            className={`w-5 h-5 rounded-full border-2 transition-transform hover-lift ${
+                              penColor === c.color
+                                ? isBoardLight
+                                  ? "scale-125 border-slate-900 ring-2 ring-[#5B3DF5]"
+                                  : "scale-125 border-white ring-2 ring-[#5B3DF5]"
+                                : isBoardLight
+                                ? "border-slate-300 hover:scale-110"
+                                : "border-white/30 hover:scale-110"
                             }`}
                             style={{ backgroundColor: c.color }}
                             title={c.name}
@@ -2560,7 +5632,7 @@ export default function StitchTeacherOS() {
                         ))}
                       </div>
 
-                      <div className="h-5 w-[1px] bg-white/20 my-auto" />
+                      <div className={`h-5 w-[1px] my-auto ${isBoardLight ? "bg-slate-300" : "bg-white/20"}`} />
 
                       {/* Stroke Sizes */}
                       <div className="flex items-center space-x-1">
@@ -2572,8 +5644,12 @@ export default function StitchTeacherOS() {
                           <button
                             key={s.size}
                             onClick={() => setPenSize(s.size)}
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-black transition-all ${
-                              penSize === s.size ? "bg-white/20 text-white font-bold" : "text-slate-400 hover:text-white"
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-black transition-all hover-lift ${
+                              penSize === s.size
+                                ? "bg-[#5B3DF5] text-white font-bold shadow-sm"
+                                : isBoardLight
+                                ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                                : "text-slate-400 hover:text-white"
                             }`}
                           >
                             {s.label}
@@ -2581,12 +5657,14 @@ export default function StitchTeacherOS() {
                         ))}
                       </div>
 
-                      <div className="h-5 w-[1px] bg-white/20 my-auto" />
+                      <div className={`h-5 w-[1px] my-auto ${isBoardLight ? "bg-slate-300" : "bg-white/20"}`} />
 
                       {/* Undo */}
                       <button
                         onClick={handleUndo}
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white"
+                        className={`p-1.5 rounded-lg transition-all hover-lift ${
+                          isBoardLight ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900" : "hover:bg-white/10 text-slate-300 hover:text-white"
+                        }`}
                         title="Bekor qilish (Undo)"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
@@ -2595,7 +5673,9 @@ export default function StitchTeacherOS() {
                       {/* Clear Canvas */}
                       <button
                         onClick={handleClearCanvas}
-                        className="p-1.5 rounded-lg hover:bg-rose-500/20 text-rose-400 hover:text-rose-300"
+                        className={`p-1.5 rounded-lg transition-all hover-lift ${
+                          isBoardLight ? "hover:bg-rose-100 text-rose-600" : "hover:bg-rose-500/20 text-rose-400 hover:text-rose-300"
+                        }`}
                         title="Barchasini tozalash"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -2604,7 +5684,9 @@ export default function StitchTeacherOS() {
                       {/* Close */}
                       <button
                         onClick={() => setIsAnnotating(false)}
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
+                        className={`p-1.5 rounded-lg transition-all hover-lift ${
+                          isBoardLight ? "hover:bg-slate-100 text-slate-600 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
+                        }`}
                         title="Yopish"
                       >
                         <X className="w-4 h-4" />
@@ -2630,7 +5712,10 @@ export default function StitchTeacherOS() {
                   {/* Floating Inline Text Input for Canvas */}
                   {isAnnotating && textInputPos && (
                     <div
-                      style={{ left: Math.min(textInputPos.x, 600), top: Math.min(textInputPos.y, 400) }}
+                      style={{
+                        left: Math.max(10, Math.min(textInputPos.x, (canvasRef.current?.clientWidth || 800) - 220)),
+                        top: Math.max(10, Math.min(textInputPos.y, (canvasRef.current?.clientHeight || 600) - 60))
+                      }}
                       className="absolute z-40 bg-[#16181F] p-2.5 rounded-xl border border-[#5B3DF5] shadow-2xl flex items-center space-x-2 animate-in fade-in zoom-in-95"
                     >
                       <input
@@ -2738,7 +5823,15 @@ export default function StitchTeacherOS() {
 
                             {/* Right: Interactive Visual Diagram */}
                             {visualToRender && (
-                              <div className="lg:col-span-6 flex flex-col justify-center">
+                              <div className="lg:col-span-6 flex flex-col justify-center relative group/visual">
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedVisual(visualToRender)}
+                                  className="absolute top-2.5 right-2.5 z-20 p-1.5 rounded-lg bg-black/60 hover:bg-[#5B3DF5] text-white/80 hover:text-white transition-all shadow-md backdrop-blur-md border border-white/10 hover:border-[#5B3DF5] cursor-pointer"
+                                  title="Katta ekranda ko'rish (Fullscreen)"
+                                >
+                                  <Maximize2 className="w-3.5 h-3.5" />
+                                </button>
                                 <VisualDiagram diagram={visualToRender} onSpeak={speak} isLight={isBoardLight} />
                               </div>
                             )}
@@ -3495,12 +6588,12 @@ export default function StitchTeacherOS() {
                       setCurrentScreenIndex((prev) => Math.max(0, prev - 1));
                       setBoardStepReveal(0);
                     }}
-                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black disabled:opacity-30 transition-all flex items-center space-x-1.5 ${
+                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black disabled:opacity-30 transition-all flex items-center space-x-1.5 hover-lift ${
                       isBoardLight ? "bg-slate-100 hover:bg-slate-200 text-slate-800" : "bg-white/10 hover:bg-white/20 text-white"
                     }`}
                   >
                     <ChevronLeft className="w-4 h-4" />
-                    <span>Oldingi</span>
+                    <span>{t.board_prev}</span>
                   </button>
 
                   {/* Center Dot Navigation & Category Label */}
@@ -3519,7 +6612,7 @@ export default function StitchTeacherOS() {
                               setCurrentScreenIndex((activeCategory?.startIndex ?? 0) + subIdx);
                               setBoardStepReveal(0);
                             }}
-                            className={`h-2 rounded-full transition-all cursor-pointer ${
+                            className={`h-2 rounded-full transition-all cursor-pointer hover-lift ${
                               isDotActive
                                 ? "w-7 bg-[#5B3DF5] shadow-sm"
                                 : isBoardLight
@@ -3540,10 +6633,10 @@ export default function StitchTeacherOS() {
                         setCurrentScreenIndex(0);
                         setBoardStepReveal(0);
                       }}
-                      className="px-5 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black bg-indigo-600 hover:bg-indigo-500 text-white transition-all flex items-center space-x-1.5 shadow-sm hover:scale-105 active:scale-95"
+                      className="px-5 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black bg-indigo-600 hover:bg-indigo-500 text-white transition-all flex items-center space-x-1.5 shadow-sm hover-lift"
                     >
                       <RotateCcw className="w-4 h-4" />
-                      <span>1-Slaydga Qaytish</span>
+                      <span>{appLanguage === 'en' ? "Back to Slide 1" : appLanguage === 'ru' ? "К слайду 1" : "1-Slaydga Qaytish"}</span>
                     </button>
                   ) : (
                     <button
@@ -3551,40 +6644,57 @@ export default function StitchTeacherOS() {
                         setCurrentScreenIndex((prev) => Math.min(totalScreens - 1, prev + 1));
                         setBoardStepReveal(0);
                       }}
-                      className="px-5 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-30 transition-all flex items-center space-x-1.5 shadow-sm"
+                      className="px-5 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-30 transition-all flex items-center space-x-1.5 shadow-sm hover-lift"
                     >
-                      <span>Keyingi</span>
+                      <span>{t.board_next}</span>
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* RIGHT CATEGORY NAVIGATION TOOLBAR (Separated, flex sibling, never overlaps board) */}
+              {/* SEPARATED TOGGLE BUTTON: Between the slides block and right sidebar, closer to the right sidebar without touching either */}
               {!isFullscreen && (
-                <aside
-                  className={`hidden md:flex shrink-0 z-20 flex-col justify-between rounded-2xl bg-[#18191E]/95 border border-white/10 shadow-2xl backdrop-blur-xl text-slate-400 transition-all duration-300 relative ${
-                    isRightBarExpanded ? "w-60 p-3" : "w-14 p-2 items-center"
-                  }`}
-                >
-                  {/* "<" or ">" toggle button between board and bar */}
+                <div className="hidden md:flex items-center shrink-0 -mr-1.5 z-30">
                   <button
                     type="button"
                     onClick={() => setIsRightBarExpanded((prev) => !prev)}
-                    className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-[#1F222A] hover:bg-[#2B2F3A] border border-white/20 text-slate-200 hover:text-white flex items-center justify-center text-xs font-black shadow-xl hover:scale-110 active:scale-95 transition-all z-30 cursor-pointer"
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center text-xs font-black shadow-xl transition-all cursor-pointer hover-lift ${
+                      isBoardLight
+                        ? "bg-white/95 hover:bg-slate-100 border-slate-300 text-slate-800 shadow-slate-200"
+                        : "bg-[#18191E]/95 hover:bg-[#232734] border-white/20 text-slate-200 hover:text-white"
+                    }`}
                     title={isRightBarExpanded ? "Bo'lim nomlarini yashirish (>)" : "Bo'lim nomlarini ko'rsatish (<)"}
                   >
                     {isRightBarExpanded ? ">" : "<"}
                   </button>
+                </div>
+              )}
+
+              {/* RIGHT CATEGORY NAVIGATION TOOLBAR (Separated, flex sibling, never overlaps board) */}
+              {!isFullscreen && (
+                <aside
+                  className={`hidden md:flex shrink-0 z-20 flex-col justify-between rounded-2xl border shadow-2xl backdrop-blur-xl transition-all duration-300 relative ${
+                    isBoardLight
+                      ? "bg-white/95 border-slate-200 text-slate-700 shadow-slate-200/80"
+                      : "bg-[#18191E]/95 border-white/10 text-slate-400"
+                  } ${
+                    isRightBarExpanded ? "w-60 p-3" : "w-14 p-2 items-center"
+                  }`}
+                >
 
                   {/* Section Jump Items */}
                   <div className={`flex flex-col space-y-1.5 w-full ${isRightBarExpanded ? "" : "items-center"}`}>
                     {isRightBarExpanded && (
-                      <div className="flex items-center justify-between pb-2 mb-1 border-b border-white/10 px-1">
-                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                      <div className={`flex items-center justify-between pb-2 mb-1 border-b px-1 ${
+                        isBoardLight ? "border-slate-200" : "border-white/10"
+                      }`}>
+                        <span className={`text-[11px] font-extrabold uppercase tracking-wider ${
+                          isBoardLight ? "text-slate-700" : "text-slate-400"
+                        }`}>
                           Bo'limlar ({categories.length})
                         </span>
-                        <span className="text-[10px] font-mono text-[#A5B4FC] font-bold">
+                        <span className="text-[10px] font-mono text-indigo-500 font-bold">
                           {totalScreens} qadam
                         </span>
                       </div>
@@ -3601,17 +6711,21 @@ export default function StitchTeacherOS() {
                             setBoardStepReveal(0);
                             showToast(`📌 ${cat.title} bo'limiga o'tildi`);
                           }}
-                          className={`rounded-xl transition-all relative group flex items-center ${
+                          className={`rounded-xl transition-all relative group flex items-center hover-lift ${
                             isRightBarExpanded
                               ? `w-full px-3 py-2 space-x-2.5 text-left ${
                                   isCatActive
                                     ? "bg-[#5B3DF5] text-white shadow-lg shadow-[#5B3DF5]/30 font-bold"
+                                    : isBoardLight
+                                    ? "hover:bg-slate-100 text-slate-700 hover:text-slate-900"
                                     : "hover:bg-white/5 text-slate-300 hover:text-white"
                                 }`
                               : `p-2.5 justify-center ${
                                   isCatActive
                                     ? "bg-[#5B3DF5] text-white shadow-lg shadow-[#5B3DF5]/40 scale-105"
-                                    : "hover:text-white hover:bg-white/5"
+                                    : isBoardLight
+                                    ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                                    : "text-slate-400 hover:text-white hover:bg-white/5"
                                 }`
                           }`}
                           title={`${cat.title} (${cat.count} ta qadam)`}
@@ -3619,9 +6733,15 @@ export default function StitchTeacherOS() {
                           {isRightBarExpanded ? (
                             <>
                               <span className="text-[11px] font-mono opacity-60 font-bold shrink-0">{idx + 1}.</span>
-                              <IconComp className="w-4 h-4 shrink-0 text-indigo-400 group-hover:text-white" />
+                              <IconComp className={`w-4 h-4 shrink-0 ${isCatActive ? "text-white" : isBoardLight ? "text-indigo-600 group-hover:text-indigo-800" : "text-indigo-400 group-hover:text-white"}`} />
                               <span className="text-xs font-medium truncate flex-1">{cat.title}</span>
-                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 opacity-75 shrink-0">
+                              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
+                                isCatActive
+                                  ? "bg-white/20 text-white font-bold"
+                                  : isBoardLight
+                                  ? "bg-slate-200/70 text-slate-700 font-bold"
+                                  : "bg-white/10 opacity-75"
+                              }`}>
                                 {cat.count}
                               </span>
                             </>
@@ -3629,7 +6749,11 @@ export default function StitchTeacherOS() {
                             <>
                               <IconComp className="w-4 h-4" />
                               {/* Tooltip on Hover when collapsed */}
-                              <span className="absolute right-full mr-2.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-[#18191E] border border-white/15 text-white text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-xl z-40">
+                              <span className={`absolute right-full mr-2.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg border text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-xl z-40 ${
+                                isBoardLight
+                                  ? "bg-white border-slate-300 text-slate-900 shadow-slate-300/50"
+                                  : "bg-[#18191E] border-white/15 text-white"
+                              }`}>
                                 {cat.title} ({cat.count})
                               </span>
                             </>
@@ -3640,19 +6764,25 @@ export default function StitchTeacherOS() {
                   </div>
 
                   {/* Bottom utility buttons */}
-                  <div className={`w-full pt-2 border-t border-white/10 mt-2 flex flex-col space-y-1.5 ${isRightBarExpanded ? "" : "items-center"}`}>
+                  <div className={`w-full pt-2 border-t mt-2 flex flex-col space-y-1.5 ${
+                    isBoardLight ? "border-slate-200" : "border-white/10"
+                  } ${isRightBarExpanded ? "" : "items-center"}`}>
                     <button
                       onClick={() => {
                         setIsBoardLight((prev) => !prev);
                         showToast(isBoardLight ? "🌙 To'q doska yoqildi" : "☀️ Yorug' doska yoqildi");
                       }}
-                      className={`rounded-xl transition-all flex items-center ${
+                      className={`rounded-xl transition-all flex items-center hover-lift ${
                         isRightBarExpanded
                           ? `w-full px-3 py-2 space-x-2.5 text-left ${
-                              isBoardLight ? "text-amber-400 bg-amber-400/10" : "text-slate-300 hover:bg-white/10"
+                              isBoardLight
+                                ? "text-amber-600 bg-amber-50 hover:bg-amber-100 font-bold"
+                                : "text-slate-300 hover:bg-white/10"
                             }`
                           : `p-2.5 justify-center ${
-                              isBoardLight ? "text-amber-400 hover:bg-amber-400/10" : "text-slate-300 hover:bg-white/10"
+                              isBoardLight
+                                ? "text-amber-600 hover:bg-amber-50"
+                                : "text-slate-300 hover:bg-white/10"
                             }`
                       }`}
                       title={isBoardLight ? "To'q doskaga o'tkazish" : "Oq doskaga o'tkazish"}
@@ -3667,10 +6797,18 @@ export default function StitchTeacherOS() {
 
                     <button
                       onClick={toggleFullscreen}
-                      className={`rounded-xl transition-all flex items-center ${
+                      className={`rounded-xl transition-all flex items-center hover-lift ${
                         isRightBarExpanded
-                          ? "w-full px-3 py-2 space-x-2.5 text-left hover:text-white hover:bg-white/5 text-slate-300"
-                          : "p-2.5 justify-center hover:text-white hover:bg-white/5 text-slate-300"
+                          ? `w-full px-3 py-2 space-x-2.5 text-left ${
+                              isBoardLight
+                                ? "hover:bg-slate-100 text-slate-700 hover:text-slate-900"
+                                : "hover:text-white hover:bg-white/5 text-slate-300"
+                            }`
+                          : `p-2.5 justify-center ${
+                              isBoardLight
+                                ? "hover:bg-slate-100 text-slate-700 hover:text-slate-900"
+                                : "hover:text-white hover:bg-white/5 text-slate-300"
+                            }`
                       }`}
                       title="Katta ekran (F)"
                     >
@@ -3686,6 +6824,60 @@ export default function StitchTeacherOS() {
           </>
         )}
       </div>
+      {/* End PUSH CONTAINER */}
+    </div>
+
+      {/* Fullscreen Interactive Visual Diagram Modal (For Classroom Visibility with Light & Dark Mode) */}
+      {expandedVisual && (
+        <div className={`fixed inset-0 z-50 backdrop-blur-2xl flex flex-col justify-between p-4 sm:p-8 animate-in fade-in ${
+          isBoardLight
+            ? "bg-[#F8FAFC]/98 text-slate-900 border-slate-200 board-light"
+            : "bg-[#0B0D13]/98 text-white border-white/15"
+        }`}>
+          <div className={`flex items-center justify-between pb-4 border-b max-w-6xl w-full mx-auto shrink-0 ${
+            isBoardLight ? "border-slate-200" : "border-white/15"
+          }`}>
+            <div className="flex items-center space-x-3">
+              <span className="px-3.5 py-1.5 rounded-full bg-[#5B3DF5] text-white text-xs font-black uppercase tracking-wider flex items-center space-x-2 shadow-md">
+                <Sparkles className="w-4 h-4" />
+                <span>Interaktiv Vizual Model (Katta Doska)</span>
+              </span>
+              <span className={`text-xs font-medium hidden sm:inline ${
+                isBoardLight ? "text-slate-600" : "text-slate-400"
+              }`}>
+                Sinfdagi barcha o'quvchilar uchun aniq va katta ko'rinish
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setExpandedVisual(null)}
+              className={`px-4 py-2 rounded-xl font-bold text-xs flex items-center space-x-2 transition-all shadow-md cursor-pointer border hover-lift ${
+                isBoardLight
+                  ? "bg-slate-200 hover:bg-slate-300 text-slate-900 border-slate-300"
+                  : "bg-white/10 hover:bg-white/20 text-white border-white/15 hover:border-white/30"
+              }`}
+              title="Slaydga qaytish"
+            >
+              <span>Slaydga Qaytish</span>
+              <X className="w-4 h-4 font-black" />
+            </button>
+          </div>
+
+          <div className="flex-1 w-full max-w-6xl mx-auto flex items-center justify-center py-6 overflow-y-auto">
+            <div className="w-full">
+              <VisualDiagram diagram={expandedVisual} onSpeak={speak} isLight={isBoardLight} />
+            </div>
+          </div>
+
+          <div className={`text-center text-xs py-2 border-t shrink-0 ${
+            isBoardLight ? "text-slate-500 border-slate-200" : "text-slate-500 border-white/10"
+          }`}>
+            Esc yoki "Slaydga Qaytish" tugmasini bosing
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

@@ -124,3 +124,15 @@ export interface Curriculum {
   teacherChatId?: string;
 }
 
+export interface ClassroomStudent {
+  username: string;
+  addedAt: number;
+}
+
+export interface TeacherClassroom {
+  id: string;
+  name: string;
+  createdAt: number;
+  students: ClassroomStudent[];
+  inviteCode: string;
+}
