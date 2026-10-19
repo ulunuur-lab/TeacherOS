@@ -3070,182 +3070,220 @@ export default function StitchTeacherOS() {
 
 
 
-      {/* 4-Blocks Social Channels & Support Modal (Triggered by Logo Click) */}
+      {/* 4 Separate Standalone Shiny Social & Support Cards (Expanding horizontally with pure blurred backdrop) */}
       {showSocialModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
-          <div className={`relative w-full max-w-xl border rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 ${
-            isBoardLight
-              ? "bg-white/98 border-slate-300 text-slate-900 shadow-slate-300"
-              : "bg-[#141620]/98 border-white/15 text-white"
-          }`}>
-            {/* Big X Close Button */}
-            <button
-              type="button"
-              onClick={() => setShowSocialModal(false)}
-              className={`absolute top-5 right-5 w-9 h-9 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer border ${
-                isBoardLight
-                  ? "bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-300"
-                  : "bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border-white/10"
-              }`}
-              title="Yopish (Esc)"
-            >
-              <X className="w-5 h-5" />
-            </button>
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowSocialModal(false);
+          }}
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 animate-in fade-in duration-200 ${
+            isBoardLight ? "bg-slate-900/40 backdrop-blur-2xl" : "bg-black/60 backdrop-blur-2xl"
+          }`}
+        >
+          {/* Upper Side: Single Sleek 'X' Close Sign */}
+          <button
+            type="button"
+            onClick={() => setShowSocialModal(false)}
+            className={`fixed top-5 right-5 sm:top-8 sm:right-8 z-50 w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer shadow-2xl hover:scale-110 active:scale-95 border backdrop-blur-xl ${
+              isBoardLight
+                ? "bg-white/80 hover:bg-white text-slate-800 border-slate-300 shadow-slate-900/20"
+                : "bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/40 shadow-black/50"
+            }`}
+            title="Yopish (Esc)"
+          >
+            <X className="w-6 h-6 font-black" />
+          </button>
 
-            {/* Header */}
-            <div className="space-y-1 text-left">
-              <div className="flex items-center space-x-2.5">
-                <BrandLogo isLight={isBoardLight} className="h-7 max-w-[130px] object-contain" />
-                <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-                  Hamjamiyat
+          {/* Four Separate Standalone Shiny Blocks Expanding From Left to Right */}
+          <div className="w-full max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 z-10 px-2 sm:px-4">
+            
+            {/* 1. Instagram */}
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noreferrer"
+              className={`relative overflow-hidden rounded-3xl p-6 flex flex-col justify-between h-72 sm:h-80 transition-all duration-300 group cursor-pointer border-2 backdrop-blur-3xl hover:-translate-y-2 hover:scale-[1.03] ${
+                isBoardLight
+                  ? "bg-gradient-to-b from-white/90 to-pink-50/80 border-pink-300 hover:border-pink-500 shadow-[0_12px_40px_rgba(236,72,153,0.18)] hover:shadow-[0_20px_50px_rgba(236,72,153,0.35)]"
+                  : "bg-gradient-to-b from-[#1f102e]/85 to-[#0e0717]/95 border-pink-500/35 hover:border-pink-400 shadow-[0_12px_40px_rgba(236,72,153,0.22)] hover:shadow-[0_20px_60px_rgba(236,72,153,0.45)]"
+              }`}
+            >
+              {/* Glossy top shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <div className="absolute -top-16 -right-16 w-36 h-36 bg-pink-500/20 rounded-full blur-2xl group-hover:bg-pink-500/35 transition-all pointer-events-none" />
+
+              {/* Card Top: Logo & Handle */}
+              <div className="flex items-start justify-between relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center text-white shadow-lg shadow-pink-500/40 group-hover:scale-110 transition-transform">
+                  {/* Authentic Instagram glyph */}
+                  <svg className="w-7 h-7 fill-white" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                </div>
+                <span className={`text-[11px] font-mono font-bold px-2.5 py-1 rounded-full border ${
+                  isBoardLight ? "bg-pink-100 text-pink-700 border-pink-300" : "bg-pink-500/15 text-pink-300 border-pink-500/30"
+                }`}>
+                  @teacheros.ai
                 </span>
               </div>
-              <h2 className={`text-xl sm:text-2xl font-black ${isBoardLight ? "text-slate-900" : "text-white"}`}>
-                TeacherOS Ijtimoiy Tarmoqlari & Aloqa
-              </h2>
-              <p className={`text-xs sm:text-sm ${isBoardLight ? "text-slate-600" : "text-slate-400"}`}>
-                Dars ishlanmalari, metodik yangiliklar va texnik yordam uchun rasmiy manzillarimiz:
-              </p>
-            </div>
 
-            {/* 4 Distinct Standalone Styled Blocks (2x2 Grid) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {/* Instagram */}
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer"
-                className={`p-4 rounded-2xl border transition-all group flex flex-col justify-between space-y-3 cursor-pointer shadow-lg hover:scale-[1.02] active:scale-[0.98] ${
-                  isBoardLight
-                    ? "bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-rose-500/10 border-pink-300 hover:border-pink-500 shadow-pink-100"
-                    : "bg-gradient-to-br from-pink-500/15 via-purple-600/10 to-rose-500/15 border-pink-500/30 hover:border-pink-500/60 shadow-pink-950/20"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                    <Camera className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-mono text-pink-500 font-bold px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20">
-                    @teacheros.ai
-                  </span>
+              {/* Card Bottom: Text & Action */}
+              <div className="relative z-10 space-y-2">
+                <h3 className={`text-xl font-black transition-colors ${
+                  isBoardLight ? "text-slate-900 group-hover:text-pink-600" : "text-white group-hover:text-pink-300"
+                }`}>
+                  Instagram
+                </h3>
+                <p className={`text-xs leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-300"}`}>
+                  Dars ishlanmalari, qisqa videolar va yangi funksiyalar taqdimoti.
+                </p>
+                <div className="pt-2 flex items-center text-xs font-bold text-pink-500 group-hover:translate-x-1 transition-transform">
+                  <span>Sahifaga o'tish</span>
+                  <ArrowUpRight className="w-4 h-4 ml-1" />
                 </div>
-                <div>
-                  <div className={`font-extrabold text-sm transition-colors ${
-                    isBoardLight ? "text-slate-900 group-hover:text-pink-600" : "text-white group-hover:text-pink-200"
-                  }`}>
-                    Instagram
-                  </div>
-                  <div className={`text-[11px] mt-0.5 leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-400"}`}>
-                    Dars ishlanmalari, qisqa videolar va yangi funksiyalar taqdimoti.
-                  </div>
-                </div>
-              </a>
+              </div>
+            </a>
 
-              {/* Telegram */}
-              <a
-                href="https://t.me"
-                target="_blank"
-                rel="noreferrer"
-                className={`p-4 rounded-2xl border transition-all group flex flex-col justify-between space-y-3 cursor-pointer shadow-lg hover:scale-[1.02] active:scale-[0.98] ${
-                  isBoardLight
-                    ? "bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-cyan-500/10 border-sky-300 hover:border-sky-500 shadow-sky-100"
-                    : "bg-gradient-to-br from-sky-500/15 via-blue-600/10 to-cyan-500/15 border-sky-500/30 hover:border-sky-500/60 shadow-sky-950/20"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#229ED9] to-[#0088cc] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                    <Send className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-mono text-sky-500 font-bold px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/20">
-                    @teacheros_official
-                  </span>
-                </div>
-                <div>
-                  <div className={`font-extrabold text-sm transition-colors ${
-                    isBoardLight ? "text-slate-900 group-hover:text-sky-600" : "text-white group-hover:text-sky-200"
-                  }`}>
-                    Telegram Kanal
-                  </div>
-                  <div className={`text-[11px] mt-0.5 leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-400"}`}>
-                    O'qituvchilar hamjamiyati, bepul materiallar va tezkor xabarlar.
-                  </div>
-                </div>
-              </a>
+            {/* 2. Telegram */}
+            <a
+              href="https://t.me"
+              target="_blank"
+              rel="noreferrer"
+              className={`relative overflow-hidden rounded-3xl p-6 flex flex-col justify-between h-72 sm:h-80 transition-all duration-300 group cursor-pointer border-2 backdrop-blur-3xl hover:-translate-y-2 hover:scale-[1.03] ${
+                isBoardLight
+                  ? "bg-gradient-to-b from-white/90 to-sky-50/80 border-sky-300 hover:border-sky-500 shadow-[0_12px_40px_rgba(14,165,233,0.18)] hover:shadow-[0_20px_50px_rgba(14,165,233,0.35)]"
+                  : "bg-gradient-to-b from-[#0a1829]/85 to-[#040e1a]/95 border-sky-500/35 hover:border-sky-400 shadow-[0_12px_40px_rgba(14,165,233,0.22)] hover:shadow-[0_20px_60px_rgba(14,165,233,0.45)]"
+              }`}
+            >
+              {/* Glossy top shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <div className="absolute -top-16 -right-16 w-36 h-36 bg-sky-500/20 rounded-full blur-2xl group-hover:bg-sky-500/35 transition-all pointer-events-none" />
 
-              {/* Facebook */}
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                className={`p-4 rounded-2xl border transition-all group flex flex-col justify-between space-y-3 cursor-pointer shadow-lg hover:scale-[1.02] active:scale-[0.98] ${
-                  isBoardLight
-                    ? "bg-gradient-to-br from-blue-600/10 via-indigo-500/5 to-blue-700/10 border-blue-300 hover:border-blue-500 shadow-blue-100"
-                    : "bg-gradient-to-br from-blue-600/15 via-indigo-600/10 to-blue-700/15 border-blue-500/30 hover:border-blue-500/60 shadow-blue-950/20"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#1877F2] to-[#0D65D9] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                    <Globe className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-mono text-blue-500 font-bold px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
-                    Community
-                  </span>
+              {/* Card Top: Logo & Handle */}
+              <div className="flex items-start justify-between relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#2AABEE] to-[#229ED9] flex items-center justify-center text-white shadow-lg shadow-sky-500/40 group-hover:scale-110 transition-transform">
+                  {/* Authentic Telegram glyph */}
+                  <svg className="w-7 h-7 fill-white" viewBox="0 0 24 24">
+                    <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.536-.198 1.006.128.832.926z"/>
+                  </svg>
                 </div>
-                <div>
-                  <div className={`font-extrabold text-sm transition-colors ${
-                    isBoardLight ? "text-slate-900 group-hover:text-blue-600" : "text-white group-hover:text-blue-200"
-                  }`}>
-                    Facebook Guruhi
-                  </div>
-                  <div className={`text-[11px] mt-0.5 leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-400"}`}>
-                    Metodik tajriba almashish va xalqaro pedagoglar forumi.
-                  </div>
-                </div>
-              </a>
+                <span className={`text-[11px] font-mono font-bold px-2.5 py-1 rounded-full border ${
+                  isBoardLight ? "bg-sky-100 text-sky-700 border-sky-300" : "bg-sky-500/15 text-sky-300 border-sky-500/30"
+                }`}>
+                  @teacheros_official
+                </span>
+              </div>
 
-              {/* Support */}
-              <a
-                href="mailto:support@teacheros.ai"
-                className={`p-4 rounded-2xl border transition-all group flex flex-col justify-between space-y-3 cursor-pointer shadow-lg hover:scale-[1.02] active:scale-[0.98] ${
-                  isBoardLight
-                    ? "bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-emerald-600/10 border-emerald-300 hover:border-emerald-500 shadow-emerald-100"
-                    : "bg-gradient-to-br from-emerald-500/15 via-teal-600/10 to-emerald-600/15 border-emerald-500/30 hover:border-emerald-500/60 shadow-emerald-950/20"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-mono text-emerald-500 font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                    24/7 Aloqa
-                  </span>
+              {/* Card Bottom: Text & Action */}
+              <div className="relative z-10 space-y-2">
+                <h3 className={`text-xl font-black transition-colors ${
+                  isBoardLight ? "text-slate-900 group-hover:text-sky-600" : "text-white group-hover:text-sky-300"
+                }`}>
+                  Telegram Kanal
+                </h3>
+                <p className={`text-xs leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-300"}`}>
+                  O'qituvchilar hamjamiyati, bepul materiallar va tezkor xabarlar.
+                </p>
+                <div className="pt-2 flex items-center text-xs font-bold text-sky-500 group-hover:translate-x-1 transition-transform">
+                  <span>Kanalga kirish</span>
+                  <ArrowUpRight className="w-4 h-4 ml-1" />
                 </div>
-                <div>
-                  <div className={`font-extrabold text-sm transition-colors ${
-                    isBoardLight ? "text-slate-900 group-hover:text-emerald-600" : "text-white group-hover:text-emerald-200"
-                  }`}>
-                    Support (Qo'llab-quvvatlash)
-                  </div>
-                  <div className={`text-[11px] mt-0.5 leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-400"}`}>
-                    Takliflar, darslik integratsiyasi va har qanday texnik yordam.
-                  </div>
-                </div>
-              </a>
-            </div>
+              </div>
+            </a>
 
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={() => setShowSocialModal(false)}
-                className={`px-6 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                  isBoardLight
-                    ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                    : "bg-white/10 hover:bg-white/20 text-white border-white/10"
-                }`}
-              >
-                Yopish
-              </button>
-            </div>
+            {/* 3. Facebook */}
+            <a
+              href="https://facebook.com"
+              target="_blank"
+              rel="noreferrer"
+              className={`relative overflow-hidden rounded-3xl p-6 flex flex-col justify-between h-72 sm:h-80 transition-all duration-300 group cursor-pointer border-2 backdrop-blur-3xl hover:-translate-y-2 hover:scale-[1.03] ${
+                isBoardLight
+                  ? "bg-gradient-to-b from-white/90 to-blue-50/80 border-blue-300 hover:border-blue-500 shadow-[0_12px_40px_rgba(59,130,246,0.18)] hover:shadow-[0_20px_50px_rgba(59,130,246,0.35)]"
+                  : "bg-gradient-to-b from-[#0a1630]/85 to-[#040c1e]/95 border-blue-500/35 hover:border-blue-400 shadow-[0_12px_40px_rgba(59,130,246,0.22)] hover:shadow-[0_20px_60px_rgba(59,130,246,0.45)]"
+              }`}
+            >
+              {/* Glossy top shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <div className="absolute -top-16 -right-16 w-36 h-36 bg-blue-500/20 rounded-full blur-2xl group-hover:bg-blue-500/35 transition-all pointer-events-none" />
+
+              {/* Card Top: Logo & Handle */}
+              <div className="flex items-start justify-between relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-[#1877F2] flex items-center justify-center text-white shadow-lg shadow-blue-500/40 group-hover:scale-110 transition-transform">
+                  {/* Authentic Facebook 'f' */}
+                  <svg className="w-7 h-7 fill-white" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </div>
+                <span className={`text-[11px] font-mono font-bold px-2.5 py-1 rounded-full border ${
+                  isBoardLight ? "bg-blue-100 text-blue-700 border-blue-300" : "bg-blue-500/15 text-blue-300 border-blue-500/30"
+                }`}>
+                  Community
+                </span>
+              </div>
+
+              {/* Card Bottom: Text & Action */}
+              <div className="relative z-10 space-y-2">
+                <h3 className={`text-xl font-black transition-colors ${
+                  isBoardLight ? "text-slate-900 group-hover:text-blue-600" : "text-white group-hover:text-blue-300"
+                }`}>
+                  Facebook Guruhi
+                </h3>
+                <p className={`text-xs leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-300"}`}>
+                  Metodik tajriba almashish va xalqaro pedagoglar forumi.
+                </p>
+                <div className="pt-2 flex items-center text-xs font-bold text-blue-500 group-hover:translate-x-1 transition-transform">
+                  <span>Guruhga qo'shilish</span>
+                  <ArrowUpRight className="w-4 h-4 ml-1" />
+                </div>
+              </div>
+            </a>
+
+            {/* 4. Support */}
+            <a
+              href="mailto:support@teacheros.ai"
+              className={`relative overflow-hidden rounded-3xl p-6 flex flex-col justify-between h-72 sm:h-80 transition-all duration-300 group cursor-pointer border-2 backdrop-blur-3xl hover:-translate-y-2 hover:scale-[1.03] ${
+                isBoardLight
+                  ? "bg-gradient-to-b from-white/90 to-emerald-50/80 border-emerald-300 hover:border-emerald-500 shadow-[0_12px_40px_rgba(16,185,129,0.18)] hover:shadow-[0_20px_50px_rgba(16,185,129,0.35)]"
+                  : "bg-gradient-to-b from-[#07241d]/85 to-[#02130e]/95 border-emerald-500/35 hover:border-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.22)] hover:shadow-[0_20px_60px_rgba(16,185,129,0.45)]"
+              }`}
+            >
+              {/* Glossy top shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <div className="absolute -top-16 -right-16 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl group-hover:bg-emerald-500/35 transition-all pointer-events-none" />
+
+              {/* Card Top: Logo & Handle */}
+              <div className="flex items-start justify-between relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#10B981] to-[#059669] flex items-center justify-center text-white shadow-lg shadow-emerald-500/40 group-hover:scale-110 transition-transform">
+                  {/* Authentic 24/7 Support Headset glyph */}
+                  <svg className="w-7 h-7 fill-none stroke-white stroke-2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                  </svg>
+                </div>
+                <span className={`text-[11px] font-mono font-bold px-2.5 py-1 rounded-full border ${
+                  isBoardLight ? "bg-emerald-100 text-emerald-700 border-emerald-300" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                }`}>
+                  24/7 Aloqa
+                </span>
+              </div>
+
+              {/* Card Bottom: Text & Action */}
+              <div className="relative z-10 space-y-2">
+                <h3 className={`text-xl font-black transition-colors ${
+                  isBoardLight ? "text-slate-900 group-hover:text-emerald-600" : "text-white group-hover:text-emerald-300"
+                }`}>
+                  Support (Yordam)
+                </h3>
+                <p className={`text-xs leading-relaxed ${isBoardLight ? "text-slate-600" : "text-slate-300"}`}>
+                  Takliflar, darslik integratsiyasi va har qanday texnik yordam.
+                </p>
+                <div className="pt-2 flex items-center text-xs font-bold text-emerald-500 group-hover:translate-x-1 transition-transform">
+                  <span>Aloqaga chiqish</span>
+                  <ArrowUpRight className="w-4 h-4 ml-1" />
+                </div>
+              </div>
+            </a>
+
           </div>
         </div>
       )}
