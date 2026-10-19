@@ -261,7 +261,7 @@ export default function StudentAppPage() {
   const [studentName, setStudentName] = useState<string>("Ulug'bek Nurmuhammadov");
   const [telegramUsername, setTelegramUsername] = useState<string>("ulunur");
   const [telegramAvatar, setTelegramAvatar] = useState<string | null>(null);
-  const [className, setClassName] = useState<string>("Intermediate group");
+  const [className, setClassName] = useState<string>("");
   const [attendancePercent, setAttendancePercent] = useState<number>(0);
   const [absentCount, setAbsentCount] = useState<number>(0);
   const [streakDays, setStreakDays] = useState<number>(0);
@@ -284,11 +284,7 @@ export default function StudentAppPage() {
   const [homeworkList, setHomeworkList] = useState<StudentHomeworkItem[]>([]);
   const [activeModalHomework, setActiveModalHomework] = useState<StudentHomeworkItem | null>(null);
   const [solvingHomework, setSolvingHomework] = useState<StudentHomeworkItem | null>(null);
-  const [availableClassrooms, setAvailableClassrooms] = useState<string[]>([
-    "Intermediate group",
-    "Class 9A",
-    "IELTS 7.0"
-  ]);
+  const [availableClassrooms, setAvailableClassrooms] = useState<string[]>([]);
 
   // Bezbet AI Chat State
   const [chatMessages, setChatMessages] = useState<Array<{ sender: "user" | "bezbet"; text: string; image?: string; time: string }>>([]);
@@ -369,7 +365,7 @@ export default function StudentAppPage() {
   const syncClassroomHomework = useCallback(async (targetClassName?: string) => {
     if (typeof window === "undefined") return;
 
-    const activeName = targetClassName || className || "Intermediate group";
+    const activeName = targetClassName || className || "";
     const collected: StudentHomeworkItem[] = [];
     const seenTopics = new Set<string>();
 
@@ -522,7 +518,7 @@ export default function StudentAppPage() {
 
   // Dynamically resolve student's enrolled classroom from Local Storage, Direct Keys, and Server/Cloud DB
   const resolveStudentClassroom = useCallback(async (forcedUsername?: string) => {
-    if (typeof window === "undefined") return "Intermediate group";
+    if (typeof window === "undefined") return "";
 
     const currentUName = (forcedUsername || telegramUsername || "ulunur")
       .trim()
@@ -671,27 +667,29 @@ export default function StudentAppPage() {
       } catch (e) {}
     }
 
-    const finalName = foundName || "Intermediate group";
+    const finalName = foundName || "";
     setClassName(finalName);
 
     // Update availableClassrooms dropdown options
     if (discoveredClassrooms.size > 0) {
       const list = Array.from(discoveredClassrooms);
-      if (!list.includes(finalName)) list.unshift(finalName);
+      if (finalName && !list.includes(finalName)) list.unshift(finalName);
       setAvailableClassrooms((prev) => Array.from(new Set([...list, ...prev])));
     }
 
     // Cache to localStorage
-    try {
-      localStorage.setItem(
-        "teacheros_student_classroom",
-        JSON.stringify({ id: foundId || "cls_active", name: finalName })
-      );
-      localStorage.setItem(
-        "teacheros_classroom",
-        JSON.stringify({ id: foundId || "cls_active", name: finalName })
-      );
-    } catch (e) {}
+    if (finalName) {
+      try {
+        localStorage.setItem(
+          "teacheros_student_classroom",
+          JSON.stringify({ id: foundId || "cls_active", name: finalName })
+        );
+        localStorage.setItem(
+          "teacheros_classroom",
+          JSON.stringify({ id: foundId || "cls_active", name: finalName })
+        );
+      } catch (e) {}
+    }
 
     // Synchronize homework for this resolved classroom
     syncClassroomHomework(finalName);
@@ -1078,7 +1076,7 @@ export default function StudentAppPage() {
                 <span className={`text-sm sm:text-base font-black truncate tracking-tight ${
                   isLight ? "text-slate-900" : "text-white"
                 }`}>
-                  {className || "Intermediate group"}
+                  {className || (lang === "en" ? "No classroom" : lang === "ru" ? "Нет класса" : "Sinfga ulanmagan")}
                 </span>
               </div>
             </div>
@@ -1286,7 +1284,9 @@ export default function StudentAppPage() {
                   }`}>
                     {studentName}
                   </h1>
-                  <p className="text-sm font-semibold text-[#635BFF]">{className}</p>
+                  <p className="text-sm font-semibold text-[#635BFF]">
+                    {className || (lang === "en" ? "No classroom" : lang === "ru" ? "Нет класса" : "Sinfga ulanmagan")}
+                  </p>
                   <p className={`text-xs font-mono ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                     @{telegramUsername}
                   </p>

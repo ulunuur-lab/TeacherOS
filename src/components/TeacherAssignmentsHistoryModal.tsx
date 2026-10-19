@@ -37,13 +37,14 @@ export default function TeacherAssignmentsHistoryModal({
   const [activeTab, setActiveTab] = useState<"homework" | "level_check" | "group_quiz">("homework");
   const [assignments, setAssignments] = useState<ClassroomAssignment[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [classrooms, setClassrooms] = useState<Array<{ id: string; name: string; students: any[] }>>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [expandedHwId, setExpandedHwId] = useState<string | null>(null);
 
   const isEn = appLanguage === "en";
   const isRu = appLanguage === "ru";
 
-  // Fetch homework assignments and student submissions
+  // Fetch homework assignments, student submissions, and real classrooms
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -63,6 +64,29 @@ export default function TeacherAssignmentsHistoryModal({
         if (subData.success && Array.isArray(subData.submissions)) {
           setSubmissions(subData.submissions.filter((s: any) => s.student_name !== "__CLASSROOM_ASSIGNMENT__"));
         }
+      }
+
+      // 3. Fetch real classrooms
+      const clsRes = await fetch("/api/classrooms?all=true");
+      if (clsRes.ok) {
+        const clsData = await clsRes.json();
+        if (clsData.success && Array.isArray(clsData.classrooms)) {
+          setClassrooms(clsData.classrooms);
+        }
+      } else {
+        try {
+          const allKeys = Object.keys(localStorage);
+          const clsKeys = allKeys.filter((k) => k.startsWith("teacheros_classrooms_"));
+          const collected: any[] = [];
+          clsKeys.forEach((k) => {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              const p = JSON.parse(raw);
+              if (Array.isArray(p)) collected.push(...p);
+            }
+          });
+          setClassrooms(collected);
+        } catch (e) {}
       }
     } catch (e) {
       console.warn("Error fetching assignments history:", e);
@@ -546,31 +570,47 @@ export default function TeacherAssignmentsHistoryModal({
           {/* TAB 3: GROUP QUIZZES / SESSIONS */}
           {activeTab === "group_quiz" && (
             <div className="space-y-4 py-2">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className={`p-5 rounded-2xl border ${
-                  isLight ? "bg-white border-slate-200" : "bg-[#181a34] border-white/10"
-                }`}>
-                  <div className="text-xs uppercase font-bold text-slate-400">Faol Sinf</div>
-                  <div className="text-base font-black text-indigo-400 mt-1">Intermediate group</div>
-                  <div className="text-xs text-slate-400 mt-0.5">12 ta o'quvchi</div>
+              {classrooms.length === 0 ? (
+                <div className="py-16 text-center flex flex-col items-center justify-center space-y-3">
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-3xl text-emerald-400 shadow-lg">
+                    👥
+                  </div>
+                  <h3 className={`text-base font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
+                    {isEn ? "No classrooms created yet" : isRu ? "Классы пока не созданы" : "Hozircha sinflar mavjud emas"}
+                  </h3>
+                  <p className={`text-xs max-w-sm leading-relaxed ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                    {isEn
+                      ? "Create classrooms in the teacher sidebar to organize students and run live group quizzes."
+                      : isRu
+                      ? "Создайте классы в боковой панели, чтобы организовывать учеников."
+                      : "O'quvchilarni guruhlarga ajratish va jonli musobaqalar o'tkazish uchun yangi sinf yarating."}
+                  </p>
                 </div>
-
-                <div className={`p-5 rounded-2xl border ${
-                  isLight ? "bg-white border-slate-200" : "bg-[#181a34] border-white/10"
-                }`}>
-                  <div className="text-xs uppercase font-bold text-slate-400">Kollektiv Guruh</div>
-                  <div className="text-base font-black text-amber-400 mt-1">Class 9A</div>
-                  <div className="text-xs text-slate-400 mt-0.5">24 ta o'quvchi</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {classrooms.map((cls, idx) => {
+                    const studentCount = Array.isArray(cls.students) ? cls.students.length : 0;
+                    return (
+                      <div
+                        key={cls.id || idx}
+                        className={`p-5 rounded-2xl border transition-all ${
+                          isLight ? "bg-white border-slate-200 shadow-sm" : "bg-[#181a34] border-white/10"
+                        }`}
+                      >
+                        <div className="text-xs uppercase font-bold text-slate-400">
+                          {idx === 0 ? (isEn ? "Active Class" : "Faol Sinf") : (isEn ? "Class" : "Sinf")}
+                        </div>
+                        <div className="text-base font-black text-indigo-400 mt-1 truncate">
+                          {cls.name}
+                        </div>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          {studentCount} {isEn ? "students" : "ta o'quvchi"}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                <div className={`p-5 rounded-2xl border ${
-                  isLight ? "bg-white border-slate-200" : "bg-[#181a34] border-white/10"
-                }`}>
-                  <div className="text-xs uppercase font-bold text-slate-400">Intensiv Guruh</div>
-                  <div className="text-base font-black text-emerald-400 mt-1">IELTS 7.0</div>
-                  <div className="text-xs text-slate-400 mt-0.5">8 ta o'quvchi</div>
-                </div>
-              </div>
+              )}
 
               <div className={`p-6 rounded-2xl border text-center space-y-2 ${
                 isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
