@@ -562,6 +562,13 @@ export default function StitchTeacherOS() {
   const [isRightBarExpanded, setIsRightBarExpanded] = useState(false);
   const [lessonHistory, setLessonHistory] = useState<Array<{ topic: string; time: string; timestamp?: number }>>([]);
 
+  // Whenever Settings is opened, ensure left drawer ("three line panel") is visible side-by-side
+  useEffect(() => {
+    if (showSettingsModal && !isHistoryOpen) {
+      setIsHistoryOpen(true);
+    }
+  }, [showSettingsModal, isHistoryOpen]);
+
   // Account & Classroom-scoped History & Homework Helpers (Preserved forever per classroom)
   const getHistoryStorageKey = (user: AuthUser | null, classId?: string | null) => {
     const uid = user ? (user.telegram_id || (user as any).id || user.username || 'user') : 'guest';
@@ -1959,7 +1966,11 @@ export default function StitchTeacherOS() {
       } else if (e.key === "f" || e.key === "F") {
         toggleFullscreen();
       } else if (e.key === "Escape") {
-        if (expandedVisual) {
+        if (showSettingsModal) {
+          setShowSettingsModal(false);
+        } else if (showSocialModal) {
+          setShowSocialModal(false);
+        } else if (expandedVisual) {
           setExpandedVisual(null);
         } else if (isFullscreen) {
           setIsFullscreen(false);
@@ -2561,443 +2572,319 @@ export default function StitchTeacherOS() {
         activeClassroomName={workspaceMode === 'classroom' ? currentClassroom.name : 'Sinf'}
       />
 
-      {/* 3-Language & Theme Settings (Docked adjacent to Sidebar if open, or centered modal) */}
+      {/* Settings Panel: Covering the entire main area to the right of the left panel (three-line panel) */}
       {showSettingsModal && (
-        isHistoryOpen ? (
-          /* SIDECAR MODE: Occupies the space directly adjacent to the 3-line sidebar */
+        <div
+          className={`fixed inset-y-0 left-0 sm:left-80 right-0 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200 border-l shadow-2xl ${
+            isBoardLight
+              ? "bg-[#F8FAFC] border-slate-200 text-slate-900"
+              : "bg-[#0B0D14] border-white/10 text-white"
+          }`}
+        >
+          {/* Top Sticky Header */}
           <div
-            className={`fixed left-80 top-0 bottom-0 z-50 w-[380px] sm:w-[440px] max-w-[calc(100vw-320px)] border-r shadow-2xl p-6 sm:p-7 space-y-6 overflow-y-auto animate-fade-in transition-all ${
+            className={`h-16 px-6 sm:px-10 border-b flex items-center justify-between shrink-0 backdrop-blur-xl ${
               isBoardLight
-                ? "bg-white/98 border-slate-200 text-slate-900 shadow-2xl"
-                : "bg-[#141724]/98 border-white/10 text-white shadow-[20px_0_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+                ? "bg-white/80 border-slate-200"
+                : "bg-[#0D0F17]/80 border-white/10"
             }`}
           >
-            {/* Header */}
-            <div className={`flex items-center justify-between pb-3 border-b ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
-              <div className="flex items-center space-x-3">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#5B3DF5] to-[#a855f7] flex items-center justify-center text-white shadow-lg">
-                  <Settings className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black tracking-tight">{t.settings_title}</h3>
-                  <p className="text-xs text-slate-400 font-medium">{t.settings_lang_desc}</p>
-                </div>
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#5B3DF5] to-[#a855f7] flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+                <Settings className="w-5 h-5" />
               </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
+                  <span>{t.settings_title}</span>
+                  <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${
+                    isBoardLight ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
+                  }`}>
+                    TeacherOS
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400 font-medium">
+                  {t.settings_lang_desc}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2.5">
               <button
                 type="button"
                 onClick={() => setShowSettingsModal(false)}
-                className={`p-1.5 rounded-xl transition-all cursor-pointer ${
-                  isBoardLight ? "hover:bg-slate-100 text-slate-500 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
+                className={`p-2 rounded-xl transition-all cursor-pointer border hover:scale-105 active:scale-95 ${
+                  isBoardLight
+                    ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                    : "bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10"
                 }`}
-                title="Yopish"
+                title="Yopish (Esc)"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            {/* Language Selection */}
-            <div className="space-y-2.5">
-              <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
-                <Globe className="w-3.5 h-3.5" />
-                <span>{t.settings_lang_section}</span>
-              </label>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {/* Uzbek */}
-                <button
-                  type="button"
-                  onClick={() => handleLanguageChange('uz')}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
-                    appLanguage === 'uz'
-                      ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
-                      : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl">🇺🇿</span>
-                    {appLanguage === 'uz' && <Check className="w-4 h-4 text-indigo-400" />}
-                  </div>
-                  <div className="font-bold text-xs">{t.settings_lang_uz}</div>
-                  <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_uz_sub}</div>
-                </button>
-
-                {/* English */}
-                <button
-                  type="button"
-                  onClick={() => handleLanguageChange('en')}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
-                    appLanguage === 'en'
-                      ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
-                      : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl">🇬🇧</span>
-                    {appLanguage === 'en' && <Check className="w-4 h-4 text-indigo-400" />}
-                  </div>
-                  <div className="font-bold text-xs">{t.settings_lang_en}</div>
-                  <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_en_sub}</div>
-                </button>
-
-                {/* Russian */}
-                <button
-                  type="button"
-                  onClick={() => handleLanguageChange('ru')}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
-                    appLanguage === 'ru'
-                      ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
-                      : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl">🇷🇺</span>
-                    {appLanguage === 'ru' && <Check className="w-4 h-4 text-indigo-400" />}
-                  </div>
-                  <div className="font-bold text-xs">{t.settings_lang_ru}</div>
-                  <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_ru_sub}</div>
-                </button>
-              </div>
-            </div>
-
-            {/* Theme Selection without ugly hex codes */}
-            <div className="space-y-2.5">
-              <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
-                {isBoardLight ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                <span>{t.settings_theme_section}</span>
-              </label>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsBoardLight(false)}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center space-x-3 ${
-                    !isBoardLight
-                      ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                      : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-200">
-                    <Moon className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-xs">{t.settings_theme_dark}</div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsBoardLight(true)}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center space-x-3 ${
-                    isBoardLight
-                      ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                      : 'bg-white/5 border-white/10 hover:border-white/20'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700">
-                    <Sun className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-xs">{t.settings_theme_light}</div>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Account Section */}
-            <div className="space-y-2.5">
-              <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
-                <User className="w-3.5 h-3.5" />
-                <span>{t.settings_account_section}</span>
-              </label>
-
-              {currentUser ? (
-                <div className={`p-4 rounded-2xl border space-y-3 ${
-                  isBoardLight ? "bg-slate-50 border-slate-200" : "bg-white/5 border-white/10"
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3 min-w-0">
-                      {currentUser.avatar_url ? (
-                        <img src={currentUser.avatar_url} alt="Telegram" className="w-10 h-10 rounded-full border border-sky-400/50 object-cover shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#229ED9] to-[#0088cc] flex items-center justify-center font-bold text-white text-sm shadow shrink-0">
-                          <Send className="w-5 h-5 fill-white" />
-                        </div>
-                      )}
-                      <div className="truncate">
-                        <div className={`font-bold text-sm truncate flex items-center gap-1.5 ${isBoardLight ? "text-slate-900" : "text-white"}`}>
-                          <span>{teacherDisplayName || currentUser.first_name || currentUser.username}</span>
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0" title="Faol Telegram sessiyasi" />
-                        </div>
-                        <div className="text-[11px] text-sky-400 font-medium truncate flex items-center gap-1">
-                          <span>{currentUser.username.startsWith('@') ? currentUser.username : `@${currentUser.username}`}</span>
-                          {currentUser.telegram_id && (
-                            <span className="text-slate-500 font-mono text-[10px]">• ID: {currentUser.telegram_id}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleLogout();
-                        setShowSettingsModal(false);
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 hover-lift ml-2"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>{t.logout}</span>
-                    </button>
-                  </div>
-
-                  {/* Teacher Display Name input for personalized greetings */}
-                  <div className={`pt-2.5 border-t space-y-1.5 ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
-                    <label className="text-[11px] font-semibold text-slate-400 flex items-center justify-between">
-                      <span>{appLanguage === 'en' ? "Teacher Name (for greeting):" : appLanguage === 'ru' ? "Имя учителя (обращение):" : "Ustoz nomi (Murojaat uchun):"}</span>
-                      <span className="text-[10px] text-indigo-400 font-normal">{appLanguage === 'en' ? "Telegram username stays fixed" : appLanguage === 'ru' ? "Telegram ник неизменен" : "Telegram username o'zgarmaydi"}</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={teacherDisplayName}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setTeacherDisplayName(val);
-                        const uid = currentUser.telegram_id || (currentUser as any).id || currentUser.username || 'user';
-                        localStorage.setItem(`teacheros_teacher_name_${uid}`, val);
-                      }}
-                      placeholder={currentUser.first_name || currentUser.username || "Masalan: Aziz Ustoz"}
-                      className={`w-full px-3 py-1.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 border transition-all ${
-                        isBoardLight
-                          ? "bg-white text-slate-900 border-slate-300 placeholder-slate-400"
-                          : "bg-white/10 text-white border-white/15 placeholder-slate-500"
-                      }`}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
-                  isBoardLight ? "bg-slate-50 border-slate-200" : "bg-white/5 border-white/10"
-                }`}>
-                  <div className="text-xs text-slate-400">
-                    {t.settings_account_guest}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSettingsModal(false);
-                      setShowAuthModal(true);
-                    }}
-                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#5B3DF5] to-[#7C3AED] text-white text-xs font-bold transition-all cursor-pointer shadow-md"
-                  >
-                    {t.login_register}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Done button */}
-            <button
-              type="button"
-              onClick={() => setShowSettingsModal(false)}
-              className={`w-full py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                isBoardLight
-                  ? "bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300"
-                  : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
-              }`}
-            >
-              {t.done}
-            </button>
           </div>
-        ) : (
-          /* CENTERED MODAL MODE */
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-            <div
-              className={`w-full max-w-lg rounded-3xl p-6 sm:p-7 border shadow-2xl relative space-y-6 ${
-                isBoardLight
-                  ? "bg-white border-slate-200 text-slate-900"
-                  : "bg-[#141724] border-white/10 text-white"
-              }`}
-            >
-              {/* Header */}
-              <div className={`flex items-center justify-between pb-3 border-b ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#5B3DF5] to-[#a855f7] flex items-center justify-center text-white shadow-lg">
-                    <Settings className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black tracking-tight">{t.settings_title}</h3>
-                    <p className="text-xs text-slate-400 font-medium">{t.settings_lang_desc}</p>
-                  </div>
+
+          {/* Scrollable Content Body */}
+          <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar p-6 sm:p-10">
+            <div className="max-w-4xl mx-auto space-y-8 pb-12">
+
+              {/* 1. Language Selection */}
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-2">
+                    <Globe className="w-4 h-4" />
+                    <span>{t.settings_lang_section}</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    {appLanguage === 'en' ? "Choose your primary language" : appLanguage === 'ru' ? "Выберите основной язык" : "Asosiy tilni tanlang"}
+                  </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSettingsModal(false)}
-                  className={`p-1.5 rounded-xl transition-all cursor-pointer ${
-                    isBoardLight ? "hover:bg-slate-100 text-slate-500 hover:text-slate-900" : "hover:bg-white/10 text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
 
-              {/* Language Selection */}
-              <div className="space-y-2.5">
-                <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>{t.settings_lang_section}</span>
-                </label>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* Uzbek */}
                   <button
                     type="button"
                     onClick={() => handleLanguageChange('uz')}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
+                    className={`relative p-5 rounded-3xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-3 group hover:scale-[1.02] ${
                       appLanguage === 'uz'
-                        ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
-                        : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                        ? isBoardLight
+                          ? 'bg-indigo-50/80 border-indigo-600 shadow-[0_8px_30px_rgba(99,102,241,0.18)]'
+                          : 'bg-indigo-600/15 border-indigo-500 shadow-[0_8px_30px_rgba(99,102,241,0.25)]'
+                        : isBoardLight
+                          ? 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
+                          : 'bg-[#121520] border-white/10 hover:border-white/20'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl">🇺🇿</span>
-                      {appLanguage === 'uz' && <Check className="w-4 h-4 text-indigo-400" />}
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-3xl">🇺🇿</span>
+                      {appLanguage === 'uz' ? (
+                        <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                      ) : (
+                        <div className="w-6 h-6 rounded-full border border-slate-500/30" />
+                      )}
                     </div>
-                    <div className="font-bold text-xs">{t.settings_lang_uz}</div>
-                    <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_uz_sub}</div>
+                    <div>
+                      <div className="font-black text-sm">{t.settings_lang_uz}</div>
+                      <div className="text-xs text-slate-400 leading-relaxed mt-1">{t.settings_lang_uz_sub}</div>
+                    </div>
+                    <div className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block self-start ${
+                      appLanguage === 'uz' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-500/10 text-slate-500'
+                    }`}>
+                      Birlamchi
+                    </div>
                   </button>
 
                   {/* English */}
                   <button
                     type="button"
                     onClick={() => handleLanguageChange('en')}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
+                    className={`relative p-5 rounded-3xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-3 group hover:scale-[1.02] ${
                       appLanguage === 'en'
-                        ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
-                        : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                        ? isBoardLight
+                          ? 'bg-indigo-50/80 border-indigo-600 shadow-[0_8px_30px_rgba(99,102,241,0.18)]'
+                          : 'bg-indigo-600/15 border-indigo-500 shadow-[0_8px_30px_rgba(99,102,241,0.25)]'
+                        : isBoardLight
+                          ? 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
+                          : 'bg-[#121520] border-white/10 hover:border-white/20'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl">🇬🇧</span>
-                      {appLanguage === 'en' && <Check className="w-4 h-4 text-indigo-400" />}
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-3xl">🇬🇧</span>
+                      {appLanguage === 'en' ? (
+                        <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                      ) : (
+                        <div className="w-6 h-6 rounded-full border border-slate-500/30" />
+                      )}
                     </div>
-                    <div className="font-bold text-xs">{t.settings_lang_en}</div>
-                    <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_en_sub}</div>
+                    <div>
+                      <div className="font-black text-sm">{t.settings_lang_en}</div>
+                      <div className="text-xs text-slate-400 leading-relaxed mt-1">{t.settings_lang_en_sub}</div>
+                    </div>
+                    <div className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block self-start ${
+                      appLanguage === 'en' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-500/10 text-slate-500'
+                    }`}>
+                      Immersion
+                    </div>
                   </button>
 
                   {/* Russian */}
                   <button
                     type="button"
                     onClick={() => handleLanguageChange('ru')}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
+                    className={`relative p-5 rounded-3xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-3 group hover:scale-[1.02] ${
                       appLanguage === 'ru'
-                        ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.25)]'
-                        : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                        ? isBoardLight
+                          ? 'bg-indigo-50/80 border-indigo-600 shadow-[0_8px_30px_rgba(99,102,241,0.18)]'
+                          : 'bg-indigo-600/15 border-indigo-500 shadow-[0_8px_30px_rgba(99,102,241,0.25)]'
+                        : isBoardLight
+                          ? 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
+                          : 'bg-[#121520] border-white/10 hover:border-white/20'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl">🇷🇺</span>
-                      {appLanguage === 'ru' && <Check className="w-4 h-4 text-indigo-400" />}
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-3xl">🇷🇺</span>
+                      {appLanguage === 'ru' ? (
+                        <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                      ) : (
+                        <div className="w-6 h-6 rounded-full border border-slate-500/30" />
+                      )}
                     </div>
-                    <div className="font-bold text-xs">{t.settings_lang_ru}</div>
-                    <div className="text-[10px] text-slate-400 leading-snug">{t.settings_lang_ru_sub}</div>
+                    <div>
+                      <div className="font-black text-sm">{t.settings_lang_ru}</div>
+                      <div className="text-xs text-slate-400 leading-relaxed mt-1">{t.settings_lang_ru_sub}</div>
+                    </div>
+                    <div className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block self-start ${
+                      appLanguage === 'ru' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-500/10 text-slate-500'
+                    }`}>
+                      СНГ
+                    </div>
                   </button>
                 </div>
               </div>
 
-              {/* Theme Selection */}
-              <div className="space-y-2.5">
-                <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
-                  {isBoardLight ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                  <span>{t.settings_theme_section}</span>
-                </label>
+              {/* 2. Theme Selection */}
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-2">
+                    {isBoardLight ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    <span>{t.settings_theme_section}</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    {appLanguage === 'en' ? "Visual appearance & board color" : appLanguage === 'ru' ? "Цветовая тема доски" : "Doska va fon ko'rinishi"}
+                  </span>
+                </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Dark Mode */}
                   <button
                     type="button"
                     onClick={() => setIsBoardLight(false)}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center space-x-3 ${
+                    className={`p-5 rounded-3xl border-2 text-left transition-all cursor-pointer flex items-center justify-between group hover:scale-[1.01] ${
                       !isBoardLight
-                        ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                        : isBoardLight ? 'bg-slate-50 border-slate-200 hover:border-slate-300' : 'bg-white/5 border-white/10 hover:border-white/20'
+                        ? 'bg-indigo-600/15 border-indigo-500 shadow-[0_8px_30px_rgba(99,102,241,0.25)]'
+                        : isBoardLight
+                          ? 'bg-white border-slate-200 hover:border-slate-300'
+                          : 'bg-[#121520] border-white/10 hover:border-white/20'
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-200">
-                      <Moon className="w-4 h-4" />
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 rounded-2xl bg-[#090b11] border border-slate-700 flex items-center justify-center text-slate-200 shadow-md">
+                        <Moon className="w-6 h-6 text-indigo-400" />
+                      </div>
+                      <div>
+                        <div className="font-black text-sm">{t.settings_theme_dark}</div>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          {appLanguage === 'en' ? "Deep dark mode for focus" : appLanguage === 'ru' ? "Тёмный режим для фокуса" : "Ko'zni toliqtirmaydigan qora fon"}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-xs">{t.settings_theme_dark}</div>
-                    </div>
+                    {!isBoardLight && (
+                      <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      </div>
+                    )}
                   </button>
 
+                  {/* Light Mode */}
                   <button
                     type="button"
                     onClick={() => setIsBoardLight(true)}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center space-x-3 ${
+                    className={`p-5 rounded-3xl border-2 text-left transition-all cursor-pointer flex items-center justify-between group hover:scale-[1.01] ${
                       isBoardLight
-                        ? 'bg-indigo-600/20 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                        ? 'bg-indigo-50/80 border-indigo-600 shadow-[0_8px_30px_rgba(99,102,241,0.18)]'
+                        : 'bg-[#121520] border-white/10 hover:border-white/20'
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700">
-                      <Sun className="w-4 h-4" />
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 shadow-md">
+                        <Sun className="w-6 h-6 text-amber-500" />
+                      </div>
+                      <div>
+                        <div className="font-black text-sm">{t.settings_theme_light}</div>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          {appLanguage === 'en' ? "Bright for classrooms & projectors" : appLanguage === 'ru' ? "Светлый для проекторов" : "Sinfxona proyektori uchun ravshan"}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-xs">{t.settings_theme_light}</div>
-                    </div>
+                    {isBoardLight && (
+                      <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      </div>
+                    )}
                   </button>
                 </div>
               </div>
 
-              {/* Account Section */}
-              <div className="space-y-2.5">
-                <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-1.5">
-                  <User className="w-3.5 h-3.5" />
-                  <span>{t.settings_account_section}</span>
-                </label>
+              {/* 3. Account Section */}
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>{t.settings_account_section}</span>
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    {appLanguage === 'en' ? "Profile & Telegram session" : appLanguage === 'ru' ? "Профиль и сессия Telegram" : "Profil va Telegram sessiyasi"}
+                  </span>
+                </div>
 
                 {currentUser ? (
-                  <div className={`p-4 rounded-2xl border space-y-3 ${
-                    isBoardLight ? "bg-slate-50 border-slate-200" : "bg-white/5 border-white/10"
+                  <div className={`p-6 rounded-3xl border-2 space-y-5 ${
+                    isBoardLight ? "bg-white border-slate-200 shadow-sm" : "bg-[#121520] border-white/10"
                   }`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center space-x-4 min-w-0">
                         {currentUser.avatar_url ? (
-                          <img src={currentUser.avatar_url} alt="Telegram" className="w-10 h-10 rounded-full border border-sky-400/50 object-cover shrink-0" />
+                          <img src={currentUser.avatar_url} alt="Telegram" className="w-14 h-14 rounded-2xl border-2 border-sky-400/50 object-cover shrink-0 shadow-md" />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#229ED9] to-[#0088cc] flex items-center justify-center font-bold text-white text-sm shadow shrink-0">
-                            <Send className="w-5 h-5 fill-white" />
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#229ED9] to-[#0088cc] flex items-center justify-center font-bold text-white text-lg shadow-lg shrink-0">
+                            <Send className="w-7 h-7 fill-white" />
                           </div>
                         )}
                         <div className="truncate">
-                          <div className={`font-bold text-sm truncate flex items-center gap-1.5 ${isBoardLight ? "text-slate-900" : "text-white"}`}>
+                          <div className={`font-black text-base truncate flex items-center gap-2 ${isBoardLight ? "text-slate-900" : "text-white"}`}>
                             <span>{teacherDisplayName || currentUser.first_name || currentUser.username}</span>
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0" title="Faol Telegram sessiyasi" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block shrink-0 shadow-[0_0_8px_#34d399]" title="Faol Telegram sessiyasi" />
                           </div>
-                          <div className="text-[11px] text-sky-400 font-medium truncate flex items-center gap-1">
+                          <div className="text-xs text-sky-400 font-medium truncate flex items-center gap-1.5 mt-0.5">
                             <span>{currentUser.username.startsWith('@') ? currentUser.username : `@${currentUser.username}`}</span>
                             {currentUser.telegram_id && (
-                              <span className="text-slate-500 font-mono text-[10px]">• ID: {currentUser.telegram_id}</span>
+                              <span className="text-slate-500 font-mono text-[11px]">• ID: {currentUser.telegram_id}</span>
                             )}
+                          </div>
+                          <div className="text-[11px] text-emerald-400/90 font-medium mt-1">
+                            {appLanguage === 'en' ? "Connected & Synced with Telegram" : appLanguage === 'ru' ? "Синхронизировано с Telegram" : "Telegram bilan sinxronizatsiya qilingan"}
                           </div>
                         </div>
                       </div>
+
                       <button
                         type="button"
                         onClick={() => {
                           handleLogout();
                           setShowSettingsModal(false);
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shrink-0 hover-lift ml-2"
+                        className="px-4 py-2.5 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-2 shrink-0 self-start sm:self-auto hover:scale-105"
                       >
-                        <LogOut className="w-3.5 h-3.5" />
+                        <LogOut className="w-4 h-4" />
                         <span>{t.logout}</span>
                       </button>
                     </div>
 
                     {/* Teacher Display Name input for personalized greetings */}
-                    <div className={`pt-2.5 border-t space-y-1.5 ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
-                      <label className="text-[11px] font-semibold text-slate-400 flex items-center justify-between">
-                        <span>{appLanguage === 'en' ? "Teacher Name (for greeting):" : appLanguage === 'ru' ? "Имя учителя (обращение):" : "Ustoz nomi (Murojaat uchun):"}</span>
-                        <span className="text-[10px] text-indigo-400 font-normal">{appLanguage === 'en' ? "Telegram username stays fixed" : appLanguage === 'ru' ? "Telegram ник неизменен" : "Telegram username o'zgarmaydi"}</span>
+                    <div className={`pt-4 border-t space-y-2 ${isBoardLight ? "border-slate-200" : "border-white/10"}`}>
+                      <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                        <span className={isBoardLight ? "text-slate-700" : "text-slate-300"}>
+                          {appLanguage === 'en' ? "Teacher Display Name (for classroom greeting):" : appLanguage === 'ru' ? "Имя учителя (для обращения к ученикам):" : "Ustoz nomi (Murojaat va darsliklar uchun):"}
+                        </span>
+                        <span className="text-[10px] text-indigo-400 font-normal">
+                          {appLanguage === 'en' ? "Telegram username stays fixed" : appLanguage === 'ru' ? "Telegram ник неизменен" : "Telegram username o'zgarmaydi"}
+                        </span>
                       </label>
                       <input
                         type="text"
@@ -3009,20 +2896,30 @@ export default function StitchTeacherOS() {
                           localStorage.setItem(`teacheros_teacher_name_${uid}`, val);
                         }}
                         placeholder={currentUser.first_name || currentUser.username || "Masalan: Aziz Ustoz"}
-                        className={`w-full px-3 py-1.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 border transition-all ${
+                        className={`w-full px-4 py-3 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 border-2 transition-all ${
                           isBoardLight
-                            ? "bg-white text-slate-900 border-slate-300 placeholder-slate-400"
-                            : "bg-white/10 text-white border-white/15 placeholder-slate-500"
+                            ? "bg-slate-50 text-slate-900 border-slate-300 placeholder-slate-400"
+                            : "bg-white/5 text-white border-white/15 placeholder-slate-500"
                         }`}
                       />
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        {appLanguage === 'en'
+                          ? "This name is shown to students on their homework assignments and level check reports."
+                          : appLanguage === 'ru'
+                          ? "Это имя отображается ученикам в домашних заданиях и отчётах."
+                          : "Bu ism o'quvchilar ilovasida uyga vazifa topshirganda va test natijalari hisobotida ustoz sifatida ko'rinadi."}
+                      </p>
                     </div>
                   </div>
                 ) : (
-                  <div className={`p-3.5 rounded-2xl border flex items-center justify-between ${
-                    isBoardLight ? "bg-slate-50 border-slate-200" : "bg-white/5 border-white/10"
+                  <div className={`p-6 rounded-3xl border-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                    isBoardLight ? "bg-white border-slate-200 shadow-sm" : "bg-[#121520] border-white/10"
                   }`}>
-                    <div className="text-xs text-slate-400">
-                      {t.settings_account_guest}
+                    <div>
+                      <div className="font-bold text-sm mb-1">{t.settings_account_section}</div>
+                      <div className="text-xs text-slate-400 max-w-md leading-relaxed">
+                        {t.settings_account_guest}
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -3030,29 +2927,53 @@ export default function StitchTeacherOS() {
                         setShowSettingsModal(false);
                         setShowAuthModal(true);
                       }}
-                      className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#5B3DF5] to-[#7C3AED] text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+                      className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#229ED9] to-[#0088cc] hover:from-[#2ba6e3] hover:to-[#0094de] text-white text-xs font-bold transition-all cursor-pointer shadow-lg shadow-sky-500/25 flex items-center space-x-2 shrink-0 hover:scale-105 active:scale-95"
                     >
-                      {t.login_register}
+                      <Send className="w-4 h-4 fill-white" />
+                      <span>{t.login_register}</span>
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Done button */}
+              {/* 4. Platform & System Status */}
+              <div className={`p-5 rounded-3xl border ${
+                isBoardLight ? "bg-slate-100/70 border-slate-200" : "bg-white/[0.03] border-white/10"
+              }`}>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left">
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-slate-400">Tizim talqini</div>
+                    <div className="text-xs font-black text-indigo-400 mt-0.5">TeacherOS 2.0 Pro</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-slate-400">Telegram Bot</div>
+                    <div className="text-xs font-bold text-emerald-400 mt-0.5 flex items-center justify-center sm:justify-start gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
+                      <span>@teacheros_official_bot</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-slate-400">AI Injiniriy</div>
+                    <div className="text-xs font-bold text-sky-400 mt-0.5">Gemini 2.5 Flash + Web Speech</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Done / Save Button */}
               <button
                 type="button"
                 onClick={() => setShowSettingsModal(false)}
-                className={`w-full py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                className={`w-full py-4 rounded-2xl text-sm font-black transition-all cursor-pointer shadow-lg hover:scale-[1.01] active:scale-99 ${
                   isBoardLight
-                    ? "bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300"
-                    : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
+                    ? "bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/20"
+                    : "bg-white hover:bg-slate-100 text-slate-950 shadow-white/10"
                 }`}
               >
                 {t.done}
               </button>
             </div>
           </div>
-        )
+        </div>
       )}
 
 
@@ -3592,6 +3513,7 @@ export default function StitchTeacherOS() {
           <button
             type="button"
             onClick={() => {
+              setIsHistoryOpen(true);
               setShowSettingsModal((prev) => !prev);
             }}
             className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer group hover-lift border ${
@@ -3734,7 +3656,10 @@ export default function StitchTeacherOS() {
                 {/* User Pill - Clickable to open Settings & Account */}
                 <button
                   type="button"
-                  onClick={() => setShowSettingsModal(true)}
+                  onClick={() => {
+                    setIsHistoryOpen(true);
+                    setShowSettingsModal(true);
+                  }}
                   className={`hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium cursor-pointer transition-all hover:scale-[1.02] hover-lift ${
                     isBoardLight
                       ? "bg-slate-100 hover:bg-slate-200 border-slate-300 hover:border-indigo-400 text-slate-800"
@@ -3782,7 +3707,10 @@ export default function StitchTeacherOS() {
               {/* Floating User Pill - Clickable to open Settings & Account */}
               <button
                 type="button"
-                onClick={() => setShowSettingsModal(true)}
+                onClick={() => {
+                  setIsHistoryOpen(true);
+                  setShowSettingsModal(true);
+                }}
                 className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-xl border shadow-2xl backdrop-blur-xl text-xs font-medium cursor-pointer transition-all hover:scale-[1.02] hover-lift ${
                   isBoardLight
                     ? "bg-white/95 hover:bg-slate-50 border-slate-300 hover:border-indigo-400 text-slate-800 shadow-slate-200"
