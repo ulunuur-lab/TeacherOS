@@ -2575,10 +2575,10 @@ export default function StitchTeacherOS() {
       {/* Settings Panel: Covering the entire main area to the right of the left panel (three-line panel) */}
       {showSettingsModal && (
         <div
-          className={`fixed inset-y-0 left-0 sm:left-80 right-0 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200 border-l shadow-2xl ${
+          className={`fixed inset-y-0 left-0 sm:left-80 right-0 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200 border-l ${
             isBoardLight
-              ? "bg-[#F8FAFC] border-slate-200 text-slate-900"
-              : "bg-[#0B0D14] border-white/10 text-white"
+              ? "bg-[#F8FAFC] border-slate-200 text-slate-900 shadow-none"
+              : "bg-[#0B0D14] border-white/10 text-white shadow-2xl"
           }`}
         >
           {/* Top Sticky Header */}
@@ -3213,10 +3213,12 @@ export default function StitchTeacherOS() {
       <aside
         className={`fixed left-0 top-0 bottom-0 z-50 w-80 ${
           isBoardLight
-            ? "bg-white/98 border-r border-slate-200 text-slate-900 shadow-2xl"
+            ? "bg-white border-r border-slate-200 text-slate-900 shadow-none"
             : "bg-[#12141D]/98 border-r border-white/10 text-white shadow-2xl"
         } p-4 sm:p-5 backdrop-blur-2xl flex flex-col justify-between overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isHistoryOpen ? "translate-x-0 shadow-[20px_0_50px_rgba(0,0,0,0.8)]" : "-translate-x-full pointer-events-none"
+          isHistoryOpen
+            ? (isBoardLight ? "translate-x-0 shadow-none" : "translate-x-0 shadow-[20px_0_50px_rgba(0,0,0,0.8)]")
+            : "-translate-x-full pointer-events-none"
         }`}
       >
         {/* Drawer Top Header (Sticky / Non-scrolling) */}

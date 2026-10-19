@@ -23,7 +23,7 @@ export function cleanTopicTitle(raw: string): string {
     /^(?:let'?s\s+(?:learn|teach|study|cover|do))(?:\s+(?:about|on))?\s+/i,
     /^(?:today(?:'s)?\s+(?:lesson|topic|class)\s+is)\s+/i,
     /^(?:we\s+are\s+(?:learning|studying|talking\s+about))\s+/i,
-    /^(?:how\s+to\s+(?:use|learn|teach))\s+/i,
+    /^(?:how\s+(?:can\s+(?:i|we|you)\s+)?(?:to\s+)?(?:talk\s+about|express|say|describe|explain|teach|use|learn))\s+/i,
     /^(?:iltimos\s+)?(?:menga\s+)?(?:bugun\s+)?dars\s+(?:tayyorla(?:b\s+ber)?|yarat|o't|tuz|qil|ber)(?:\s*[:\-])?\s*/i,
     /^(?:iltimos\s+)?(?:menga\s+)?(?:bugun\s+)?(?:[a-z0-9\s\-]+?)\s+(?:haqida|to'g'risida|mavzusida)\s+(?:dars|slayd|taqdimot)\s+(?:tayyorla|yarat|o't|tuz|qil)(?:b\s+ber)?/i,
     /^(?:bugun\s+)?(?:[a-z0-9\s\-]+?)\s+(?:mavzusini|mavzusi)\s+(?:o'tamiz|o'rganamiz|o'tmoqchiman)/i,
@@ -449,10 +449,12 @@ Return ONLY a strict JSON object with this schema:
     promptParts.push({ text: prompt });
 
     const models = [
+      "gemini-3.5-flash-lite",
+      "gemini-3.5-flash",
+      "gemini-3.7-flash",
+      "gemini-3.6-flash",
       "gemini-flash-lite-latest",
-      "gemini-flash-latest",
-      "gemini-2.5-flash-lite",
-      "gemini-3.1-flash-lite"
+      "gemini-flash-latest"
     ];
 
     let lastError = "";
@@ -461,7 +463,7 @@ Return ONLY a strict JSON object with this schema:
       try {
         console.log(`[Gemini API] Requesting ${model} for topic: "${topic}" (${level}, ${hasFiles ? `${files.length} file(s)` : "text-only"})...`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 14000); // 14s per model (fast fallback)
+        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s per model (fast & reliable)
 
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -510,6 +512,23 @@ Return ONLY a strict JSON object with this schema:
     const normTopic = topic.toLowerCase();
     
     // Topic-aware intelligent builder so students NEVER see "Shakl A" or "Key Particle"
+    let displayTopic = topic;
+    if (topic.length > 32) {
+      if (normTopic.includes("plan") && (normTopic.includes("future") || normTopic.includes("certainty") || normTopic.includes("sure"))) {
+        displayTopic = "Future Plans & Degrees of Certainty (Might, May, Going to)";
+      } else if (normTopic.includes("interview") || normTopic.includes("job")) {
+        displayTopic = "Job Interview English";
+      } else if (normTopic.includes("travel") || normTopic.includes("airport")) {
+        displayTopic = "Travel & Airport English";
+      } else if (normTopic.includes("conditional") || normTopic.includes("if")) {
+        displayTopic = "Conditionals";
+      } else if (normTopic.includes("passive")) {
+        displayTopic = "Passive Voice";
+      } else {
+        const words = topic.split(" ");
+        displayTopic = words.slice(0, 4).join(" ");
+      }
+    }
     const isPrep = normTopic.includes("preposition") || normTopic.includes("in on at") || normTopic.includes("at on in");
     const isBio = normTopic.includes("ronaldo") || normTopic.includes("messi") || normTopic.includes("biography") || normTopic.includes("person");
     const isPP = normTopic.includes("perfect") && !isPrep;
@@ -669,16 +688,16 @@ Return ONLY a strict JSON object with this schema:
 
     const fallbackCurriculum: Curriculum = {
       id: `gen_${Date.now()}`,
-      topic,
+      topic: displayTopic,
       level,
       length,
       category: "Grammar & Communication",
-      description: t_str(`${topic} mavzusi bo'yicha mukammal CEFR ${level} darajasidagi interaktiv darslik paketi.`, `Complete interactive CEFR ${level} lesson deck on ${topic}.`, `Полный интерактивный пакет уроков уровня CEFR ${level} по теме ${topic}.`),
+      description: t_str(`${displayTopic} mavzusi bo'yicha mukammal CEFR ${level} darajasidagi interaktiv darslik paketi.`, `Complete interactive CEFR ${level} lesson deck on ${displayTopic}.`, `Полный интерактивный пакет уроков уровня CEFR ${level} по теме ${displayTopic}.`),
       slides: [
         {
           id: "s1",
           tag: t_str("1. MOHIYAT & HOOK", "1. HOOK & CONCEPT", "1. СУТЬ И ВВЕДЕНИЕ"),
-          title: t_str(`${topic} — Asosiy Tushuncha & Kontekst`, `${topic} — Core Concept & Context`, `${topic} — Основная концепция и контекст`),
+          title: t_str(`${displayTopic} — Asosiy Tushuncha & Kontekst`, `${displayTopic} — Core Concept & Context`, `${displayTopic} — Основная концепция и контекст`),
           body: slide1Body,
           visual: isTense && (normTopic.includes("continuous") || normTopic.includes("past")) ? {
             type: "interruption_timeline" as const,

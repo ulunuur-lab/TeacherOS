@@ -44,6 +44,7 @@ interface StudentHomeworkModalProps {
   appLanguage?: "uz" | "en" | "ru";
   isEmbedded?: boolean;
   studentName?: string;
+  isLight?: boolean;
 }
 
 export default function StudentHomeworkModal({
@@ -53,7 +54,8 @@ export default function StudentHomeworkModal({
   onComplete,
   appLanguage = "uz",
   isEmbedded = false,
-  studentName = "O'quvchi"
+  studentName = "O'quvchi",
+  isLight = false
 }: StudentHomeworkModalProps) {
   if (!isOpen || !homework) return null;
 
@@ -270,18 +272,30 @@ export default function StudentHomeworkModal({
   const content = (
     <div className="w-full flex-1 flex flex-col justify-between space-y-6">
       {/* 1. TOP HEADER (100% Width) */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-4 shrink-0">
+      <div className={`flex items-center justify-between border-b pb-4 shrink-0 ${
+        isLight ? "border-slate-200" : "border-white/10"
+      }`}>
         <div className="space-y-1">
           <div className="flex items-center space-x-2.5">
-            <span className="px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#635BFF]/20 text-[#818cf8] border border-[#635BFF]/30 font-mono">
+            <span className={`px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider border font-mono ${
+              isLight
+                ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                : "bg-[#635BFF]/20 text-[#818cf8] border-[#635BFF]/30"
+            }`}>
               {appLanguage === "en" ? "Homework Assignment" : appLanguage === "ru" ? "Домашнее задание" : "Uyga Vazifa"}
             </span>
-            <span className="text-xs text-slate-400 font-mono">📅 {homework.assignedDate}</span>
-            <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[11px] font-mono text-slate-300">
+            <span className={`text-xs font-mono ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+              📅 {homework.assignedDate}
+            </span>
+            <span className={`px-2 py-0.5 rounded-md text-[11px] font-mono border ${
+              isLight ? "bg-slate-100 border-slate-200 text-slate-700 font-bold" : "bg-white/5 border-white/10 text-slate-300"
+            }`}>
               {questions.length} ta savol
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
+          <h1 className={`text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight ${
+            isLight ? "text-slate-900" : "text-white"
+          }`}>
             {homework.topic}
           </h1>
         </div>
@@ -289,7 +303,11 @@ export default function StudentHomeworkModal({
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white flex items-center space-x-2 text-xs font-bold transition-all cursor-pointer border border-white/10"
+          className={`px-4 py-2 rounded-xl flex items-center space-x-2 text-xs font-bold transition-all cursor-pointer border ${
+            isLight
+              ? "bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200 shadow-sm"
+              : "bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white border-white/10"
+          }`}
         >
           <span>✕</span>
           <span className="hidden sm:inline">
@@ -300,24 +318,30 @@ export default function StudentHomeworkModal({
 
       {!isSubmitted ? (
         <>
-          {/* 2. SLEEK CONTINUOUS PROGRESS BAR (Replaces the cramped 50 dots) */}
+          {/* 2. SLEEK CONTINUOUS PROGRESS BAR */}
           <div className="w-full space-y-2 shrink-0">
             <div className="flex items-center justify-between text-xs font-mono">
               <div className="flex items-center space-x-2">
-                <span className="font-bold text-white">
+                <span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
                   {appLanguage === "en" ? "Question" : appLanguage === "ru" ? "Вопрос" : "Savol"}{" "}
-                  <span className="text-[#635BFF] font-black text-sm">{currentIndex + 1}</span> / {questions.length}
+                  <span className={`font-black text-sm ${isLight ? "text-indigo-600" : "text-[#635BFF]"}`}>
+                    {currentIndex + 1}
+                  </span> / {questions.length}
                 </span>
                 {currentQ.sectionTitle && (
-                  <span className="text-slate-400 hidden sm:inline">• {currentQ.sectionTitle}</span>
+                  <span className={`hidden sm:inline font-medium ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                    • {currentQ.sectionTitle}
+                  </span>
                 )}
               </div>
-              <span className="text-[#818cf8] font-bold">
+              <span className={`font-black ${isLight ? "text-indigo-600" : "text-[#818cf8]"}`}>
                 {percentCompleted}% {appLanguage === "en" ? "completed" : appLanguage === "ru" ? "пройдено" : "bajarildi"}
               </span>
             </div>
 
-            <div className="w-full h-3 rounded-full bg-white/10 overflow-hidden shadow-inner p-0.5">
+            <div className={`w-full h-3 rounded-full overflow-hidden p-0.5 ${
+              isLight ? "bg-slate-200 shadow-inner" : "bg-white/10 shadow-inner"
+            }`}>
               <div
                 className="h-full rounded-full bg-gradient-to-r from-[#635BFF] via-[#818cf8] to-emerald-400 transition-all duration-300"
                 style={{ width: `${percentCompleted}%` }}
@@ -325,10 +349,16 @@ export default function StudentHomeworkModal({
             </div>
           </div>
 
-          {/* 3. QUESTION PROMPT CARD (Widened to full right space) */}
-          <div className="w-full p-6 sm:p-8 rounded-[24px] bg-[#1a1c36] border border-white/10 shadow-2xl space-y-4">
+          {/* 3. QUESTION PROMPT CARD (Tuff high-contrast card) */}
+          <div className={`w-full p-6 sm:p-8 rounded-[24px] border-2 shadow-xl space-y-4 ${
+            isLight
+              ? "bg-white border-slate-200 shadow-slate-200/60"
+              : "bg-[#1a1c36] border-white/10 shadow-2xl"
+          }`}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-[#818cf8] flex items-center space-x-1.5">
+              <span className={`text-xs font-mono uppercase tracking-wider flex items-center space-x-1.5 font-bold ${
+                isLight ? "text-indigo-600" : "text-[#818cf8]"
+              }`}>
                 <BookOpen className="w-4 h-4" />
                 <span>
                   {currentQ.options && currentQ.options.length > 0
@@ -344,12 +374,14 @@ export default function StudentHomeworkModal({
                     : "Javobingizni yozing"}
                 </span>
               </span>
-              <span className="text-xs font-mono text-slate-400">
+              <span className={`text-xs font-mono font-bold ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                 Savol {currentIndex + 1}
               </span>
             </div>
 
-            <p className="text-xl sm:text-2xl font-bold text-white leading-relaxed">
+            <p className={`text-xl sm:text-2xl font-black leading-relaxed ${
+              isLight ? "text-slate-900" : "text-white"
+            }`}>
               {currentQ.question}
             </p>
           </div>
@@ -368,32 +400,46 @@ export default function StudentHomeworkModal({
                       key={oIdx}
                       type="button"
                       onClick={() => handleSelectOption(opt)}
-                      className={`w-full text-left p-5 rounded-[22px] border transition-all flex items-center justify-between cursor-pointer group shadow-lg hover:scale-[1.01] active:scale-[0.99] ${
+                      className={`w-full text-left p-5 rounded-[22px] border-2 transition-all flex items-center justify-between cursor-pointer group shadow-md hover:scale-[1.01] active:scale-[0.99] ${
                         isSelected
-                          ? "bg-[#635BFF]/30 border-[#635BFF] text-white shadow-[0_0_25px_rgba(99,91,255,0.4)] ring-2 ring-[#635BFF]"
-                          : "bg-[#181a34] hover:bg-white/10 border-white/10 text-slate-200 hover:text-white"
+                          ? isLight
+                            ? "bg-indigo-50/80 border-indigo-600 text-indigo-950 shadow-md ring-2 ring-indigo-500/20"
+                            : "bg-[#635BFF]/30 border-[#635BFF] text-white shadow-[0_0_25px_rgba(99,91,255,0.4)] ring-2 ring-[#635BFF]"
+                          : isLight
+                            ? "bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-800"
+                            : "bg-[#181a34] hover:bg-white/10 border-white/10 text-slate-200 hover:text-white"
                       }`}
                     >
                       <div className="flex items-center space-x-4 min-w-0 pr-2">
                         <span
                           className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 transition-colors ${
                             isSelected
-                              ? "bg-[#635BFF] text-white shadow-md shadow-[#635BFF]/50"
-                              : "bg-white/10 text-slate-300 group-hover:bg-white/20"
+                              ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/40"
+                              : isLight
+                                ? "bg-slate-100 text-slate-700 border border-slate-200 group-hover:bg-slate-200"
+                                : "bg-white/10 text-slate-300 group-hover:bg-white/20"
                           }`}
                         >
                           {keyLetter}
                         </span>
-                        <span className="text-base sm:text-lg font-medium leading-relaxed break-words">
+                        <span className={`text-base sm:text-lg leading-relaxed break-words ${
+                          isSelected ? "font-bold" : "font-medium"
+                        } ${
+                          isLight
+                            ? isSelected ? "text-indigo-950" : "text-slate-800"
+                            : "text-white"
+                        }`}>
                           {cleanText}
                         </span>
                       </div>
 
                       <div className="shrink-0 ml-2">
                         {isSelected ? (
-                          <CheckCircle2 className="w-6 h-6 text-[#818cf8]" />
+                          <CheckCircle2 className={`w-6 h-6 ${isLight ? "text-indigo-600" : "text-[#818cf8]"}`} />
                         ) : (
-                          <div className="w-5 h-5 rounded-full border border-white/20 group-hover:border-white/40" />
+                          <div className={`w-5 h-5 rounded-full border ${
+                            isLight ? "border-slate-300 group-hover:border-slate-400" : "border-white/20 group-hover:border-white/40"
+                          }`} />
                         )}
                       </div>
                     </button>
@@ -413,7 +459,11 @@ export default function StudentHomeworkModal({
                       ? "Введите ответ и нажмите Enter..."
                       : "Javobingizni bu yerga yozing va Enter bosing..."
                   }
-                  className="w-full p-5 rounded-[22px] bg-[#181a34] border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-[#635BFF] focus:ring-2 focus:ring-[#635BFF] text-base font-medium shadow-inner"
+                  className={`w-full p-5 rounded-[22px] border-2 text-base font-medium shadow-inner transition-all focus:outline-none focus:ring-2 ${
+                    isLight
+                      ? "bg-white border-slate-300 focus:border-indigo-600 text-slate-900 placeholder-slate-400 focus:ring-indigo-500/20"
+                      : "bg-[#181a34] border-white/10 focus:border-[#635BFF] text-white placeholder-slate-400 focus:ring-[#635BFF]"
+                  }`}
                   autoFocus
                 />
               </div>
@@ -421,23 +471,37 @@ export default function StudentHomeworkModal({
           </div>
 
           {/* 5. BOTTOM NAVIGATION BAR (Spanning full width) */}
-          <div className="w-full flex items-center justify-between pt-6 border-t border-white/10 shrink-0">
+          <div className={`w-full flex items-center justify-between pt-6 border-t shrink-0 ${
+            isLight ? "border-slate-200" : "border-white/10"
+          }`}>
             <button
               type="button"
               onClick={() => setCurrentIndex((p) => Math.max(0, p - 1))}
               disabled={currentIndex === 0}
-              className="px-5 py-3 rounded-2xl text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-300 disabled:opacity-20 disabled:cursor-not-allowed transition-all flex items-center space-x-2 border border-white/5"
+              className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 border disabled:opacity-20 disabled:cursor-not-allowed ${
+                isLight
+                  ? "bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-sm"
+                  : "bg-white/5 hover:bg-white/10 text-slate-300 border-white/5"
+              }`}
             >
               <ArrowLeft className="w-4 h-4" />
               <span>{appLanguage === "en" ? "Previous" : appLanguage === "ru" ? "Назад" : "Oldingi"}</span>
             </button>
 
-            <div className="hidden sm:flex items-center space-x-2 text-[11px] font-mono text-slate-400">
-              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 font-bold">1-4</span>
+            <div className={`hidden sm:flex items-center space-x-2 text-[11px] font-mono ${
+              isLight ? "text-slate-500" : "text-slate-400"
+            }`}>
+              <span className={`px-2 py-0.5 rounded border font-bold ${
+                isLight ? "bg-slate-100 border-slate-200 text-slate-700" : "bg-white/5 border-white/10"
+              }`}>1-4</span>
               <span>yoki</span>
-              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 font-bold">A-D</span>
+              <span className={`px-2 py-0.5 rounded border font-bold ${
+                isLight ? "bg-slate-100 border-slate-200 text-slate-700" : "bg-white/5 border-white/10"
+              }`}>A-D</span>
               <span>tanlash •</span>
-              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 font-bold">Enter</span>
+              <span className={`px-2 py-0.5 rounded border font-bold ${
+                isLight ? "bg-slate-100 border-slate-200 text-slate-700" : "bg-white/5 border-white/10"
+              }`}>Enter</span>
               <span>keyingisi</span>
             </div>
 
@@ -474,14 +538,18 @@ export default function StudentHomeworkModal({
           </div>
 
           <div className="text-center space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-black text-white">
+            <h2 className={`text-2xl sm:text-3xl font-black ${
+              isLight ? "text-slate-900" : "text-white"
+            }`}>
               {appLanguage === "en"
                 ? "Homework Completed Successfully!"
                 : appLanguage === "ru"
                 ? "Задание успешно выполнено!"
                 : "Ajoyib natija! Vazifa topshirildi!"}
             </h2>
-            <p className="text-sm sm:text-base text-slate-300">
+            <p className={`text-sm sm:text-base ${
+              isLight ? "text-slate-600" : "text-slate-300"
+            }`}>
               {appLanguage === "en"
                 ? `You scored ${score} out of ${questions.length} questions.`
                 : appLanguage === "ru"
@@ -491,37 +559,47 @@ export default function StudentHomeworkModal({
           </div>
 
           {/* Stats Badges */}
-          <div className="w-full max-w-xl p-5 rounded-[24px] bg-[#181a34] border border-white/10 grid grid-cols-3 gap-4 text-center font-mono">
+          <div className={`w-full max-w-xl p-5 rounded-[24px] border-2 grid grid-cols-3 gap-4 text-center font-mono ${
+            isLight ? "bg-white border-slate-200 shadow-xl text-slate-900" : "bg-[#181a34] border-white/10 text-white"
+          }`}>
             <div className="space-y-1">
-              <span className="text-[10px] uppercase text-slate-400 block tracking-wider">Aniqlik</span>
-              <span className="text-2xl font-black text-emerald-400">
+              <span className={`text-[10px] uppercase block tracking-wider ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                Aniqlik
+              </span>
+              <span className="text-2xl font-black text-emerald-500">
                 {Math.round((score / questions.length) * 100)}%
               </span>
             </div>
-            <div className="space-y-1 border-x border-white/10">
-              <span className="text-[10px] uppercase text-slate-400 block tracking-wider">Streak</span>
-              <span className="text-2xl font-black text-amber-400 flex items-center justify-center space-x-1">
+            <div className={`space-y-1 border-x ${isLight ? "border-slate-200" : "border-white/10"}`}>
+              <span className={`text-[10px] uppercase block tracking-wider ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                Streak
+              </span>
+              <span className="text-2xl font-black text-amber-500 flex items-center justify-center space-x-1">
                 <span>+1</span>
                 <span>🔥</span>
               </span>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] uppercase text-slate-400 block tracking-wider">Holat</span>
-              <span className="text-2xl font-black text-sky-400">Done ✔</span>
+              <span className={`text-[10px] uppercase block tracking-wider ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                Holat
+              </span>
+              <span className="text-2xl font-black text-sky-500">Done ✔</span>
             </div>
           </div>
 
           {/* Question Review Accordion */}
           <div className="w-full max-w-3xl space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                <HelpCircle className="w-4 h-4 text-[#818cf8]" />
+              <h3 className={`text-base font-bold flex items-center space-x-2 ${
+                isLight ? "text-slate-900" : "text-white"
+              }`}>
+                <HelpCircle className="w-4 h-4 text-indigo-500" />
                 <span>Savollar va javoblar tahlili:</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setShowReview((p) => !p)}
-                className="text-xs font-bold text-[#818cf8] hover:text-white transition-colors"
+                className="text-xs font-bold text-indigo-600 hover:underline transition-colors"
               >
                 {showReview ? "Yashirish ∧" : "Barchasini ko'rish ∨"}
               </button>
@@ -541,38 +619,48 @@ export default function StudentHomeworkModal({
                   return (
                     <div
                       key={idx}
-                      className={`p-5 rounded-[20px] border space-y-2 ${
+                      className={`p-5 rounded-[20px] border-2 space-y-2 ${
                         isCorrect
-                          ? "bg-emerald-950/20 border-emerald-500/30"
-                          : "bg-red-950/20 border-red-500/30"
+                          ? isLight
+                            ? "bg-emerald-50 border-emerald-300 text-slate-900 shadow-sm"
+                            : "bg-emerald-950/20 border-emerald-500/30 text-white"
+                          : isLight
+                            ? "bg-rose-50 border-rose-300 text-slate-900 shadow-sm"
+                            : "bg-red-950/20 border-red-500/30 text-white"
                       }`}
                     >
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-300 font-mono">Savol #{idx + 1}</span>
+                        <span className={`font-bold font-mono ${isLight ? "text-slate-600" : "text-slate-300"}`}>
+                          Savol #{idx + 1}
+                        </span>
                         <span
-                          className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                          className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
                             isCorrect
-                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                              : "bg-red-500/20 text-red-300 border border-red-500/30"
+                              ? "bg-emerald-500/20 text-emerald-600 border border-emerald-500/30"
+                              : "bg-rose-500/20 text-rose-600 border border-rose-500/30"
                           }`}
                         >
                           {isCorrect ? "To'g'ri ✔" : "Xato ✕"}
                         </span>
                       </div>
 
-                      <p className="text-sm font-semibold text-white">{q.question}</p>
+                      <p className={`text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
+                        {q.question}
+                      </p>
 
                       <div className="text-xs font-mono space-y-1 pt-1">
-                        <p className={isCorrect ? "text-emerald-400" : "text-red-400"}>
+                        <p className={isCorrect ? (isLight ? "text-emerald-700 font-bold" : "text-emerald-400 font-bold") : (isLight ? "text-rose-700 font-bold" : "text-rose-400 font-bold")}>
                           <b>Sizning javobingiz:</b> {studentAns}
                         </p>
                         {!isCorrect && (
-                          <p className="text-emerald-400">
+                          <p className={isLight ? "text-emerald-700 font-bold" : "text-emerald-400 font-bold"}>
                             <b>To'g'ri javob:</b> {q.answer}
                           </p>
                         )}
                         {q.explanation && (
-                          <p className="text-slate-300 font-sans text-xs pt-1 border-t border-white/5">
+                          <p className={`text-xs pt-1 border-t ${
+                            isLight ? "text-slate-700 border-slate-200" : "text-slate-300 border-white/5"
+                          }`}>
                             💡 <b>Izoh:</b> {q.explanation}
                           </p>
                         )}
@@ -614,8 +702,12 @@ export default function StudentHomeworkModal({
 
   // If called as a modal: render as full-stage expansive container
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-5xl rounded-[28px] bg-[#121324] border border-white/10 shadow-2xl p-6 sm:p-10 flex flex-col min-h-[600px] my-auto">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 backdrop-blur-md animate-fade-in overflow-y-auto ${
+      isLight ? "bg-slate-900/40" : "bg-black/85"
+    }`}>
+      <div className={`relative w-full max-w-5xl rounded-[28px] border-2 shadow-2xl p-6 sm:p-10 flex flex-col min-h-[600px] my-auto ${
+        isLight ? "bg-white border-slate-200 text-slate-900" : "bg-[#121324] border-white/10 text-white"
+      }`}>
         {content}
       </div>
     </div>

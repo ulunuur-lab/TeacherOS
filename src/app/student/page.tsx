@@ -1086,6 +1086,7 @@ export default function StudentAppPage() {
               onComplete={handleHomeworkComplete}
               appLanguage={lang}
               studentName={studentName}
+              isLight={isLight}
             />
           </div>
         ) : (
@@ -2029,6 +2030,7 @@ export default function StudentAppPage() {
             onComplete={handleHomeworkComplete}
             appLanguage={lang}
             studentName={studentName}
+            isLight={isLight}
           />
         )}
 
