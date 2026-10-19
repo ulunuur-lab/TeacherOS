@@ -520,8 +520,188 @@ export default function StudentAppPage() {
     };
   }, [studentName, attendancePercent, streakDays]);
 
+  // Dynamically resolve student's enrolled classroom from Local Storage, Direct Keys, and Server/Cloud DB
+  const resolveStudentClassroom = useCallback(async (forcedUsername?: string) => {
+    if (typeof window === "undefined") return "Intermediate group";
+
+    const currentUName = (forcedUsername || telegramUsername || "ulunur")
+      .trim()
+      .toLowerCase()
+      .replace("@", "");
+
+    let foundName: string | null = null;
+    let foundId: string | null = null;
+    const discoveredClassrooms = new Set<string>();
+
+    // 1. Direct student key: teacheros_student_classroom_${currentUName}
+    try {
+      const directKey = localStorage.getItem(`teacheros_student_classroom_${currentUName}`);
+      if (directKey) {
+        const parsed = JSON.parse(directKey);
+        if (parsed.name && parsed.name !== "Intermediate group") {
+          foundName = parsed.name;
+          foundId = parsed.id;
+          discoveredClassrooms.add(parsed.name);
+        }
+      }
+    } catch (e) {}
+
+    // 2. Scan all teacheros_classrooms_* keys in localStorage
+    if (!foundName) {
+      try {
+        const allKeys = Object.keys(localStorage);
+        for (const k of allKeys) {
+          if (k.startsWith("teacheros_classrooms_")) {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                for (const cls of parsed) {
+                  if (cls.name) discoveredClassrooms.add(cls.name);
+                  if (Array.isArray(cls.students)) {
+                    const isEnrolled = cls.students.some((s: any) => {
+                      const sUser = (typeof s === "string" ? s : s.username || "")
+                        .toLowerCase()
+                        .replace("@", "")
+                        .trim();
+                      return sUser === currentUName;
+                    });
+                    if (isEnrolled && cls.name) {
+                      foundName = cls.name;
+                      foundId = cls.id;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+          if (foundName) break;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Query Server API specifically for this student: /api/classrooms?studentUsername=...
+    try {
+      const res = await fetch(`/api/classrooms?studentUsername=${encodeURIComponent(currentUName)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.classroom && data.classroom.name) {
+          foundName = data.classroom.name;
+          foundId = data.classroom.id;
+          discoveredClassrooms.add(data.classroom.name);
+        }
+      }
+    } catch (e) {}
+
+    // 4. Query Server API for all classrooms
+    try {
+      const allRes = await fetch("/api/classrooms?all=true");
+      if (allRes.ok) {
+        const allData = await allRes.json();
+        if (allData.success && Array.isArray(allData.classrooms)) {
+          allData.classrooms.forEach((cls: any) => {
+            if (cls.name) discoveredClassrooms.add(cls.name);
+            if (!foundName && Array.isArray(cls.students)) {
+              const isEnrolled = cls.students.some((s: any) => {
+                const sUser = (typeof s === "string" ? s : s.username || "")
+                  .toLowerCase()
+                  .replace("@", "")
+                  .trim();
+                return sUser === currentUName;
+              });
+              if (isEnrolled && cls.name) {
+                foundName = cls.name;
+                foundId = cls.id;
+              }
+            }
+          });
+          // If no specific match yet but real classrooms exist, pick the latest
+          if (!foundName && allData.classrooms.length > 0) {
+            const realCls = allData.classrooms.find(
+              (c: any) => c.name && c.name !== "Intermediate group"
+            );
+            if (realCls) {
+              foundName = realCls.name;
+              foundId = realCls.id;
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
+    // 5. Fallback to saved classroom in localStorage
+    if (!foundName) {
+      try {
+        const savedClass =
+          localStorage.getItem("teacheros_student_classroom") ||
+          localStorage.getItem("teacheros_classroom");
+        if (savedClass) {
+          const parsedCls = JSON.parse(savedClass);
+          if (parsedCls.name && parsedCls.name !== "Intermediate group") {
+            foundName = parsedCls.name;
+            foundId = parsedCls.id;
+            discoveredClassrooms.add(parsedCls.name);
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 6. Check if any classroom homework exists on server with a real classroom name
+    if (!foundName) {
+      try {
+        const hwRes = await fetch("/api/classroom-homework?all=true");
+        if (hwRes.ok) {
+          const hwData = await hwRes.json();
+          if (hwData.success && Array.isArray(hwData.homeworks) && hwData.homeworks.length > 0) {
+            const hwCls = hwData.homeworks.find(
+              (h: any) =>
+                h.classroomName &&
+                h.classroomName !== "all" &&
+                h.classroomName !== "Intermediate group" &&
+                h.classroomName !== "Yakkaxon Rejim"
+            );
+            if (hwCls) {
+              foundName = hwCls.classroomName;
+              foundId = hwCls.classroomId;
+              discoveredClassrooms.add(hwCls.classroomName);
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    const finalName = foundName || "Intermediate group";
+    setClassName(finalName);
+
+    // Update availableClassrooms dropdown options
+    if (discoveredClassrooms.size > 0) {
+      const list = Array.from(discoveredClassrooms);
+      if (!list.includes(finalName)) list.unshift(finalName);
+      setAvailableClassrooms((prev) => Array.from(new Set([...list, ...prev])));
+    }
+
+    // Cache to localStorage
+    try {
+      localStorage.setItem(
+        "teacheros_student_classroom",
+        JSON.stringify({ id: foundId || "cls_active", name: finalName })
+      );
+      localStorage.setItem(
+        "teacheros_classroom",
+        JSON.stringify({ id: foundId || "cls_active", name: finalName })
+      );
+    } catch (e) {}
+
+    // Synchronize homework for this resolved classroom
+    syncClassroomHomework(finalName);
+
+    return finalName;
+  }, [telegramUsername, syncClassroomHomework]);
+
   // Check Telegram session & classroom homework on mount
   useEffect(() => {
+    let resolvedUName = "ulunur";
     try {
       if (typeof window !== "undefined") {
         // A. Instant Automatic Login via Telegram Mini App
@@ -542,7 +722,7 @@ export default function StudentAppPage() {
               setStudentName(studentObj.first_name);
               if (studentObj.photo_url) setTelegramAvatar(studentObj.photo_url);
               setIsAuthenticated(true);
-              return;
+              resolvedUName = studentObj.username;
             }
           } catch (err) {
             console.warn("TG WebApp read error:", err);
@@ -566,47 +746,38 @@ export default function StudentAppPage() {
           setStudentName(studentObj.first_name);
           if (studentObj.photo_url) setTelegramAvatar(studentObj.photo_url);
           setIsAuthenticated(true);
+          resolvedUName = studentObj.username;
         } else {
           // Check saved session
           const savedSession = localStorage.getItem("teacheros_student_session");
           if (savedSession) {
             const parsed = JSON.parse(savedSession);
-            if (parsed.username) setTelegramUsername(parsed.username);
+            if (parsed.username) {
+              setTelegramUsername(parsed.username);
+              resolvedUName = parsed.username;
+            }
             if (parsed.first_name) setStudentName(parsed.first_name);
             if (parsed.photo_url) setTelegramAvatar(parsed.photo_url);
             setIsAuthenticated(true);
           }
         }
       }
-
-      // 2. Sync Classroom name
-      const savedClass = localStorage.getItem("teacheros_student_classroom") || localStorage.getItem("teacheros_classroom");
-      let activeClsName = "Intermediate group";
-      if (savedClass) {
-        try {
-          const parsedCls = JSON.parse(savedClass);
-          if (parsedCls.name) {
-            setClassName(parsedCls.name);
-            activeClsName = parsedCls.name;
-          }
-        } catch (e) {}
-      }
-
-      // 3. Load Homework assigned by teacher for this classroom (Server + Local Storage)
-      syncClassroomHomework(activeClsName);
     } catch (e) {
-      console.warn("Storage sync error:", e);
+      console.warn("Session check error:", e);
     } finally {
       setIsAuthLoading(false);
     }
-  }, [syncClassroomHomework]);
 
-  // Re-sync homework whenever student switches to homework tab
+    // Dynamic classroom resolution
+    resolveStudentClassroom(resolvedUName);
+  }, [resolveStudentClassroom]);
+
+  // Re-sync classroom & homework whenever student switches tabs
   useEffect(() => {
-    if (activeTab === "homework") {
-      syncClassroomHomework();
+    if (activeTab === "homework" || activeTab === "classroom") {
+      resolveStudentClassroom();
     }
-  }, [activeTab, syncClassroomHomework]);
+  }, [activeTab, resolveStudentClassroom]);
 
   // Auto-scroll Bezbet chat
   useEffect(() => {

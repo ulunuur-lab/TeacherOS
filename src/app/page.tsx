@@ -673,7 +673,7 @@ export default function StitchTeacherOS() {
       id: `cls_${Date.now()}`,
       name,
       createdAt: Date.now(),
-      students: studentUsernames.map((u) => ({ username: u, addedAt: Date.now() })),
+      students: studentUsernames.map((u) => ({ username: u.replace('@', ''), addedAt: Date.now() })),
       inviteCode: `cls_${Date.now().toString(36)}`
     };
     const updated = [newClass, ...classrooms];
@@ -686,6 +686,24 @@ export default function StitchTeacherOS() {
       localStorage.setItem(`teacheros_classrooms_${teacherUid}`, JSON.stringify(updated));
       localStorage.setItem('teacheros_workspace_mode', 'classroom');
       localStorage.setItem('teacheros_classroom', JSON.stringify({ id: newClass.id, name: newClass.name, students: newClass.students.length }));
+      // Save direct student classroom links for each added student
+      studentUsernames.forEach((u) => {
+        const clean = u.trim().toLowerCase().replace('@', '');
+        if (clean) {
+          localStorage.setItem(`teacheros_student_classroom_${clean}`, JSON.stringify({ id: newClass.id, name: newClass.name }));
+        }
+      });
+      // Sync to server API
+      fetch('/api/classrooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          classroom: newClass,
+          teacherId: teacherUid,
+          teacherName: (currentUser as any)?.teacher_name || currentUser?.first_name || 'Ustoz'
+        })
+      }).catch((e) => console.warn('Classroom sync to server failed:', e));
     } catch (e) {}
     showToast(`🎉 "${name}" sinfi yaratildi!`);
     confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
@@ -749,8 +767,9 @@ export default function StitchTeacherOS() {
     const teacherUid = currentUser?.telegram_id || (currentUser as any)?.id || currentUser?.username || 'user';
     const updated = classrooms.map((c) => {
       if (c.id === classroomId) {
-        const existing = new Set(c.students.map((s) => s.username.toLowerCase()));
+        const existing = new Set(c.students.map((s) => s.username.toLowerCase().replace('@', '')));
         const newEntries = usernames
+          .map((u) => u.replace('@', ''))
           .filter((u) => !existing.has(u.toLowerCase()))
           .map((u) => ({ username: u, addedAt: Date.now() }));
         return { ...c, students: [...c.students, ...newEntries] };
@@ -764,6 +783,26 @@ export default function StitchTeacherOS() {
       localStorage.setItem('teacheros_classroom', JSON.stringify({ id: active.id, name: active.name, students: active.students.length }));
     }
     localStorage.setItem(`teacheros_classrooms_${teacherUid}`, JSON.stringify(updated));
+    // Save direct student classroom links
+    if (active) {
+      usernames.forEach((u) => {
+        const clean = u.trim().toLowerCase().replace('@', '');
+        if (clean) {
+          localStorage.setItem(`teacheros_student_classroom_${clean}`, JSON.stringify({ id: active.id, name: active.name }));
+        }
+      });
+      // Sync to server API
+      fetch('/api/classrooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add_students',
+          classroomId,
+          students: usernames,
+          teacherId: teacherUid
+        })
+      }).catch((e) => console.warn('Add students sync failed:', e));
+    }
     showToast(appLanguage === 'en' ? "Students added!" : "O'quvchilar qo'shildi!");
   };
 
@@ -779,7 +818,41 @@ export default function StitchTeacherOS() {
       localStorage.removeItem('teacheros_classroom');
     }
     localStorage.setItem(`teacheros_classrooms_${teacherUid}`, JSON.stringify(updated));
+    fetch(`/api/classrooms?id=${encodeURIComponent(classroomId)}`, { method: 'DELETE' }).catch((e) => console.warn(e));
     showToast(appLanguage === 'en' ? "Classroom deleted" : "Sinfxona o'chirildi");
+  };
+
+  // Launch Homework directly from the current generated lesson
+  const handleLaunchHomeworkFromLesson = () => {
+    const activeTopic = curriculum?.topic || topicInput.trim() || "General English";
+    setActiveHomeworkTopic(activeTopic);
+    setTopicInput(activeTopic);
+    setStudioMode('homework');
+    if (generatedHomeworkData && activeHomeworkTopic?.toLowerCase() === activeTopic.toLowerCase()) {
+      setHomeworkStep('review');
+    } else {
+      setHomeworkStep('config');
+    }
+    showToast(
+      appLanguage === 'en'
+        ? `Configuring homework for "${activeTopic}"`
+        : appLanguage === 'ru'
+        ? `Настройка задания по теме "${activeTopic}"`
+        : `"${activeTopic}" darsi bo'yicha vazifa sozlash`
+    );
+  };
+
+  // Launch Baamboozle Group Quiz directly from the current generated lesson
+  const handleLaunchGroupQuizFromLesson = () => {
+    const activeTopic = curriculum?.topic || topicInput.trim() || "General English";
+    setActiveGroupQuizTopic(activeTopic);
+    showToast(
+      appLanguage === 'en'
+        ? `Launching Baamboozle quiz: "${activeTopic}"`
+        : appLanguage === 'ru'
+        ? `Запуск викторины Baamboozle: "${activeTopic}"`
+        : `"${activeTopic}" bo'yicha Baamboozle musobaqasi!`
+    );
   };
 
   // Sync isolated history, classrooms, real Telegram avatar, and teacher display name when user logs in / switches accounts
@@ -6710,6 +6783,109 @@ export default function StitchTeacherOS() {
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* TWO SEPARATE ACTION BLOCKS UNDER IT (Homework & Group Quiz) */}
+                  <div className={`w-full pt-3 mt-auto border-t flex flex-col space-y-2 shrink-0 ${
+                    isBoardLight ? "border-slate-200" : "border-white/10"
+                  } ${isRightBarExpanded ? "" : "items-center"}`}>
+                    {/* BLOCK 1: HOMEWORK */}
+                    {isRightBarExpanded ? (
+                      <button
+                        type="button"
+                        onClick={handleLaunchHomeworkFromLesson}
+                        className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between group transition-all cursor-pointer shadow-md hover:scale-[1.02] active:scale-[0.98] ${
+                          isBoardLight
+                            ? "bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border-emerald-300 hover:border-emerald-500 text-emerald-950 shadow-emerald-500/10"
+                            : "bg-gradient-to-r from-emerald-950/70 via-emerald-900/40 to-teal-950/60 hover:from-emerald-900/80 hover:to-teal-900/70 border-emerald-500/30 hover:border-emerald-400/60 text-white shadow-emerald-950/40 hover:shadow-[0_0_15px_rgba(16,185,129,0.25)]"
+                        }`}
+                        title="Darsdan uyga vazifa yaratish"
+                      >
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                            <Home className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[11px] font-black uppercase tracking-wide truncate flex items-center space-x-1">
+                              <span>{t.others_hw_title}</span>
+                            </div>
+                            <p className={`text-[10px] truncate ${isBoardLight ? "text-emerald-700 font-semibold" : "text-emerald-300/80"}`}>
+                              {appLanguage === 'en' ? "From lesson →" : appLanguage === 'ru' ? "Из урока →" : "Darsdan tuzish →"}
+                            </p>
+                          </div>
+                        </div>
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0 opacity-70 group-hover:opacity-100 group-hover:rotate-12 transition-all" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleLaunchHomeworkFromLesson}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all relative group hover-lift cursor-pointer ${
+                          isBoardLight
+                            ? "bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 shadow-sm"
+                            : "bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-400 shadow-md shadow-emerald-500/10"
+                        }`}
+                        title="Darsdan uyga vazifa yaratish"
+                      >
+                        <Home className="w-4 h-4" />
+                        <span className={`absolute right-full mr-2.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg border text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-xl z-40 ${
+                          isBoardLight
+                            ? "bg-white border-emerald-300 text-emerald-900 shadow-slate-300/50"
+                            : "bg-emerald-950 border-emerald-500/40 text-emerald-200"
+                        }`}>
+                          {t.others_hw_title}: Darsdan tuzish
+                        </span>
+                      </button>
+                    )}
+
+                    {/* BLOCK 2: GROUP QUIZ */}
+                    {isRightBarExpanded ? (
+                      <button
+                        type="button"
+                        onClick={handleLaunchGroupQuizFromLesson}
+                        className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between group transition-all cursor-pointer shadow-md hover:scale-[1.02] active:scale-[0.98] ${
+                          isBoardLight
+                            ? "bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border-indigo-300 hover:border-indigo-500 text-indigo-950 shadow-indigo-500/10"
+                            : "bg-gradient-to-r from-indigo-950/70 via-indigo-900/40 to-purple-950/60 hover:from-indigo-900/80 hover:to-purple-900/70 border-indigo-500/30 hover:border-indigo-400/60 text-white shadow-indigo-950/40 hover:shadow-[0_0_15px_rgba(99,102,241,0.25)]"
+                        }`}
+                        title="Baamboozle guruh musobaqasi"
+                      >
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                            <Users className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[11px] font-black uppercase tracking-wide truncate flex items-center space-x-1">
+                              <span>{t.others_gq_title}</span>
+                            </div>
+                            <p className={`text-[10px] truncate ${isBoardLight ? "text-indigo-700 font-semibold" : "text-indigo-300/80"}`}>
+                              {appLanguage === 'en' ? "Baamboozle →" : appLanguage === 'ru' ? "Baamboozle →" : "Baamboozle →"}
+                            </p>
+                          </div>
+                        </div>
+                        <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleLaunchGroupQuizFromLesson}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all relative group hover-lift cursor-pointer ${
+                          isBoardLight
+                            ? "bg-indigo-50 hover:bg-indigo-100 border border-indigo-300 text-indigo-700 shadow-sm"
+                            : "bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 hover:border-indigo-400/60 text-indigo-400 shadow-md shadow-indigo-500/10"
+                        }`}
+                        title="Baamboozle guruh musobaqasi"
+                      >
+                        <Users className="w-4 h-4" />
+                        <span className={`absolute right-full mr-2.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg border text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all shadow-xl z-40 ${
+                          isBoardLight
+                            ? "bg-white border-indigo-300 text-indigo-900 shadow-slate-300/50"
+                            : "bg-indigo-950 border-indigo-500/40 text-indigo-200"
+                        }`}>
+                          {t.others_gq_title}: Baamboozle musobaqasi
+                        </span>
+                      </button>
+                    )}
                   </div>
                 </aside>
               )}
