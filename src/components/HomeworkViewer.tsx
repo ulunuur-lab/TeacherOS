@@ -508,29 +508,61 @@ export default function HomeworkViewer({
 
   // 1-Click Direct Assign to Classroom
   const handleDirectAssign = async () => {
-    if (!data || isAssigning) return;
+    if (isAssigning) return;
     setIsAssigning(true);
 
     try {
       const targetClassroomName = activeClassroomName || "Yakkaxon rejim";
-      const targetClassroomId = activeClassroomId || (typeof window !== "undefined" ? localStorage.getItem("teacheros_active_classroom_id") : null) || "classroom_1";
+      const targetClassroomId =
+        activeClassroomId ||
+        (typeof window !== "undefined" ? localStorage.getItem("teacheros_active_classroom_id") : null) ||
+        "classroom_1";
+
+      // If data is null, synthesize a complete homework payload using the viewer's rich content
+      const assignPayloadData: HomeworkGeneratedData = (data && data.sections && data.sections.length > 0)
+        ? data
+        : {
+            topic: topic || "English Lesson",
+            intensity: "medium",
+            totalCount: 10,
+            vocabulary: getSafeItems(true, null, undefined, "vocabulary", topic, isEn, isRu),
+            sections: availableTabs
+              .filter((tabKey) => tabKey !== "vocabulary")
+              .slice(0, 3)
+              .map((tabKey) => {
+                const meta = TYPE_ICON_MAP[tabKey];
+                return {
+                  typeKey: tabKey,
+                  title: meta ? (isEn ? meta.labelEn : isRu ? meta.labelRu : meta.labelUz) : tabKey,
+                  instruction: isEn
+                    ? "Answer the following questions carefully."
+                    : isRu
+                    ? "Внимательно ответьте на следующие вопросы."
+                    : "Quyidagi mashqlarni diqqat bilan bajaring.",
+                  items: getSafeItems(false, undefined, undefined, tabKey, topic, isEn, isRu)
+                };
+              })
+          };
 
       const payload = {
         classroomId: targetClassroomId,
         classroomName: targetClassroomName,
-        topic: topic,
-        data: data,
-        assignedBy: typeof window !== "undefined" ? (JSON.parse(localStorage.getItem("teacheros_auth_user") || "{}").first_name || "Ustoz") : "Ustoz"
+        topic: topic || "English Lesson",
+        data: assignPayloadData,
+        assignedBy:
+          typeof window !== "undefined"
+            ? JSON.parse(localStorage.getItem("teacheros_auth_user") || "{}").first_name || "Ustoz"
+            : "Ustoz"
       };
 
-      // 1. Post to persistent API
+      // 1. Post to persistent API (Supabase Cloud + Local + TMP)
       await fetch('/api/classroom-homework', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      // 2. Also persist in localStorage for instant local sync
+      // 2. Also persist in localStorage across all common keys
       if (typeof window !== "undefined") {
         const key = `teacheros_homeworks_${targetClassroomId}`;
         const existing = JSON.parse(localStorage.getItem(key) || "[]");
@@ -540,13 +572,13 @@ export default function HomeworkViewer({
           classroomId: targetClassroomId,
           classroomName: targetClassroomName,
           createdAt: Date.now(),
-          data: data
+          data: assignPayloadData
         };
         const updated = [newEntry, ...existing.filter((x: any) => x.topic !== topic)];
         localStorage.setItem(key, JSON.stringify(updated));
-        // Global sync keys for student app
         localStorage.setItem("teacheros_homeworks_all", JSON.stringify(updated));
         localStorage.setItem("teacheros_latest_assigned_hw", JSON.stringify(newEntry));
+        localStorage.setItem("teacheros_homeworks_classroom_1", JSON.stringify(updated));
       }
 
       // 3. Confetti effect
@@ -565,7 +597,7 @@ export default function HomeworkViewer({
       setAssignToast(successMsg);
       setTimeout(() => setAssignToast(null), 4000);
 
-      onAssign?.(data);
+      onAssign?.(assignPayloadData);
     } catch (e: any) {
       console.error("Assign failed:", e);
       setAssignToast(isEn ? "Failed to assign" : isRu ? "Ошибка назначения" : "Xatolik yuz berdi");

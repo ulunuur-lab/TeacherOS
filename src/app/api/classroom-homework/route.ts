@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import os from "os";
+import { supabase, isSupabaseConfigured } from "@/lib/db";
 
 export interface ClassroomAssignment {
   id: string;
@@ -36,44 +38,46 @@ export interface ClassroomAssignment {
 }
 
 // In-memory store persistent across requests in runtime
-const globalStore = (globalThis as any).__teacherOS_classroom_homeworks || new Map<string, ClassroomAssignment[]>();
+const globalStore: Map<string, ClassroomAssignment> =
+  (globalThis as any).__teacherOS_classroom_homeworks || new Map<string, ClassroomAssignment>();
 (globalThis as any).__teacherOS_classroom_homeworks = globalStore;
 
-const DB_DIR = path.join(process.cwd(), "data");
-const DB_FILE = path.join(DB_DIR, "classroom_homework.json");
+const LOCAL_DATA_FILE = path.join(process.cwd(), "data", "classroom_homework.json");
+const TMP_DATA_FILE = path.join(os.tmpdir(), "classroom_homework.json");
 
-function getStoredAssignments(): ClassroomAssignment[] {
+function readLocalFile(): ClassroomAssignment[] {
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const raw = fs.readFileSync(DB_FILE, "utf8");
-      return JSON.parse(raw);
+    if (fs.existsSync(LOCAL_DATA_FILE)) {
+      const raw = fs.readFileSync(LOCAL_DATA_FILE, "utf8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-  } catch (e) {
-    console.warn("Failed to read classroom_homework.json:", e);
-  }
-  // Fallback to in-memory
-  const all: ClassroomAssignment[] = [];
-  globalStore.forEach((list: ClassroomAssignment[]) => {
-    all.push(...list);
-  });
-  return all;
+  } catch (e) {}
+
+  try {
+    if (fs.existsSync(TMP_DATA_FILE)) {
+      const raw = fs.readFileSync(TMP_DATA_FILE, "utf8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {}
+
+  return [];
 }
 
-function saveStoredAssignments(assignments: ClassroomAssignment[]) {
+function writeLocalFile(assignments: ClassroomAssignment[]) {
+  const jsonStr = JSON.stringify(assignments, null, 2);
   try {
-    if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
-    fs.writeFileSync(DB_FILE, JSON.stringify(assignments, null, 2), "utf8");
-  } catch (e) {
-    console.warn("Failed to write to classroom_homework.json:", e);
-  }
-  // Always update in-memory
-  assignments.forEach((hw) => {
-    const key = (hw.classroomId || hw.classroomName || "default").toLowerCase();
-    const existing = globalStore.get(key) || [];
-    if (!existing.some((x: ClassroomAssignment) => x.id === hw.id)) {
-      globalStore.set(key, [hw, ...existing]);
-    }
-  });
+    const dir = path.dirname(LOCAL_DATA_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(LOCAL_DATA_FILE, jsonStr, "utf8");
+  } catch (e) {}
+
+  try {
+    const dir = path.dirname(TMP_DATA_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(TMP_DATA_FILE, jsonStr, "utf8");
+  } catch (e) {}
 }
 
 // GET: Retrieve assigned homework for classroom
@@ -82,22 +86,76 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const classroomId = searchParams.get("classroomId")?.toLowerCase().trim();
     const classroomName = searchParams.get("classroomName")?.toLowerCase().trim();
+    const isAll = searchParams.get("all") === "true";
 
-    const all = getStoredAssignments();
+    const allMap = new Map<string, ClassroomAssignment>();
 
-    let filtered = all;
-    if (classroomId && classroomId !== "solo" && classroomId !== "all") {
-      filtered = all.filter(
-        (h) =>
-          h.classroomId?.toLowerCase() === classroomId ||
-          (classroomName && h.classroomName?.toLowerCase() === classroomName)
-      );
-    } else if (classroomName && classroomName !== "all" && classroomName !== "solo") {
-      filtered = all.filter((h) => h.classroomName?.toLowerCase() === classroomName);
+    // 1. Load from In-Memory
+    globalStore.forEach((item) => {
+      if (item && item.id) allMap.set(item.id, item);
+    });
+
+    // 2. Load from Local/TMP files
+    const fileItems = readLocalFile();
+    fileItems.forEach((item) => {
+      if (item && item.id && !allMap.has(item.id)) {
+        allMap.set(item.id, item);
+      }
+    });
+
+    // 3. Load from Cloud Supabase Database
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: supaRows, error } = await supabase
+          .from("student_submissions")
+          .select("*")
+          .eq("student_name", "__CLASSROOM_ASSIGNMENT__")
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        if (!error && Array.isArray(supaRows)) {
+          supaRows.forEach((row: any) => {
+            const payload = row.mistakes?.[0];
+            if (payload && payload.id) {
+              allMap.set(payload.id, {
+                id: payload.id,
+                classroomId: payload.classroomId || "solo",
+                classroomName: payload.classroomName || "Yakkaxon Rejim",
+                topic: payload.topic || row.topic_title,
+                intensity: payload.intensity || "medium",
+                totalCount: payload.totalCount || row.total_questions || 10,
+                sections: payload.sections || [],
+                vocabulary: payload.vocabulary || [],
+                assignedAt: payload.assignedAt || row.created_at,
+                assignedBy: payload.assignedBy || "Ustoz"
+              });
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("Supabase fetch assignment warning:", err);
+      }
     }
 
-    // Sort by latest assigned
-    filtered.sort((a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime());
+    const allAssignments = Array.from(allMap.values()).sort(
+      (a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime()
+    );
+
+    let filtered = allAssignments;
+
+    if (!isAll && (classroomId || classroomName)) {
+      const matched = allAssignments.filter((h) => {
+        const cId = (h.classroomId || "").toLowerCase().trim();
+        const cName = (h.classroomName || "").toLowerCase().trim();
+        return (
+          (classroomId && classroomId !== "solo" && classroomId !== "all" && cId === classroomId) ||
+          (classroomName && classroomName !== "all" && classroomName !== "solo" && cName === classroomName)
+        );
+      });
+
+      // If matched items found, return them. If classroom has no specific homework, return all recent homeworks so the student is never left with an empty state!
+      filtered = matched.length > 0 ? matched : allAssignments;
+    }
 
     return NextResponse.json({
       success: true,
@@ -125,23 +183,68 @@ export async function POST(req: NextRequest) {
       classroomName: classroomName || "Yakkaxon Rejim",
       topic: topic,
       intensity: data?.intensity || "medium",
-      totalCount: data?.totalCount || (data?.sections?.reduce((acc: number, s: any) => acc + (s.items?.length || 0), 0) || 10),
+      totalCount:
+        data?.totalCount ||
+        data?.sections?.reduce((acc: number, s: any) => acc + (s.items?.length || 0), 0) ||
+        10,
       sections: data?.sections || [],
       vocabulary: data?.vocabulary || [],
       assignedAt: new Date().toISOString(),
       assignedBy: assignedBy || "Ustoz"
     };
 
-    const current = getStoredAssignments();
-    // Prepend new assignment
-    const updated = [assignment, ...current.filter((x) => x.id !== assignment.id)];
-    saveStoredAssignments(updated);
+    // 1. Update in-memory
+    globalStore.set(assignment.id, assignment);
+
+    // 2. Update local / tmp file
+    const existing = readLocalFile().filter((x) => x.id !== assignment.id);
+    writeLocalFile([assignment, ...existing]);
+
+    // 3. Persist to Cloud Supabase
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from("student_submissions").insert([
+          {
+            student_name: "__CLASSROOM_ASSIGNMENT__",
+            syllabus_level: "B1",
+            topic_id: 999,
+            topic_title: topic,
+            score: assignment.totalCount,
+            total_questions: assignment.totalCount,
+            percent: 100,
+            mistakes: [assignment],
+            created_at: assignment.assignedAt
+          }
+        ]);
+      } catch (e) {
+        console.warn("Supabase assignment insert warning:", e);
+      }
+    }
 
     return NextResponse.json({
       success: true,
       message: "Homework successfully assigned to classroom",
       homework: assignment
     });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+
+// DELETE: Remove an assignment by id
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ success: false, error: "ID is required" }, { status: 400 });
+    }
+
+    globalStore.delete(id);
+    const existing = readLocalFile().filter((x) => x.id !== id);
+    writeLocalFile(existing);
+
+    return NextResponse.json({ success: true, message: "Assignment removed" });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

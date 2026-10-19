@@ -1,8 +1,16 @@
 // ====================================================================
-// TeacherOS Student Bot Runner (Long Polling & Telegram Mini App)
+// TeacherOS Student Bot Runner (Permanent Resilient Long Polling)
 // Bot: @app_teacheros_bot
 // Token: 8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA
 // ====================================================================
+
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught exception caught safely:', err?.message || err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('💥 Unhandled rejection caught safely:', reason);
+});
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8664328884:AAED3moTd05id_VJb1Op6ose-F0z_8AAAuA';
 const APP_URL = process.env.APP_URL || 'https://teacher-os-beryl.vercel.app';
@@ -43,7 +51,7 @@ async function initBotConfig() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ drop_pending_updates: false })
     });
-    console.log('✅ Webhook cleared, ready for instant long polling');
+    console.log('✅ Webhook cleared, ready for instant permanent long polling');
   } catch (err) {
     console.error('⚠️ Bot initialization warning:', err.message);
   }
@@ -76,12 +84,12 @@ let offset = 0;
 async function pollUpdates() {
   while (true) {
     try {
-      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${offset}&timeout=25`, {
+      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${offset}&timeout=20`, {
         cache: 'no-store'
       });
       const data = await res.json();
 
-      if (data.ok && Array.isArray(data.result)) {
+      if (data && data.ok && Array.isArray(data.result)) {
         for (const update of data.result) {
           offset = update.update_id + 1;
 
@@ -126,16 +134,18 @@ async function pollUpdates() {
           const sent = await sendTelegramMessage(chatId, welcomeMessage, keyboard);
           console.log(`📤 Sent response to ${firstName} (${chatId}):`, sent?.ok ? 'SUCCESS' : sent?.description);
         }
+      } else {
+        await new Promise(r => setTimeout(r, 1500));
       }
     } catch (err) {
-      console.error('⚠️ Polling error, retrying in 3s:', err.message);
-      await new Promise(r => setTimeout(r, 3000));
+      console.warn('⚠️ Telegram polling reconnecting:', err?.message || 'network timeout');
+      await new Promise(r => setTimeout(r, 2000));
     }
   }
 }
 
 // Start
 initBotConfig().then(() => {
-  console.log('⚡ Telegram Bot is actively listening for student /start commands...');
+  console.log('⚡ Telegram Bot is actively listening permanently for student /start commands...');
   pollUpdates();
 });

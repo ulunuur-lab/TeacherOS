@@ -75,7 +75,8 @@ import {
   Shuffle,
   Puzzle,
   AlignLeft,
-  Swords
+  Swords,
+  ClipboardList
 } from "lucide-react";
 import {
   Curriculum,
@@ -98,6 +99,7 @@ import ClassroomModal from "../components/ClassroomModal";
 import ClassroomSelector from "../components/ClassroomSelector";
 import BaamboozleQuiz from "../components/BaamboozleQuiz";
 import HomeworkViewer, { HomeworkGeneratedData } from "../components/HomeworkViewer";
+import TeacherAssignmentsHistoryModal from "../components/TeacherAssignmentsHistoryModal";
 import {
   compressCurriculumToHash,
   decompressCurriculumFromHash,
@@ -447,6 +449,7 @@ export default function StitchTeacherOS() {
   const [classrooms, setClassrooms] = useState<TeacherClassroom[]>([]);
   const [activeClassroomId, setActiveClassroomId] = useState<string | null>(null);
   const [showClassroomModal, setShowClassroomModal] = useState<boolean>(false);
+  const [showAssignmentsHistoryModal, setShowAssignmentsHistoryModal] = useState<boolean>(false);
   const [teacherDisplayName, setTeacherDisplayName] = useState<string>('');
   const [classroomModalMode, setClassroomModalMode] = useState<'create' | 'list'>('create');
 
@@ -2545,6 +2548,15 @@ export default function StitchTeacherOS() {
         appLanguage={appLanguage}
       />
 
+      {/* Teacher Assignments & Submissions History Modal (Separate from main chat history) */}
+      <TeacherAssignmentsHistoryModal
+        isOpen={showAssignmentsHistoryModal}
+        onClose={() => setShowAssignmentsHistoryModal(false)}
+        isLight={isBoardLight}
+        appLanguage={appLanguage}
+        activeClassroomName={workspaceMode === 'classroom' ? currentClassroom.name : 'Sinf'}
+      />
+
       {/* 3-Language & Theme Settings (Docked adjacent to Sidebar if open, or centered modal) */}
       {showSettingsModal && (
         isHistoryOpen ? (
@@ -3436,6 +3448,24 @@ export default function StitchTeacherOS() {
               <Users className="w-4 h-4 text-indigo-500" />
               <span>{t.others_gq_title}</span>
             </button>
+
+            {/* Dedicated Assignments & Results History (Separate from Chat History) */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowAssignmentsHistoryModal(true);
+                setIsHistoryOpen(false);
+              }}
+              className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer bg-gradient-to-r from-emerald-500/15 to-teal-500/15 hover:from-emerald-500/25 hover:to-teal-500/25 border border-emerald-500/30 text-emerald-300 shadow-sm"
+            >
+              <div className="flex items-center space-x-2.5">
+                <ClipboardList className="w-4 h-4 text-emerald-400" />
+                <span>{appLanguage === 'en' ? "Assignments & Results Hub" : appLanguage === 'ru' ? "Задания и результаты" : "Topshiriqlar & Natijalar Tarixi"}</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/30 font-mono text-emerald-200">
+                Hub
+              </span>
+            </button>
           </div>
 
           {/* History List Section */}
@@ -3620,6 +3650,20 @@ export default function StitchTeacherOS() {
                 <span className="text-[10px] opacity-75">({currentClassroom.students})</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => setShowAssignmentsHistoryModal(true)}
+              className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
+                isBoardLight
+                  ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800"
+                  : "bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/30 text-emerald-200"
+              }`}
+              title="Biriktirilgan uyga vazifalar va test natijalari tarixi"
+            >
+              <ClipboardList className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">{appLanguage === 'en' ? "Assignments" : appLanguage === 'ru' ? "Задания" : "Topshiriqlar"}</span>
+            </button>
 
             {curriculum && (
               <>

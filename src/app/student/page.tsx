@@ -414,7 +414,8 @@ export default function StudentAppPage() {
     try {
       const urls = [
         `/api/classroom-homework?classroomName=${encodeURIComponent(activeName)}`,
-        `/api/classroom-homework?classroomName=all`
+        `/api/classroom-homework?all=true`,
+        `/api/classroom-homework`
       ];
 
       for (const url of urls) {
@@ -1091,71 +1092,53 @@ export default function StudentAppPage() {
                   </h2>
 
                   <div className="space-y-3 pt-4">
-                    <div
-                      onClick={() => {
-                        playSoundEffect("click");
-                        setActiveTab("homework");
-                      }}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${
-                        isLight
-                          ? "bg-slate-50 hover:bg-indigo-50 border-slate-200 hover:border-indigo-300"
-                          : "bg-[#131428] border-white/5 hover:border-[#635BFF]/40"
-                      }`}
-                    >
-                      <div className="space-y-0.5">
-                        <span className={`text-xs font-bold block ${isLight ? "text-slate-900 group-hover:text-indigo-600" : "text-white group-hover:text-indigo-300"}`}>
-                          {t.recent_past_perfect}
-                        </span>
-                        <span className={`text-[10px] block font-mono ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                          {t.recent_past_perfect_sub}
-                        </span>
+                    {homeworkList.length === 0 ? (
+                      <div className="py-8 px-4 text-center flex flex-col items-center justify-center space-y-2.5">
+                        <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-xl text-slate-400">
+                          ⏳
+                        </div>
+                        <p className={`text-xs font-semibold ${isLight ? "text-slate-700" : "text-slate-300"}`}>
+                          {lang === "en" ? "No recent activities yet" : lang === "ru" ? "Пока нет недавних активностей" : "Hozircha faoliyatlar mavjud emas"}
+                        </p>
+                        <p className={`text-[11px] max-w-[240px] leading-relaxed ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                          {lang === "en" ? "When your teacher assigns homework or covers a lesson, it will appear here." : lang === "ru" ? "Когда учитель назначит задание, оно появится здесь." : "Ustoz dars o'tganida yoki vazifa berganida bu yerda chiqadi."}
+                        </p>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-transform group-hover:translate-x-1" />
-                    </div>
-
-                    <div
-                      onClick={() => {
-                        playSoundEffect("click");
-                        alert("Guruh musobaqasi dars vaqtida ustoz tomonidan boshqariladi.");
-                      }}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${
-                        isLight
-                          ? "bg-slate-50 hover:bg-amber-50 border-slate-200 hover:border-amber-300"
-                          : "bg-[#131428] border-white/5 hover:border-amber-400/40"
-                      }`}
-                    >
-                      <div className="space-y-0.5">
-                        <span className={`text-xs font-bold block ${isLight ? "text-slate-900 group-hover:text-amber-600" : "text-white group-hover:text-amber-300"}`}>
-                          {t.recent_group_quiz}
-                        </span>
-                        <span className={`text-[10px] block font-mono ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                          {t.recent_group_quiz_sub}
-                        </span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-500 transition-transform group-hover:translate-x-1" />
-                    </div>
-
-                    <div
-                      onClick={() => {
-                        playSoundEffect("click");
-                        setActiveTab("homework");
-                      }}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${
-                        isLight
-                          ? "bg-slate-50 hover:bg-emerald-50 border-slate-200 hover:border-emerald-300"
-                          : "bg-[#131428] border-white/5 hover:border-emerald-400/40"
-                      }`}
-                    >
-                      <div className="space-y-0.5">
-                        <span className={`text-xs font-bold block ${isLight ? "text-slate-900 group-hover:text-emerald-600" : "text-white group-hover:text-emerald-300"}`}>
-                          {t.recent_level_check}
-                        </span>
-                        <span className={`text-[10px] block font-mono ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                          {t.recent_level_check_sub}
-                        </span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-transform group-hover:translate-x-1" />
-                    </div>
+                    ) : (
+                      homeworkList.slice(0, 3).map((hw) => (
+                        <div
+                          key={hw.id}
+                          onClick={() => {
+                            playSoundEffect("click");
+                            setActiveModalHomework(hw);
+                          }}
+                          className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${
+                            hw.isDone
+                              ? isLight
+                                ? "bg-emerald-50/60 border-emerald-200 hover:border-emerald-400"
+                                : "bg-emerald-950/20 border-emerald-500/20 hover:border-emerald-500/40"
+                              : isLight
+                              ? "bg-slate-50 hover:bg-indigo-50 border-slate-200 hover:border-indigo-300"
+                              : "bg-[#131428] border-white/5 hover:border-[#635BFF]/40"
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <span className={`text-xs font-bold block flex items-center space-x-2 ${
+                              hw.isDone
+                                ? "text-emerald-500"
+                                : isLight ? "text-slate-900 group-hover:text-indigo-600" : "text-white group-hover:text-indigo-300"
+                            }`}>
+                              <span>{hw.topic}</span>
+                              {hw.isDone && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 inline" />}
+                            </span>
+                            <span className={`text-[10px] block font-mono ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                              📅 {hw.assignedDate} • {hw.isDone ? (lang === "en" ? "Completed" : lang === "ru" ? "Выполнено" : "Bajarildi") : (lang === "en" ? "Assigned by Teacher" : lang === "ru" ? "Назначено учителем" : "Ustoz tomonidan berildi")}
+                            </span>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-transform group-hover:translate-x-1" />
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -1283,47 +1266,58 @@ export default function StudentAppPage() {
                       playSoundEffect("click");
                       setActiveModalHomework(hw);
                     }}
-                    className={`p-5 rounded-[20px] border flex items-center justify-between transition-all cursor-pointer group shadow-lg ${
+                    className={`p-5 rounded-[22px] border flex items-center justify-between transition-all cursor-pointer group shadow-lg hover:scale-[1.01] active:scale-[0.99] ${
                       hw.isDone
                         ? isLight
-                          ? "bg-white border-emerald-300 hover:border-emerald-500"
-                          : "bg-[#1a1c36] border-emerald-500/30 hover:border-emerald-500/60"
+                          ? "bg-white border-emerald-300 hover:border-emerald-500 hover:shadow-emerald-500/10"
+                          : "bg-[#181a34] border-emerald-500/30 hover:border-emerald-500/60 hover:shadow-emerald-500/10"
                         : isLight
-                        ? "bg-white border-slate-200 hover:border-indigo-400 hover:shadow-md"
-                        : "bg-[#1a1c36] border-white/10 hover:border-[#635BFF]/60 hover:shadow-[#635BFF]/20"
+                        ? "bg-white border-slate-200 hover:border-[#635BFF]/60 hover:shadow-indigo-500/15"
+                        : "bg-[#181a34] border-white/10 hover:border-[#635BFF]/60 hover:shadow-[0_0_25px_rgba(99,91,255,0.2)]"
                     }`}
                   >
-                    <div className="space-y-1">
-                      <h3 className={`text-base sm:text-lg font-bold transition-colors ${
+                    <div className="space-y-1.5">
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#635BFF]/20 text-[#818cf8] border border-[#635BFF]/30">
+                          {hw.questions?.length || 10} ta mashq
+                        </span>
+                        <p className={`text-xs font-mono ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                          📅 {hw.assignedDate}
+                        </p>
+                      </div>
+
+                      <h3 className={`text-base sm:text-lg font-black tracking-tight transition-colors ${
                         isLight ? "text-slate-900 group-hover:text-indigo-600" : "text-white group-hover:text-indigo-300"
                       }`}>
                         {hw.topic}
                       </h3>
-                      <p className={`text-xs font-mono ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                        📅 {hw.assignedDate}
+
+                      <p className={`text-[11px] font-mono ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                        {hw.isDone
+                          ? (lang === "en" ? "Result saved to student portal" : lang === "ru" ? "Результат сохранен" : "Natija profilingizga yozildi")
+                          : (lang === "en" ? "Click to start solving exercises" : lang === "ru" ? "Нажмите, чтобы начать решение" : "Mashqlarni yechish uchun bosing")}
                       </p>
                     </div>
 
                     <div className="flex items-center space-x-3 sm:space-x-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-md ${
-                        isLight
-                          ? "bg-slate-100 group-hover:bg-[#2563eb] text-slate-700 group-hover:text-white"
-                          : "bg-white/5 group-hover:bg-[#635BFF] text-slate-300 group-hover:text-white"
-                      }`}>
-                        <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
-                      </div>
-
                       {hw.isDone ? (
-                        <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-500 text-xs font-bold flex items-center space-x-1.5 shadow-sm min-w-[90px] justify-center">
-                          <CheckCircle2 className="w-4 h-4" />
+                        <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center space-x-1.5 shadow-sm min-w-[110px] justify-center font-mono">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                           <span>{t.hw_done}</span>
                         </div>
                       ) : (
-                        <div className="px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-500 text-xs font-bold flex items-center space-x-1.5 shadow-sm min-w-[90px] justify-center">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{t.hw_not_done}</span>
+                        <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#635BFF] to-[#4F46E5] text-white text-xs font-bold flex items-center space-x-1.5 shadow-lg shadow-[#635BFF]/30 min-w-[110px] justify-center group-hover:brightness-110 transition-all">
+                          <span>{lang === "en" ? "Solve Now →" : lang === "ru" ? "Решить →" : "Boshlash →"}</span>
                         </div>
                       )}
+
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                        isLight
+                          ? "bg-slate-100 group-hover:bg-[#635BFF] text-slate-700 group-hover:text-white"
+                          : "bg-white/5 group-hover:bg-[#635BFF] text-slate-300 group-hover:text-white"
+                      }`}>
+                        <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                      </div>
                     </div>
                   </div>
                 ))}
